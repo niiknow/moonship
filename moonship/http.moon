@@ -1,4 +1,6 @@
-http_handler = ngx and require "moonship.nginx.http" or require "socket.http"
+http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
+ltn12 = require('ltn12')
+
 util         = require "moonship.util"
 string_upper = string.upper
 qs_encode    = util.query_string_encode
@@ -9,19 +11,37 @@ request = (opts) ->
     opts = { url: opts, method: 'GET' }
 
   unless opts.url
-    opts["method"] = string_upper(opts["method"] or 'GET')
-    opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
-    opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
+    return { code: 0, error: "url is required" }
 
-    -- auto add content length
-    if opts["body"] then
-      opts["body"] = (type(opts["body"]) == "table") and qs_encode(opts["body"]) or opts["body"]
-      opts["Content-Length"] = strlen(opts["body"] or "")
+  opts["method"] = string_upper(opts["method"] or 'GET')
+  opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
+  opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
-    return http_handler.request(opts)
+  if opts.source then
+    buff = { }
+    sink = ltn12.sink.table(buff)
+    ltn12.pump.all(req.source, sink)
+    body = table.concat(buff)
+    opts["body"] = body
 
-  { code: 0, error: "url is required" }
 
+  -- auto add content length
+  if opts["body"] then
+    opts["body"] = (type(opts["body"]) == "table") and qs_encode(opts["body"]) or opts["body"]
+    opts["Content-Length"] = strlen(opts["body"] or "")
+
+
+  unless ngx
+    resultChunks = {}
+    body = ""
+    opts.sink = ltn12.sink.table(resultChunks)
+    one, code, headers, status, x = http_handler.request(opts)
+    if one then
+      body = table.concat(resultChunks)
+
+    return {:body, :code, :headers, :status }
+
+  http_handler.request(opts)
 {
   :request
 }

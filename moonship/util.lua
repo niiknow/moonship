@@ -134,7 +134,7 @@ query_string_encode = function(t, sep, quote)
         i = i + 2
       else
         buf[i + 2] = "="
-        buf[i + 3] = quote .. _escape(v .. quote)
+        buf[i + 3] = quote .. (_escape(v)) .. quote
         buf[i + 4] = sep
         i = i + 4
       end

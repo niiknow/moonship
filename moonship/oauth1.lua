@@ -1,4 +1,5 @@
 local util = require("moonship.util")
+local crypto = require("moonship.crypto")
 local escape_uri = ngx and ngx.escape_uri or util.url_escape
 local unescape_uri = ngx and ngx.unescape_uri or util.url_unescape
 local encode_base64 = ngx and ngx.encode_base64 or crypto.base64_encode
@@ -12,34 +13,30 @@ end
 local qs_encode = util.query_string_encode
 local url_parse = util.url_parse
 local url_build = util.url_build
-local secret, sign, create_signature
-local _ = {
-  normalizeParameters = function(parameters, body, query)
-    local items = {
-      qs_encode(parameters, "&")
-    }
-    if body then
-      string_split(body, "&", items)
-    end
-    if query then
-      string_split(query, "&", items)
-    end
-    table.sort(items)
-    return table.concat(items, "&")
+local normalizeParameters, calculateBaseString, secret, sign, create_signature
+normalizeParameters = function(parameters, body, query)
+  local items = {
+    qs_encode(parameters, "&")
+  }
+  if body then
+    string_split(body, "&", items)
   end
-}
-_ = {
-  calculateBaseString = function(body, method, query, base_uri, parameters)
-    local parms = normalizeParameters(parameters, body, query)
-    return escape_uri(method) .. "&" .. escape_uri(base_uri) .. "&" .. escape_uri(parms)
+  if query then
+    string_split(query, "&", items)
   end
-}
+  table.sort(items)
+  return table.concat(items, "&")
+end
+calculateBaseString = function(body, method, query, base_uri, parameters)
+  local parms = normalizeParameters(parameters, body, query)
+  return escape_uri(method) .. "&" .. escape_uri(base_uri) .. "&" .. escape_uri(parms)
+end
 secret = function(oauth)
   return unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
 end
-sign = function(body, method, query, base_uri, parameters)
+sign = function(body, method, query, base_uri, oauth, parameters)
   local strToSign = calculateBaseString(body, method, query, base_uri, parameters)
-  local signedString = digest_hmac_sha1(secret(opts["oauth"]), strToSign)
+  local signedString = digest_hmac_sha1(secret(oauth), strToSign)
   return encode_base64(signedString)
 end
 create_signature = function(opts, oauth)
@@ -61,7 +58,7 @@ create_signature = function(opts, oauth)
   if (oauth["callback"]) then
     parameters["oauth_callback"] = unescape_uri(oauth["callback"])
   end
-  parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', query, base_uri, parameters)
+  parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', query, base_uri, oauth, parameters)
   return "OAuth " .. qs_encode(parameters, ",", "\"")
 end
 return {

@@ -1,4 +1,5 @@
 util              = require "moonship.util"
+crypto            = require "moonship.crypto"
 
 escape_uri        = ngx and ngx.escape_uri or util.url_escape
 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
@@ -12,7 +13,7 @@ url_build         = util.url_build
 
 local *
 
-normalizeParameters: (parameters, body, query) ->
+normalizeParameters = (parameters, body, query) ->
   items = {qs_encode(parameters, "&")}
   if body then
     string_split(body, "&", items)
@@ -23,16 +24,16 @@ normalizeParameters: (parameters, body, query) ->
   table.sort(items)
   table.concat(items, "&")
 
-calculateBaseString: (body, method, query, base_uri, parameters) ->
+calculateBaseString = (body, method, query, base_uri, parameters) ->
   parms = normalizeParameters(parameters, body, query)
   escape_uri(method) .. "&" .. escape_uri(base_uri) .. "&" .. escape_uri(parms)
 
 secret = (oauth) ->
   unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
 
-sign = (body, method, query, base_uri, parameters) ->
+sign = (body, method, query, base_uri, oauth, parameters) ->
   strToSign = calculateBaseString(body, method, query, base_uri, parameters)
-  signedString = digest_hmac_sha1(secret(opts["oauth"]), strToSign)
+  signedString = digest_hmac_sha1(secret(oauth), strToSign)
   encode_base64(signedString)
 
 create_signature = (opts, oauth) ->
@@ -58,7 +59,7 @@ create_signature = (opts, oauth) ->
   if (oauth["callback"]) then
     parameters["oauth_callback"] = unescape_uri(oauth["callback"])
 
-  parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', query, base_uri, parameters)
+  parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', query, base_uri, oauth, parameters)
 
   "OAuth " .. qs_encode(parameters, ",", "\"")
 

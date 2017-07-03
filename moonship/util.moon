@@ -110,7 +110,7 @@ query_string_encode = (t, sep="&", quote="") ->
       i += 2
     else
       buf[i + 2] = "="
-      buf[i + 3] = quote .. _escape v .. quote
+      buf[i + 3] = quote .. (_escape v) .. quote
       buf[i + 4] = sep
       i += 4
 

@@ -82,7 +82,6 @@ build_env = function(src_env, dest_env, wl)
       env[name] = val
     end
   end
-  print(dest_env)
   env._G = dest_env
   return setmetatable(dest_env, {
     __index = env
@@ -90,7 +89,7 @@ build_env = function(src_env, dest_env, wl)
 end
 loadstring = function(code, name, env)
   if env == nil then
-    env = { }
+    env = _G
   end
   assert(type(code) == "string", "code must be a string")
   assert(type(env) == "table", "env is required")
@@ -102,7 +101,7 @@ loadstring_safe = function(code, name, env, wl)
 end
 loadfile = function(file, env)
   if env == nil then
-    env = { }
+    env = _G
   end
   assert(type(file) == "string", "file name is required")
   assert(type(env) == "table", "env is required")

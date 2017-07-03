@@ -1,4 +1,5 @@
-local http_handler = ngx and require("moonship.nginx.http" or require("socket.http"))
+local http_handler = (ngx and require("moonship.nginx.http")) or require("http.compat.socket")
+local ltn12 = require('ltn12')
 local util = require("moonship.util")
 local string_upper = string.upper
 local qs_encode = util.query_string_encode
@@ -11,21 +12,43 @@ request = function(opts)
     }
   end
   if not (opts.url) then
-    opts["method"] = string_upper(opts["method"] or 'GET')
-    opts["headers"] = opts["headers"] or {
-      ["Accept"] = "*/*"
+    return {
+      code = 0,
+      error = "url is required"
     }
-    opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
-    if opts["body"] then
-      opts["body"] = (type(opts["body"]) == "table") and qs_encode(opts["body"]) or opts["body"]
-      opts["Content-Length"] = strlen(opts["body"] or "")
-    end
-    return http_handler.request(opts)
   end
-  return {
-    code = 0,
-    error = "url is required"
+  opts["method"] = string_upper(opts["method"] or 'GET')
+  opts["headers"] = opts["headers"] or {
+    ["Accept"] = "*/*"
   }
+  opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
+  if opts.source then
+    local buff = { }
+    local sink = ltn12.sink.table(buff)
+    ltn12.pump.all(req.source, sink)
+    local body = table.concat(buff)
+    opts["body"] = body
+  end
+  if opts["body"] then
+    opts["body"] = (type(opts["body"]) == "table") and qs_encode(opts["body"]) or opts["body"]
+    opts["Content-Length"] = strlen(opts["body"] or "")
+  end
+  if not (ngx) then
+    local resultChunks = { }
+    local body = ""
+    opts.sink = ltn12.sink.table(resultChunks)
+    local one, code, headers, status, x = http_handler.request(opts)
+    if one then
+      body = table.concat(resultChunks)
+    end
+    return {
+      body = body,
+      code = code,
+      headers = headers,
+      status = status
+    }
+  end
+  return http_handler.request(opts)
 end
 return {
   request = request
