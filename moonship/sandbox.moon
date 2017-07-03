@@ -5,16 +5,11 @@ table_pack = table.pack or (...) -> { n: select("#", ...), ... }
 has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"
 pack_1 = (first, ...) -> first, table_pack(...)
 
-loadf = (file, env) ->
-  chunk, err = loadfile(file)
-  if chunk and env then setfenv(chunk, env)
-  chunk, err
-
 loads = has_52_compatible_load and load or (code, name, mode, env) ->
-  if code.byte(code, 1) ~= 27 then
+  if code.byte(code, 1) ~= 27
     chunk, err = loadstring(code, name)
 
-    if chunk and env then
+    if chunk and env
       setfenv(chunk, env)
 
     return chunk, err
@@ -64,16 +59,16 @@ build_env = (src_env, dest_env={}, wl=whitelist) ->
   env = {}
   for name in wl\gmatch "%S+" do
     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
-    if t_name then
+    if t_name
       tbl = env[t_name]
       env_t = src_env[t_name]
-      if tbl == nil and env_t then
+      if tbl == nil and env_t
         tbl = {}
         env[t_name] = tbl
 
-      if env_t then
+      if env_t
         t_tbl = type(tbl)
-        if t_tbl ~= "table" then
+        if t_tbl ~= "table"
           error("field '".. t_name .. "' already added as " .. t_tbl)
 
         tbl[field] = env_t[field]
@@ -130,6 +125,7 @@ exec = (code, name, env, wl) ->
 
   ret
 
+
 loadmoon = (moon_code) ->
   tree, err = parse.string moon_code
   unless tree
@@ -145,10 +141,10 @@ loadmoon = (moon_code) ->
 execmoon = (code, name, env, wl) ->
   lua_code, err = loadmoon(code)
 
-  unless err
-    return exec(lua_code, name, env, wl)
+  unless lua_code
+    return nil, err
 
-  nil, err
+  exec(lua_code, name, env, wl)
 
 {
   :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe,

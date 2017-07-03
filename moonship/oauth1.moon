@@ -15,10 +15,10 @@ local *
 
 normalizeParameters = (parameters, body, query) ->
   items = {qs_encode(parameters, "&")}
-  if body then
+  if body
     string_split(body, "&", items)
 
-  if query then
+  if query
     string_split(query, "&", items)
 
   table.sort(items)
@@ -53,10 +53,10 @@ create_signature = (opts, oauth) ->
     oauth_version: oauth["version"] or "1.0"
   }
 
-  if (oauth["accesstoken"]) then
+  if oauth["accesstoken"]
     parameters["oauth_token"] = oauth["accesstoken"]
 
-  if (oauth["callback"]) then
+  if oauth["callback"]
     parameters["oauth_callback"] = unescape_uri(oauth["callback"])
 
   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', query, base_uri, oauth, parameters)

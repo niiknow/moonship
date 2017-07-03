@@ -41,11 +41,11 @@ sha256 = (str) ->
   crypto_wrapper("sha256", str)
 
 hmac = (key, str, hasher) ->
-  if hasher == md5 then
+  if hasher == md5
     hmac_wrapper(key, str, "md5")
-  elseif hasher == sha1 then
+  elseif hasher == sha1
     hmac_wrapper(key, str, "sha1")
-  elseif hasher == sha256 then
+  elseif hasher == sha256
     hmac_wrapper(key, str, "sha256")
 
 {

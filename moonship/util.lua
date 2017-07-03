@@ -6,7 +6,7 @@ do
   local _obj_0 = table
   concat, insert = _obj_0.concat, _obj_0.insert
 end
-local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, loadstring
+local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults
 url_unescape = function(str)
   return url.unescape(str)
 end
@@ -158,8 +158,13 @@ resolveGithubRaw = function(modname)
   end
   return __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 end
-loadstring = function(code)
-  return moonscript.loadstring('print "hi!"')
+applyDefaults = function(opts, defOpts)
+  for k, v in pairs(defOpts) do
+    if not (opts[k]) then
+      opts[k] = v
+    end
+  end
+  return opts
 end
 return {
   url_escape = url_escape,
@@ -173,5 +178,7 @@ return {
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
-  query_string_encode = query_string_encode
+  query_string_encode = query_string_encode,
+  resolveGithubRaw = resolveGithubRaw,
+  applyDefaults = applyDefaults
 }

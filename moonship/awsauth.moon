@@ -31,7 +31,7 @@ class AwsAuth
 
   get_signed_request_body: () =>
     params = @options.request_body
-    if type(@options.request_body) == "table" then
+    if type(@options.request_body) == "table"
       table.sort(params)
       params = util.query_string_encode(params)
 

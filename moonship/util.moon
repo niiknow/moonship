@@ -28,10 +28,10 @@ url_parse = (str) ->
 -- }
 url_build = (parts, includeQuery=true) ->
   out = parts.path or ""
-  if includeQuery then
-    if parts.query then
+  if includeQuery
+    if parts.query
       out ..= "?" .. parts.query
-    if parts.fragment then
+    if parts.fragment
       out ..= "#" .. parts.fragment
 
   if host = parts.host
@@ -120,7 +120,7 @@ query_string_encode = (t, sep="&", quote="") ->
 
 resolveGithubRaw = (modname) ->
   capturePath = "https://raw.githubusercontent.com/"
-  if string.find(modname, "github.com/") then
+  if string.find(modname, "github.com/")
     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/blob(/[^/]+)(/[^?#]*)(.*)")
     path, file = string.match(pathx, "^(.*/)([^/]*)$")
     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
@@ -130,11 +130,14 @@ resolveGithubRaw = (modname) ->
 
   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
-loadstring = (code) ->
-  moonscript.loadstring 'print "hi!"'
+applyDefaults = (opts, defOpts) ->
+  for k, v in pairs(defOpts) do
+    unless opts[k]
+      opts[k] = v
+  opts
 
 { :url_escape, :url_unescape, :url_parse, :url_build
   :trim, :path_sanitize, :slugify, :split,
   :json_encodable, :from_json, :to_json,
-  :query_string_encode
+  :query_string_encode, :resolveGithubRaw, :applyDefaults
 }

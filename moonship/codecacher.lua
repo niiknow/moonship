@@ -5,7 +5,36 @@ local ngin = require("moonship.ngin")
 local sandbox = require("moonship.sandbox")
 local util = require("moonship.util")
 local plpath = require("pl.path")
-local CodeCacher
+local aws_auth = require("moonship.awsauth")
+local myUrlHandler, CodeCacher
+myUrlHandler = function(opts)
+  local cleanPath, querystring = string.match(opts.url, "([^?#]*)(.*)")
+  local full_path = cleanPath
+  local authHeaders = { }
+  if opts.aws and opts.aws.aws_s3_code_path then
+    local aws = aws_auth.AwsAuth:new(opts.aws)
+    full_path = "https://${aws.aws_host}/" .. tostring(opts.aws.aws_s3_code_path) .. "/#{full_path)"
+    authHeaders = aws:get_auth_headers()
+  end
+  full_path = util.sanitizePath(tostring(fullpath) .. "/index.moon")
+  local req = {
+    url = full_path,
+    method = "GET",
+    capture_url = "/__code",
+    headers = { }
+  }
+  if opts.last_modified then
+    req.headers["If-Modified-Since"] = opts.last_modified
+  end
+  for k, v in pairs(authHeaders) do
+    req.headers[k] = v
+  end
+  local res = httpc.request(req)
+  if res.status == 200 then
+    return res.body
+  end
+  return "{code: 0}"
+end
 do
   local _class_0
   local _base_0 = {
@@ -36,7 +65,7 @@ do
       if (valHolder == nil) then
         local domainAndPath, query = string.match(url, "([^?#]*)(.*)")
         domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
-        local fileBasePath = utils.sanitizePath(localBasePath .. "/" .. domainAndPath)
+        local fileBasePath = utils.sanitizePath(self.options.localBasePath .. "/" .. domainAndPath)
         local localFullPath = fileBasePath .. "/index.lua"
         valHolder = {
           url = url,
@@ -45,8 +74,11 @@ do
           lastCheck = os.time(),
           fileMod = lfs.attributes(localFullPath, "modification")
         }
+        if (self.options.aws) then
+          valHolder["aws"] = self.options.aws
+        end
       end
-      if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - self.defaultTtl))) then
+      if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - self.options.ttl))) then
         valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
         if (valHolder.fileMod ~= nil) then
           valHolder.value = sandbox.loadfile(valHolder.localFullPath, ngin.getSandboxEnv())
@@ -65,14 +97,26 @@ do
   }
   _base_0.__index = _base_0
   _class_0 = setmetatable({
-    __init = function(self, localBasePath, ttl, codeHandler, code_cache_size, myUrlHandler)
-      self.codeCache = lru.new(code_cache_size or 10000)
-      self.urlHandler = codeHandler or myUrlHandler
-      self.defaultTtl = ttl or 3600
+    __init = function(self, opts)
+      if opts == nil then
+        opts = { }
+      end
+      local defOpts = {
+        appPath = "/app",
+        ttl = 3600,
+        codeHandler = myUrlHandler,
+        code_cache_size = 10000
+      }
+      opts = utils.applyDefaults(opts, defOpts)
+      if (opts.ttl < 120) then
+        opts.ttl = 120
+      end
+      opts.localBasePath = plpath.abspath(opts.appPath)
+      self.options = opts
+      self.codeCache = lru.new(opts.code_cache_size)
       if (self.defaultTtl < 120) then
         self.defaultTtl = 120
       end
-      self.localBasePath = plpath.abspath(localBasePath)
     end,
     __base = _base_0,
     __name = "CodeCacher"

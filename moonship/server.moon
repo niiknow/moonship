@@ -33,7 +33,7 @@ reply = (myserver, stream) ->
   res_headers\append("content-type", "text/plain")
   -- Send headers to client; end the stream immediately if this was a HEAD request
   assert(stream:write_headers(res_headers, req.method == "HEAD"))
-  if req.method  ~= "HEAD" then
+  if req.method  ~= "HEAD"
     -- Send body, ending the stream
     assert(stream:write_chunk("Hello world!\n", true))
 

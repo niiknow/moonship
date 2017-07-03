@@ -9,13 +9,13 @@ local *
 loadCode = (url) ->
   res = httpc.request({ url: url, method: "GET", capture_url: "/__githubraw" })
 
-  if res.status == 200 then
+  if res.status == 200
     return res.body
 
   "nil"
 
 buildRequest = () ->
-  if (ngx) then
+  if ngx
     ngx.req.read_body()
     req_wrapper = {
       body: ngx.req.get_body_data(),
@@ -40,7 +40,7 @@ buildRequest = () ->
 require_new = (modname) ->
   unless _G[modname]
     base, file, query = util.resolveGithubRaw(modname)
-    if base then
+    if base
       code = @loadCode("#{base}#{file}#{query}")
       _G["__ghrawbase"] = base
       fn, err = sandbox.loadstring(code, nil, _G)
@@ -73,58 +73,21 @@ class Engine
     @options = config.Config\new(options)
     @codeCache = codecacher.CodeCacher\new(@options)
 
-  handleResponse: (first, second) =>
-    statusCode = 200
-    msg = ""
-    contentType = "text/plain"
-    opts = {}
-    req_method = string.lower(ngx.req.get_method())
+  handleResponse: (rst) =>
+    if type(rst) ~= 'table'
+      return {body: rst, code: 500, status: "500 unexpected response", headers: {'Content-Type': "text/plain"}}
 
-    if type(first) == 'number' then
-      statusCode = first
-
-      if type(second) == 'string' then
-        msg = second
-
-    elseif type(first) == 'string' then
-      msg = first
-    elseif type(first) == 'table' then
-
-      -- attempt to execute the method that is required
-      func = first[req_method]
-      if (type(func) == 'function') then
-        -- execute the function in sandbox
-        env = getSandboxEnv()
-        setfenv(func, env)
-
-        rsp, err = func()
-        second = rsp.headers or {}
-        msg = rsp.content
-        statusCode = rsp.statuscode or statusCode
-      else
-        statusCode = 404
-
-
-    if type(second) == 'table' then
-      for k, v in pairs(second) do
-        ngx.header[k] = v
-        if ('content-type' == string.lower(k)) then
-          contentType = nil
-
-    if (contentType ~= nil) then
-      ngx.header['Content-Type'] = contentType
-
-    ngx.status = statusCode
-    ngx.say(msg)
-    ngx.exit(statusCode)
+    rst.code = rst.code or 200
+    rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"
+    rst
 
   engage: (host=(ngx and ngx.var.host), uri=(ngx and ngx.var.uri)) =>
     path = util.sanitizePath(string.format("%s/%s", host, uri))
     rst, err = @codeAdaptor.run(path)
     unless err
-      return {body: rst.body, headers: rst.headers, status: rst.status, code: rst.code or 200 }
+      return @handleResponse(rst)
 
-    {error: err, code: 500, status: "500 error running remote code" }
+    { error: err, code: 500, status: "500 Engine.engage error" }
 
 {
   :Engine

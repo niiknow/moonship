@@ -16,7 +16,7 @@ loadCode = function(url)
   return "nil"
 end
 buildRequest = function()
-  if (ngx) then
+  if ngx then
     ngx.req.read_body()
     local req_wrapper = {
       body = ngx.req.get_body_data(),
@@ -74,46 +74,20 @@ local _ = {
 do
   local _class_0
   local _base_0 = {
-    handleResponse = function(self, first, second)
-      local statusCode = 200
-      local msg = ""
-      local contentType = "text/plain"
-      local opts = { }
-      local req_method = string.lower(ngx.req.get_method())
-      if type(first) == 'number' then
-        statusCode = first
-        if type(second) == 'string' then
-          msg = second
-        end
-      elseif type(first) == 'string' then
-        msg = first
-      elseif type(first) == 'table' then
-        local func = first[req_method]
-        if (type(func) == 'function') then
-          local env = getSandboxEnv()
-          setfenv(func, env)
-          local rsp, err = func()
-          second = rsp.headers or { }
-          msg = rsp.content
-          statusCode = rsp.statuscode or statusCode
-        else
-          statusCode = 404
-        end
+    handleResponse = function(self, rst)
+      if type(rst) ~= 'table' then
+        return {
+          body = rst,
+          code = 500,
+          status = "500 unexpected response",
+          headers = {
+            ['Content-Type'] = "text/plain"
+          }
+        }
       end
-      if type(second) == 'table' then
-        for k, v in pairs(second) do
-          ngx.header[k] = v
-          if ('content-type' == string.lower(k)) then
-            contentType = nil
-          end
-        end
-      end
-      if (contentType ~= nil) then
-        ngx.header['Content-Type'] = contentType
-      end
-      ngx.status = statusCode
-      ngx.say(msg)
-      return ngx.exit(statusCode)
+      rst.code = rst.code or 200
+      rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"
+      return rst
     end,
     engage = function(self, host, uri)
       if host == nil then
@@ -125,17 +99,12 @@ do
       local path = util.sanitizePath(string.format("%s/%s", host, uri))
       local rst, err = self.codeAdaptor.run(path)
       if not (err) then
-        return {
-          body = rst.body,
-          headers = rst.headers,
-          status = rst.status,
-          code = rst.code or 200
-        }
+        return self:handleResponse(rst)
       end
       return {
         error = err,
         code = 500,
-        status = "500 error running remote code"
+        status = "500 Engine.engage error"
       }
     end
   }

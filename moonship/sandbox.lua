@@ -11,14 +11,6 @@ local pack_1
 pack_1 = function(first, ...)
   return first, table_pack(...)
 end
-local loadf
-loadf = function(file, env)
-  local chunk, err = loadfile(file)
-  if chunk and env then
-    setfenv(chunk, env)
-  end
-  return chunk, err
-end
 local loads = has_52_compatible_load and load or function(code, name, mode, env)
   if code.byte(code, 1) ~= 27 then
     local chunk, err = loadstring(code, name)
@@ -143,10 +135,10 @@ loadmoon = function(moon_code)
 end
 execmoon = function(code, name, env, wl)
   local lua_code, err = loadmoon(code)
-  if not (err) then
-    return exec(lua_code, name, env, wl)
+  if not (lua_code) then
+    return nil, err
   end
-  return nil, err
+  return exec(lua_code, name, env, wl)
 end
 return {
   build_env = build_env,

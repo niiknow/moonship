@@ -52,10 +52,10 @@ create_signature = function(opts, oauth)
     oauth_nonce = digest_md5(timestamp .. ""),
     oauth_version = oauth["version"] or "1.0"
   }
-  if (oauth["accesstoken"]) then
+  if oauth["accesstoken"] then
     parameters["oauth_token"] = oauth["accesstoken"]
   end
-  if (oauth["callback"]) then
+  if oauth["callback"] then
     parameters["oauth_callback"] = unescape_uri(oauth["callback"])
   end
   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', query, base_uri, oauth, parameters)

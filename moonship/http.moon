@@ -7,7 +7,7 @@ qs_encode    = util.query_string_encode
 
 local *
 request = (opts) ->
-  if type(opts) == 'string' then
+  if type(opts) == 'string'
     opts = { url: opts, method: 'GET' }
 
   unless opts.url
@@ -17,7 +17,7 @@ request = (opts) ->
   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
-  if opts.source then
+  if opts.source
     buff = { }
     sink = ltn12.sink.table(buff)
     ltn12.pump.all(req.source, sink)
@@ -26,7 +26,7 @@ request = (opts) ->
 
 
   -- auto add content length
-  if opts["body"] then
+  if opts["body"]
     opts["body"] = (type(opts["body"]) == "table") and qs_encode(opts["body"]) or opts["body"]
     opts["Content-Length"] = strlen(opts["body"] or "")
 
@@ -36,7 +36,7 @@ request = (opts) ->
     body = ""
     opts.sink = ltn12.sink.table(resultChunks)
     one, code, headers, status, x = http_handler.request(opts)
-    if one then
+    if one
       body = table.concat(resultChunks)
 
     return {:body, :code, :headers, :status }
