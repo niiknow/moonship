@@ -1,11 +1,12 @@
 local url = require("socket.url")
 local cjson_safe = require("cjson.safe")
+local moonscript = require("moonscript.base")
 local concat, insert
 do
   local _obj_0 = table
   concat, insert = _obj_0.concat, _obj_0.insert
 end
-local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, from_json, to_json, query_string_encode
+local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, loadstring
 url_unescape = function(str)
   return url.unescape(str)
 end
@@ -146,6 +147,19 @@ query_string_encode = function(t, sep, quote)
   end
   buf[i] = nil
   return concat(buf)
+end
+resolveGithubRaw = function(modname)
+  local capturePath = "https://raw.githubusercontent.com/"
+  if string.find(modname, "github.com/") then
+    local user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/blob(/[^/]+)(/[^?#]*)(.*)")
+    local path, file = string.match(pathx, "^(.*/)([^/]*)$")
+    local base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
+    return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
+  end
+  return __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
+end
+loadstring = function(code)
+  return moonscript.loadstring('print "hi!"')
 end
 return {
   url_escape = url_escape,

@@ -1,6 +1,7 @@
 
 url = require "socket.url"
 cjson_safe = require "cjson.safe"
+moonscript = require "moonscript.base"
 
 import concat, insert from table
 
@@ -116,6 +117,21 @@ query_string_encode = (t, sep="&", quote="") ->
 
   buf[i] = nil
   concat buf
+
+resolveGithubRaw = (modname) ->
+  capturePath = "https://raw.githubusercontent.com/"
+  if string.find(modname, "github.com/") then
+    user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/blob(/[^/]+)(/[^?#]*)(.*)")
+    path, file = string.match(pathx, "^(.*/)([^/]*)$")
+    base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
+
+    -- convert period to folder before return
+    return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
+
+  __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
+
+loadstring = (code) ->
+  moonscript.loadstring 'print "hi!"'
 
 { :url_escape, :url_unescape, :url_parse, :url_build
   :trim, :path_sanitize, :slugify, :split,

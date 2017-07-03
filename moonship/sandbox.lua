@@ -1,3 +1,5 @@
+local parse = require("moonscript.parse")
+local compile = require("moonscript.compile")
 local table_pack = table.pack or function(...)
   return {
     n = select("#", ...),
@@ -23,9 +25,16 @@ local loads = has_52_compatible_load and load or function(code, name, mode, env)
     if chunk and env then
       setfenv(chunk, env)
     end
-    local _ = chunk, err
+    return chunk, err
   end
   return nil, "can't load binary chunk"
+end
+local readfile
+readfile = function(file)
+  local f = io.open(file, "rb")
+  local content = f:read("*all")
+  f:close()
+  return content
 end
 local whitelist = [[_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall
 
@@ -50,7 +59,7 @@ table.concat table.insert table.maxn table.pack table.remove table.sort table.un
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
-local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec
+local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec, loadmoon, execmoon
 build_env = function(src_env, dest_env, wl)
   if dest_env == nil then
     dest_env = { }
@@ -96,7 +105,7 @@ loadstring = function(code, name, env)
   return loads(code, name or "sandbox", "t", env)
 end
 loadstring_safe = function(code, name, env, wl)
-  env = build_env(_G or _ENV, env, wl)
+  env = build_env(_G, env, wl)
   return loadstring(code, name, env)
 end
 loadfile = function(file, env)
@@ -105,18 +114,39 @@ loadfile = function(file, env)
   end
   assert(type(file) == "string", "file name is required")
   assert(type(env) == "table", "env is required")
-  return loadf(file, env)
+  local code = readfile(file)
+  return loadstring(code, env)
 end
 loadfile_safe = function(file, env, wl)
-  env = build_env(_G or _ENV, env, wl)
+  env = build_env(_G, env, wl)
   return loadfile(file, env)
 end
-exec = function(fn)
+exec = function(code, name, env, wl)
+  local fn = loadstring_safe(code, name, env, wl)
   local ok, ret = pack_1(pcall(fn))
   if not (ok) then
     return nil, ret[1]
   end
   return ret
+end
+loadmoon = function(moon_code)
+  local tree, err = parse.string(moon_code)
+  if not (tree) then
+    return nil, "Parse error: " .. err
+  end
+  local lua_code, pos
+  lua_code, err, pos = compile.tree(tree)
+  if not (lua_code) then
+    return nil, compile.format_error(err, pos, moon_code)
+  end
+  return lua_code
+end
+execmoon = function(code, name, env, wl)
+  local lua_code, err = loadmoon(code)
+  if not (err) then
+    return exec(lua_code, name, env, wl)
+  end
+  return nil, err
 end
 return {
   build_env = build_env,
@@ -125,5 +155,7 @@ return {
   loadstring_safe = loadstring_safe,
   loadfile = loadfile,
   loadfile_safe = loadfile_safe,
-  exec = exec
+  loadmoon = loadmoon,
+  exec = exec,
+  execmoon = execmoon
 }

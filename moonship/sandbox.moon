@@ -1,3 +1,5 @@
+parse = require "moonscript.parse"
+compile = require "moonscript.compile"
 
 table_pack = table.pack or (...) -> { n: select("#", ...), ... }
 has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"
@@ -15,10 +17,16 @@ loads = has_52_compatible_load and load or (code, name, mode, env) ->
     if chunk and env then
       setfenv(chunk, env)
 
-    chunk, err
+    return chunk, err
 
   nil, "can't load binary chunk"
 
+
+readfile = (file) ->
+  f = io.open(file, "rb")
+  content = f\read("*all")
+  f\close()
+  content
 
 --- List of safe library methods (5.1 to 5.3)
 whitelist = [[
@@ -96,7 +104,7 @@ loadstring = (code, name, env=_G) ->
 -- @return          The `env` where the code was ran, or `nil` in case of error.
 -- @return          The chunk return values, or an error message.
 loadstring_safe = (code, name, env, wl) ->
-  env = build_env(_G or _ENV, env, wl)
+  env = build_env(_G, env, wl)
   loadstring(code, name, env)
 
 
@@ -104,15 +112,17 @@ loadfile = (file, env=_G) ->
   assert(type(file) == "string", "file name is required")
   assert(type(env) == "table", "env is required")
 
-  loadf(file, env)
+  code = readfile(file)
+  loadstring(code, env)
 
 
 loadfile_safe = (file, env, wl) ->
-  env = build_env(_G or _ENV, env, wl)
+  env = build_env(_G, env, wl)
   loadfile(file, env)
 
 
-exec = (fn) ->
+exec = (code, name, env, wl) ->
+  fn = loadstring_safe(code, name, env, wl)
   ok, ret = pack_1(pcall(fn))
 
   unless ok
@@ -120,6 +130,27 @@ exec = (fn) ->
 
   ret
 
+loadmoon = (moon_code) ->
+  tree, err = parse.string moon_code
+  unless tree
+    return nil, "Parse error: " .. err
+
+  lua_code, err, pos = compile.tree tree
+  unless lua_code
+    return nil, compile.format_error err, pos, moon_code
+
+  lua_code
+
+
+execmoon = (code, name, env, wl) ->
+  lua_code, err = loadmoon(code)
+
+  unless err
+    return exec(lua_code, name, env, wl)
+
+  nil, err
+
 {
-  :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :exec
+  :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe,
+  :loadmoon, :exec, :execmoon
 }

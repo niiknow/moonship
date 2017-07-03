@@ -14,15 +14,28 @@ describe "moonship.sandbox", ->
     assert.same expected, actual
 
   it "fail to execute restricted function", ->
-    expected = "[string \"ffail\"]:4: attempt to call field 'dump' (a nil value)"
+    expected = "ffail"
     data = "local function hi()\n"
     data ..= "  return 'hello world'\n"
     data ..= "end\nreturn string.dump(hi)"
-    ignore, actual = sandbox.exec sandbox.loadstring_safe data, 'ffail'
-    assert.same expected, actual
+    ignore, actual = sandbox.exec data, expected
+    hasMatch = actual\match(expected)
+
+    -- actual is error message
+    assert.same expected, hasMatch
 
   it "correctly execute good function", ->
     expected = "hello world"
     fn = sandbox.loadstring_safe "return string.gsub('hello cruel world', 'cruel ', '')"
     actual = fn!
     assert.same expected, actual
+
+  it "fail to execute restricted moonscript function", ->
+    expected = "mfail"
+    data = "hi = () -> \n"
+    data ..= "  'hello world'\n"
+    data ..= "\nstring.dump(hi)"
+    ignore, actual = sandbox.execmoon data, expected
+    hasMatch = actual\match(expected)
+    -- actual is error message
+    assert.same "mfail", hasMatch
