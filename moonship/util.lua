@@ -5,7 +5,7 @@ do
   local _obj_0 = table
   concat, insert = _obj_0.concat, _obj_0.insert
 end
-local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, to_json, from_json, query_string_encode
+local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, from_json, to_json, query_string_encode
 url_unescape = function(str)
   return url.unescape(str)
 end
@@ -99,11 +99,11 @@ json_encodable = function(obj, seen)
     return obj
   end
 end
-to_json = function(obj)
-  return cjson_safe.encode(json_encodable(obj))
-end
 from_json = function(obj)
   return cjson_safe.decode(obj)
+end
+to_json = function(obj)
+  return cjson_safe.encode(json_encodable(obj))
 end
 query_string_encode = function(t, sep, quote)
   if sep == nil then

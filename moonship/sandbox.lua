@@ -1,4 +1,14 @@
-local table_unpack = table.unpack or unpack
+local table_pack = table.pack or function(...)
+  return {
+    n = select("#", ...),
+    ...
+  }
+end
+local has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert):match("builtin")
+local pack_1
+pack_1 = function(first, ...)
+  return first, table_pack(...)
+end
 local loadf
 loadf = function(file, env)
   local chunk, err = loadfile(file)
@@ -7,19 +17,17 @@ loadf = function(file, env)
   end
   return chunk, err
 end
-local loads
-loads = function(code, name, mode, env)
-  if code.byte(code, 1) == 27 then
-    return nil, "can't load binary chunk"
+local loads = has_52_compatible_load and load or function(code, name, mode, env)
+  if code.byte(code, 1) ~= 27 then
+    local chunk, err = loadstring(code, name)
+    if chunk and env then
+      setfenv(chunk, env)
+    end
+    local _ = chunk, err
   end
-  local chunk, err = loadstring(code, name)
-  if chunk and env then
-    setfenv(chunk, env)
-  end
-  return chunk, err
+  return nil, "can't load binary chunk"
 end
-local whitelist
-whitelist = [[_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall
+local whitelist = [[_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall
 
 bit32.arshift bit32.band bit32.bnot bit32.bor bit32.btest bit32.bxor bit32.extract bit32.lrotate
 bit32.lshift bit32.replace bit32.rrotate bit32.rshift
@@ -42,16 +50,18 @@ table.concat table.insert table.maxn table.pack table.remove table.sort table.un
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
-build_env(src_env, dest_env, awhitelist)(function()
-  local dest_env = dest_env or { }
+local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec
+build_env = function(src_env, dest_env, wl)
+  if dest_env == nil then
+    dest_env = { }
+  end
+  if wl == nil then
+    wl = whitelist
+  end
   assert(getmetatable(dest_env) == nil, "env has a metatable")
   local env = { }
-  for name in {
-    awhitelist = gmatch("%S+")
-  } do
-    local t_name, field = {
-      name = match("^([^%.]+)%.([^%.]+)$")
-    }
+  for name in wl:gmatch("%S+") do
+    local t_name, field = name:match("^([^%.]+)%.([^%.]+)$")
     if t_name then
       local tbl = env[t_name]
       local env_t = src_env[t_name]
@@ -72,38 +82,43 @@ build_env(src_env, dest_env, awhitelist)(function()
       env[name] = val
     end
   end
+  print(dest_env)
   env._G = dest_env
   return setmetatable(dest_env, {
     __index = env
   })
-end)
-loadstring(code, name, env)(function()
+end
+loadstring = function(code, name, env)
+  if env == nil then
+    env = { }
+  end
   assert(type(code) == "string", "code must be a string")
   assert(type(env) == "table", "env is required")
-  local fn, err = loads(code, name or "sandbox", "t", env)
-  return nil, err
-end)
-loadstring_safe(code, name, env, awhitelist)(function()
-  local env = build_env(_G or _ENV, env, awhitelist or whitelist)
+  return loads(code, name or "sandbox", "t", env)
+end
+loadstring_safe = function(code, name, env, wl)
+  env = build_env(_G or _ENV, env, wl)
   return loadstring(code, name, env)
-end)
-loadfile(file, env)(function()
+end
+loadfile = function(file, env)
+  if env == nil then
+    env = { }
+  end
   assert(type(file) == "string", "file name is required")
   assert(type(env) == "table", "env is required")
-  local fn, err = loadf(file, env)
-  return fn, err
-end)
-loadfile_safe(file, env, awhitelist)(function()
-  local env = build_env(_G or _ENV, env, awhitelist or whitelist)
+  return loadf(file, env)
+end
+loadfile_safe = function(file, env, wl)
+  env = build_env(_G or _ENV, env, wl)
   return loadfile(file, env)
-end)
-exec(fn)(function()
+end
+exec = function(fn)
   local ok, ret = pack_1(pcall(fn))
   if not (ok) then
-    return ret, nil
+    return nil, ret[1]
   end
-  return nil, ret[1]
-end)
+  return ret
+end
 return {
   build_env = build_env,
   whitelist = whitelist,

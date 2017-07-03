@@ -1,19 +1,24 @@
 
-table_unpack = table.unpack or unpack
+table_pack = table.pack or (...) -> { n: select("#", ...), ... }
+has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"
+pack_1 = (first, ...) -> first, table_pack(...)
 
 loadf = (file, env) ->
   chunk, err = loadfile(file)
   if chunk and env then setfenv(chunk, env)
   chunk, err
 
-loads = (code, name, mode, env) ->
-  --mode = mode or "bt"
-  if code.byte(code, 1) == 27 then return nil, "can't load binary chunk"
-  chunk, err = loadstring(code, name)
-  if chunk and env then setfenv(chunk, env)
-  chunk, err
+loads = has_52_compatible_load and load or (code, name, mode, env) ->
+  if code.byte(code, 1) ~= 27 then
+    chunk, err = loadstring(code, name)
 
-local *
+    if chunk and env then
+      setfenv(chunk, env)
+
+    chunk, err
+
+  nil, "can't load binary chunk"
+
 
 --- List of safe library methods (5.1 to 5.3)
 whitelist = [[
@@ -42,14 +47,15 @@ utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
 
 
+local *
+
 -- Builds the environment table for a sandbox.
-build_env(src_env, dest_env, awhitelist) ->
-  dest_env = dest_env or {}
+build_env = (src_env, dest_env={}, wl=whitelist) ->
   assert(getmetatable(dest_env) == nil, "env has a metatable")
 
   env = {}
-  for name in awhitelist:gmatch "%S+" do
-    t_name, field = name:match "^([^%.]+)%.([^%.]+)$"
+  for name in wl\gmatch "%S+" do
+    t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
     if t_name then
       tbl = env[t_name]
       env_t = src_env[t_name]
@@ -73,40 +79,47 @@ build_env(src_env, dest_env, awhitelist) ->
 
   setmetatable(dest_env, { __index: env })
 
-loadstring(code, name, env) ->
+
+loadstring = (code, name, env=_G) ->
   assert(type(code) == "string", "code must be a string")
   assert(type(env) == "table", "env is required")
-  fn, err = loads(code, name or "sandbox", "t", env)
-  nil, err
+
+  loads(code, name or "sandbox", "t", env)
+
 
 --- Executes Lua code in a sandbox.
 --
 -- @param code      Lua source code string.
 -- @param name      Name of the chunk (for errors, default "sandbox").
 -- @param env       Table used as environment (default a new empty table).
--- @param whitelist String with a list of library functions imported from the global namespace (default `sandbox.whitelist`).
+-- @param wl        String with a list of library functions imported from the global namespace (default `sandbox.whitelist`).
 -- @return          The `env` where the code was ran, or `nil` in case of error.
 -- @return          The chunk return values, or an error message.
-loadstring_safe(code, name, env, awhitelist) ->
-  env = build_env(_G or _ENV, env, awhitelist or whitelist)
+loadstring_safe = (code, name, env, wl) ->
+  env = build_env(_G or _ENV, env, wl)
   loadstring(code, name, env)
 
 
-loadfile(file, env) ->
+loadfile = (file, env=_G) ->
   assert(type(file) == "string", "file name is required")
   assert(type(env) == "table", "env is required")
-  fn, err = loadf(file, env)
-  fn, err
+
+  loadf(file, env)
 
 
-loadfile_safe(file, env, awhitelist) ->
-  env = build_env(_G or _ENV, env, awhitelist or whitelist)
+loadfile_safe = (file, env, wl) ->
+  env = build_env(_G or _ENV, env, wl)
   loadfile(file, env)
 
-exec(fn) ->
-  ok, ret = pack_1(pcall(fn))
-  unless ok
-    return ret, nil
-  nil, ret[1]
 
-{ :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :exec }
+exec = (fn) ->
+  ok, ret = pack_1(pcall(fn))
+
+  unless ok
+    return nil, ret[1]
+
+  ret
+
+{
+  :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :exec
+}
