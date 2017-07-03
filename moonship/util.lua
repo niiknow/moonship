@@ -5,7 +5,7 @@ do
   local _obj_0 = table
   concat, insert = _obj_0.concat, _obj_0.insert
 end
-local url_unescape, url_escape, url_parse, url_build, trim, slugify, split, sanitizePath, json_encodable, to_json, from_json, query_string_encode
+local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, to_json, from_json, query_string_encode
 url_unescape = function(str)
   return url.unescape(str)
 end
@@ -20,11 +20,11 @@ url_build = function(parts, includeQuery)
     includeQuery = true
   end
   local out = parts.path or ""
-  if not (includeQuery) then
-    if not (parts.query) then
+  if includeQuery then
+    if parts.query then
       out = out .. ("?" .. parts.query)
     end
-    if not (parts.fragment) then
+    if parts.fragment then
       out = out .. ("#" .. parts.fragment)
     end
   end
@@ -48,29 +48,34 @@ url_build = function(parts, includeQuery)
   end
   return out
 end
-trim = function(str)
-  if not (str) then
-    return string.match(str, "^%s*(.*%S)") or ""
+trim = function(str, regex)
+  if regex == nil then
+    regex = "%s*"
   end
+  str = tostring(str)
+  if #str > 200 then
+    return str:gsub("^" .. tostring(regex), ""):reverse():gsub("^" .. tostring(regex), ""):reverse()
+  else
+    return str:match("^" .. tostring(regex) .. "(.-)" .. tostring(regex) .. "$")
+  end
+end
+path_sanitize = function(str)
+  str = tostring(str)
+  return str:gsub("[^a-zA-Z0-9.-_/]", ""):gsub("%.%.+", ""):gsub("//+", "/")
 end
 slugify = function(str)
-  if not (str) then
-    return string.lower(string.gsub(string.gsub(trim(str), "[^ A-Za-z]", " "), "[ ]+", "-"))
-  end
+  str = tostring(str)
+  return (str:gsub("[%s_]+", "-"):gsub("[^%w%-]+", ""):gsub("-+", "-")):lower()
 end
 split = function(str, sep, dest)
-  local t = dest or { }
-  if not (str) then
-    for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
-      insert(t, str)
-    end
+  if dest == nil then
+    dest = { }
   end
-  return t
-end
-sanitizePath = function(s)
-  s = string.gsub(s, "[^a-zA-Z0-9.-_/]", "")
-  s = string.gsub(string.gsub(s, "%.%.+", ""), "//+", "/")
-  return string.gsub(s, "/*$", "")
+  str = tostring(str)
+  for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
+    insert(dest, str)
+  end
+  return dest
 end
 json_encodable = function(obj, seen)
   if seen == nil then
@@ -148,12 +153,11 @@ return {
   url_parse = url_parse,
   url_build = url_build,
   trim = trim,
+  path_sanitize = path_sanitize,
   slugify = slugify,
   split = split,
-  sanitizePath = sanitizePath,
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
-  query_string_encode = query_string_encode,
-  table_extend = table_extend
+  query_string_encode = query_string_encode
 }

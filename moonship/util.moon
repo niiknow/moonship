@@ -27,10 +27,10 @@ url_parse = (str) ->
 -- }
 url_build = (parts, includeQuery=true) ->
   out = parts.path or ""
-  unless includeQuery
-    unless parts.query
+  if includeQuery then
+    if parts.query then
       out ..= "?" .. parts.query
-    unless parts.fragment
+    if parts.fragment then
       out ..= "#" .. parts.fragment
 
   if host = parts.host
@@ -49,33 +49,32 @@ url_build = (parts, includeQuery=true) ->
 
   out
 
-trim = (str) ->
-  unless str
-    string.match(str, "^%s*(.*%S)") or ""
+
+trim = (str, regex="%s*") ->
+  str = tostring str
+
+  if #str > 200
+    str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
+  else
+    str\match "^#{regex}(.-)#{regex}$"
+
+path_sanitize = (str) ->
+  str = tostring str
+  -- path should not have double quote, single quote, period
+  -- purposely left casing alone because paths are case-sensitive
+  -- finally, remove double period and make single forward slash
+  str\gsub("[^a-zA-Z0-9.-_/]", "")\gsub("%.%.+", "")\gsub("//+", "/")
 
 slugify = (str) ->
-  unless str
-    string.lower(string.gsub(string.gsub(trim(str),"[^ A-Za-z]"," "),"[ ]+","-"))
+  str = tostring str
+  (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
+split = (str, sep, dest={}) ->
+  str = tostring str
+  for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
+    insert(dest, str)
 
-split = (str, sep, dest) ->
-  t = dest or {}
-
-  unless str
-    for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
-      insert(t, str)
-  t
-
-sanitizePath = (s) ->
-  -- path should not have double quote, single quote, period
-  -- we purposely left casing because paths are case-sensitive
-  s = string.gsub(s, "[^a-zA-Z0-9.-_/]", "")
-
-  -- remove double period and forward slash
-  s = string.gsub(string.gsub(s, "%.%.+", ""), "//+", "/")
-
-  -- remove trailing forward slash which can always add later
-  string.gsub(s, "/*$", "")
+  dest
 
 json_encodable = (obj, seen={}) ->
   switch type obj
@@ -88,9 +87,9 @@ json_encodable = (obj, seen={}) ->
     else
       obj
 
-to_json = (obj) -> cjson_safe.encode json_encodable obj
-
 from_json = (obj) -> cjson_safe.decode obj
+
+to_json = (obj) -> cjson_safe.encode json_encodable obj
 
 query_string_encode = (t, sep="&", quote="") ->
   _escape = ngx and ngx.escape_uri or url_escape
@@ -119,7 +118,7 @@ query_string_encode = (t, sep="&", quote="") ->
   concat buf
 
 { :url_escape, :url_unescape, :url_parse, :url_build
-  :trim, :slugify, :split, :sanitizePath,
+  :trim, :path_sanitize, :slugify, :split,
   :json_encodable, :from_json, :to_json,
   :query_string_encode
 }

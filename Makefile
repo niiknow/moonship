@@ -11,6 +11,7 @@ global: build
 	sudo luarocks make moonship-dev-1.rockspec
 
 build:
+	moonc example.moon
 	moonc moonship
 
 watch: build

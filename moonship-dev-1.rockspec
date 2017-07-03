@@ -29,7 +29,6 @@ dependencies = {
   "bcrypt",
   "luacrypto",
   "md5",
-  "basexx",
   "penlight",
   "lua-resty-http",
   "lua-resty-string",

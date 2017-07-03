@@ -1,6 +1,5 @@
-local engine = require("moonship.engine")
 local Engine
-Engine = engine.Engine
+Engine = require("moonship.engine").Engine
 return {
   Engine = Engine
 }

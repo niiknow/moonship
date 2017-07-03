@@ -1,7 +1,5 @@
 
-engine = require "moonship.engine"
-
-import Engine from engine
+import Engine from require "moonship.engine"
 
 {
   :Engine
