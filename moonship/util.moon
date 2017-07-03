@@ -72,7 +72,7 @@ sanitizePath = (s) ->
   s = string.gsub(s, "[^a-zA-Z0-9.-_/]", "")
 
   -- remove double period and forward slash
-  s = string.gsub(string.gsub(s, "%.%.", ""), "//", "/")
+  s = string.gsub(string.gsub(s, "%.%.+", ""), "//+", "/")
 
   -- remove trailing forward slash which can always add later
   string.gsub(s, "/*$", "")
@@ -92,7 +92,7 @@ to_json = (obj) -> cjson_safe.encode json_encodable obj
 
 from_json = (obj) -> cjson_safe.decode obj
 
-query_string_encode = (t, sep="", quote="") ->
+query_string_encode = (t, sep="&", quote="") ->
   _escape = ngx and ngx.escape_uri or url_escape
 
   i = 0

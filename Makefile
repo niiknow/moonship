@@ -3,7 +3,6 @@
 
 test:
 	busted spec
-	busted spec_openresty
 
 local: build
 	luarocks make --force --local moonship-dev-1.rockspec
@@ -13,7 +12,6 @@ global: build
 
 build:
 	moonc moonship
-	moonc spec_openresty/s1
 
 watch: build
 	moonc -w moonship

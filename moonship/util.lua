@@ -69,7 +69,7 @@ split = function(str, sep, dest)
 end
 sanitizePath = function(s)
   s = string.gsub(s, "[^a-zA-Z0-9.-_/]", "")
-  s = string.gsub(string.gsub(s, "%.%.", ""), "//", "/")
+  s = string.gsub(string.gsub(s, "%.%.+", ""), "//+", "/")
   return string.gsub(s, "/*$", "")
 end
 json_encodable = function(obj, seen)
@@ -102,7 +102,7 @@ from_json = function(obj)
 end
 query_string_encode = function(t, sep, quote)
   if sep == nil then
-    sep = ""
+    sep = "&"
   end
   if quote == nil then
     quote = ""
