@@ -2,7 +2,7 @@
 .PHONY: test local build global watch clean
 
 test:
-	busted spec
+	busted -c spec
 
 local: build
 	luarocks make --force --local moonship-dev-1.rockspec

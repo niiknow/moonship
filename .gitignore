@@ -61,3 +61,6 @@ t/servroot/
 reindex
 .DS_Store
 dockerfiles/app/codecache/*
+*.report.*
+*.report.*.*
+
