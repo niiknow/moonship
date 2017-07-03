@@ -2,8 +2,8 @@ local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 local aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
-local codecache_size = os.getenv("MOONSHIP_CODECACHE_SIZE")
 local app_path = os.getenv("MOONSHIP_APP_PATH")
+local codecache_size = os.getenv("MOONSHIP_CODECACHE_SIZE") or 10000
 local Config
 do
   local _class_0
