@@ -7,7 +7,6 @@ util              = require "moonship.util"
 plpath            = require "pl.path"
 aws_auth          = require "moonship.awsauth"
 
-
 local *
 myUrlHandler = (opts) ->
   -- ngx.log(ngx.ERR, "mydebug: " .. secret_key)
@@ -39,6 +38,58 @@ myUrlHandler = (opts) ->
 
   "{code: 0}"
 
+buildRequest = () ->
+  if ngx
+    ngx.req.read_body()
+    req_wrapper = {
+      body: ngx.req.get_body_data(),
+      form: ngx.req.get_post_args(),
+      headers: ngx.req.get_headers()
+      method: ngx.req.get_method(),
+      path: ngx.var.uri,
+      port: ngx.var.server_port,
+      query: ngx.req.get_uri_args(),
+      querystring: ngx.req.args,
+      remote_addr: ngx.var.remote_addr,
+      referer: ngx.var.http_referer or "-",
+      scheme: ngx.var.scheme,
+      server_addr: ngx.var.server_addr,
+      user_agent: ""
+    }
+    req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
+    return req_wrapper
+
+  _G["request"] or {}
+
+require_new = (modname) ->
+  unless _G[modname]
+    base, file, query = util.resolveGithubRaw(modname)
+    if base
+      code = @loadCode("#{base}#{file}#{query}")
+      _G["__ghrawbase"] = base
+      fn, err = sandbox.loadstring(code, nil, _G)
+      unless fn
+        return nil, "error loading '#{modname}' with message: #{err}"
+
+      rst, err = sandbox.exec(fn)
+      unless rst
+        return nil, "error executing '#{modname}' with message: #{err}"
+
+      _G[modname] = rst
+
+  _G[modname]
+
+getSandboxEnv: () ->
+  env = {
+    http: httpc,
+    require: require_new,
+    util: util,
+    crypto: crypto,
+    request: buildRequest(),
+    __ghrawbase: __ghrawbase
+  }
+  sandbox.build_env(_G, env, sandbox.whitelist)
+
 --
 -- the strategy of this cache is to:
 --1. dynamically load remote file
@@ -50,7 +101,7 @@ myUrlHandler = (opts) ->
 class CodeCacher
 
   new: (opts={}) =>
-    defOpts = {appPath: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
+    defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
     opts = utils.applyDefaults(opts, defOpts)
 
     -- should not be lower than 2 minutes
@@ -103,7 +154,7 @@ class CodeCacher
         \close()
 
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-      valHolder.value = sandbox.loadstring rsp.body, nil, ngin.getSandboxEnv()
+      valHolder.value = sandbox.loadmoon rsp.body, opts.url, getSandboxEnv()
     elseif (rsp.status == 404)
       -- on 404 - set nil and delete local file
       valHolder.value = nil
@@ -142,7 +193,7 @@ class CodeCacher
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
       if (valHolder.fileMod ~= nil)
 
-        valHolder.value = sandbox.loadfile valHolder.localFullPath, ngin.getSandboxEnv()
+        valHolder.value = sandbox.loadfile valHolder.localFullPath, getSandboxEnv()
 
         -- set it back immediately for the next guy
         -- set next ttl

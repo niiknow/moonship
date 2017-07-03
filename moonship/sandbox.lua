@@ -107,7 +107,7 @@ loadfile = function(file, env)
   assert(type(file) == "string", "file name is required")
   assert(type(env) == "table", "env is required")
   local code = readfile(file)
-  return loadstring(code, env)
+  return loadstring(code, file, env)
 end
 loadfile_safe = function(file, env, wl)
   env = build_env(_G, env, wl)

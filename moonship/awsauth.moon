@@ -63,7 +63,7 @@ class AwsAuth
   -- get signing key
   -- https://docs.aws.amazon.com/general/latest/gr/sigv4-calculate-signature.html
   get_signing_key: () =>
-    k_date    = @hmac("AWS4" .. @options.aws_secret, @options.iso_date).digest()
+    k_date    = @hmac("AWS4" .. @options.aws_secret_access_key, @options.iso_date).digest()
     k_region  = @hmac(k_date, @options.aws_region).digest()
     k_service = @hmac(k_region, @options.aws_service).digest()
     @hmac(k_service, "aws4_request").digest()
@@ -84,7 +84,7 @@ class AwsAuth
   -- get authorization string
   -- x-amz-content-sha256 required by s3
   get_authorization_header: () =>
-    param = { @options.aws_key, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
+    param = { @options.aws_access_key_id, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
     header = {
       "AWS4-HMAC-SHA256 Credential=" .. table.concat(param, "/"),
       "SignedHeaders=content-type;host;x-amz-date",

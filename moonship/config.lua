@@ -1,9 +1,9 @@
 local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
-local aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
-local aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local app_path = os.getenv("MOONSHIP_APP_PATH")
-local codecache_size = os.getenv("MOONSHIP_CODECACHE_SIZE") or 10000
+local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
 local Config
 do
   local _class_0
@@ -15,10 +15,10 @@ do
         newOpts = { }
       end
       newOpts.aws_region = newOpts.aws_region or aws_region
-      newOpts.aws_access_key = newOpts.aws_access_key or aws_access_key
-      newOpts.aws_secret_key = newOpts.aws_secret_key or aws_secret_key
+      newOpts.aws_access_key_id = newOpts.aws_access_key_id or aws_access_key_id
+      newOpts.aws_secret_access_key = newOpts.aws_secret_access_key or aws_secret_access_key
       newOpts.aws_s3_code_path = newOpts.aws_s3_code_path or aws_s3_code_path
-      newOpts.codecache_size = newOpts.codecache_size or codecache_size
+      newOpts.code_cache_size = newOpts.code_cache_size or code_cache_size
       newOpts.app_path = newOpts.app_path or app_path
       self.data = newOpts
     end,

@@ -6,7 +6,7 @@ local sandbox = require("moonship.sandbox")
 local util = require("moonship.util")
 local plpath = require("pl.path")
 local aws_auth = require("moonship.awsauth")
-local myUrlHandler, CodeCacher
+local myUrlHandler, buildRequest, require_new, CodeCacher
 myUrlHandler = function(opts)
   local cleanPath, querystring = string.match(opts.url, "([^?#]*)(.*)")
   local full_path = cleanPath
@@ -35,6 +35,62 @@ myUrlHandler = function(opts)
   end
   return "{code: 0}"
 end
+buildRequest = function()
+  if ngx then
+    ngx.req.read_body()
+    local req_wrapper = {
+      body = ngx.req.get_body_data(),
+      form = ngx.req.get_post_args(),
+      headers = ngx.req.get_headers(),
+      method = ngx.req.get_method(),
+      path = ngx.var.uri,
+      port = ngx.var.server_port,
+      query = ngx.req.get_uri_args(),
+      querystring = ngx.req.args,
+      remote_addr = ngx.var.remote_addr,
+      referer = ngx.var.http_referer or "-",
+      scheme = ngx.var.scheme,
+      server_addr = ngx.var.server_addr,
+      user_agent = ""
+    }
+    req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
+    return req_wrapper
+  end
+  return _G["request"] or { }
+end
+require_new = function(modname)
+  if not (_G[modname]) then
+    local base, file, query = util.resolveGithubRaw(modname)
+    if base then
+      local code = self:loadCode(tostring(base) .. tostring(file) .. tostring(query))
+      _G["__ghrawbase"] = base
+      local fn, err = sandbox.loadstring(code, nil, _G)
+      if not (fn) then
+        return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
+      end
+      local rst
+      rst, err = sandbox.exec(fn)
+      if not (rst) then
+        return nil, "error executing '" .. tostring(modname) .. "' with message: " .. tostring(err)
+      end
+      _G[modname] = rst
+    end
+  end
+  return _G[modname]
+end
+local _ = {
+  getSandboxEnv = function()
+    local env = {
+      http = httpc,
+      require = require_new,
+      util = util,
+      crypto = crypto,
+      request = buildRequest(),
+      __ghrawbase = __ghrawbase
+    }
+    return sandbox.build_env(_G, env, sandbox.whitelist)
+  end
+}
 do
   local _class_0
   local _base_0 = {
@@ -54,7 +110,7 @@ do
           _with_0:close()
         end
         valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
-        valHolder.value = sandbox.loadstring(rsp.body, nil, ngin.getSandboxEnv())
+        valHolder.value = sandbox.loadmoon(rsp.body, opts.url, getSandboxEnv())
       elseif (rsp.status == 404) then
         valHolder.value = nil
         return os.remove(valHolder.localFullPath)
@@ -81,7 +137,7 @@ do
       if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - self.options.ttl))) then
         valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
         if (valHolder.fileMod ~= nil) then
-          valHolder.value = sandbox.loadfile(valHolder.localFullPath, ngin.getSandboxEnv())
+          valHolder.value = sandbox.loadfile(valHolder.localFullPath, getSandboxEnv())
           valHolder.lastCheck = os.time()
           self.codeCache:set(url, valHolder)
         else
@@ -102,7 +158,7 @@ do
         opts = { }
       end
       local defOpts = {
-        appPath = "/app",
+        app_path = "/app",
         ttl = 3600,
         codeHandler = myUrlHandler,
         code_cache_size = 10000

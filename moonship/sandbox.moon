@@ -108,7 +108,7 @@ loadfile = (file, env=_G) ->
   assert(type(env) == "table", "env is required")
 
   code = readfile(file)
-  loadstring(code, env)
+  loadstring(code, file, env)
 
 
 loadfile_safe = (file, env, wl) ->

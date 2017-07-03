@@ -41,7 +41,7 @@ do
       return crypto.hmac(secret, message, crypto.sha256)
     end,
     get_signing_key = function(self)
-      local k_date = self:hmac("AWS4" .. self.options.aws_secret, self.options.iso_date).digest()
+      local k_date = self:hmac("AWS4" .. self.options.aws_secret_access_key, self.options.iso_date).digest()
       local k_region = self:hmac(k_date, self.options.aws_region).digest()
       local k_service = self:hmac(k_region, self.options.aws_service).digest()
       return self:hmac(k_service, "aws4_request").digest()
@@ -69,7 +69,7 @@ do
     end,
     get_authorization_header = function(self)
       local param = {
-        self.options.aws_key,
+        self.options.aws_access_key_id,
         self.options.iso_date,
         self.options.aws_region,
         self.options.aws_service,
