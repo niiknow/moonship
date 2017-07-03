@@ -1,0 +1,12 @@
+language: c
+sudo: required
+
+services:
+  - docker
+
+install:
+  - docker build -t moonship-test .
+
+script:
+  - docker run moonship-test
+
