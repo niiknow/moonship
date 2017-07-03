@@ -17,6 +17,37 @@ url_escape = (str) ->
 url_parse = (str) ->
   url.parse(str)
 
+-- {
+--     [path] = "/test"
+--     [scheme] = "http"
+--     [host] = "localhost.com"
+--     [port] = "8080"
+--     [fragment] = "!hash_bang"
+--     [query] = "hello=world"
+-- }
+url_build = (parts) ->
+  out = parts.path or ""
+  unless parts.query
+    out ..= "?" .. parts.query
+  unless parts.fragment
+    out ..= "#" .. parts.fragment
+
+  if host = parts.host
+    host = "//" .. host
+    if parts.port
+      host ..= ":" .. parts.port
+
+    if parts.scheme
+      if parts.scheme != ""
+        host = parts.scheme .. ":" .. host
+
+    if parts.path and out\sub(1,1) != "/"
+      out = "/" .. out
+
+    out = host .. out
+
+  out
+
 trim = (str) ->
   unless str
     string.match(str, "^%s*(.*%S)") or ""
@@ -60,35 +91,6 @@ to_json = (obj) -> cjson_safe.encode json_encodable obj
 
 from_json = (obj) -> cjson_safe.decode obj
 
--- {
---     [path] = "/test"
---     [scheme] = "http"
---     [host] = "localhost.com"
---     [port] = "8080"
---     [fragment] = "!hash_bang"
---     [query] = "hello=world"
--- }
-build_url = (parts) ->
-  out = parts.path or ""
-  out ..= "?" .. parts.query if parts.query
-  out ..= "#" .. parts.fragment if parts.fragment
-
-  if host = parts.host
-    host = "//" .. host
-    if parts.port
-      host ..= ":" .. parts.port
-
-    if parts.scheme
-      if parts.scheme != ""
-        host = parts.scheme .. ":" .. host
-
-    if parts.path and out\sub(1,1) != "/"
-      out = "/" .. out
-
-    out = host .. out
-
-  out
-
 query_string_encode = (t, sep="", quote="") ->
   _escape = ngx and ngx.escape_uri or url_escape
 
@@ -115,8 +117,8 @@ query_string_encode = (t, sep="", quote="") ->
   buf[i] = nil
   concat buf
 
-{ :url_escape, :url_unescape, :url_parse,
+{ :url_escape, :url_unescape, :url_parse, :url_build
   :trim, :slugify, :split, :sanitizePath,
-  :json_encodable, :from_json, :to_json, :build_url,
+  :json_encodable, :from_json, :to_json,
   :query_string_encode, :table_extend
 }

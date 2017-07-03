@@ -5,7 +5,7 @@ do
   local _obj_0 = table
   concat, insert = _obj_0.concat, _obj_0.insert
 end
-local url_unescape, url_escape, url_parse, trim, slugify, split, sanitizePath, json_encodable, to_json, from_json, build_url, query_string_encode
+local url_unescape, url_escape, url_parse, url_build, trim, slugify, split, sanitizePath, json_encodable, to_json, from_json, query_string_encode
 url_unescape = function(str)
   return url.unescape(str)
 end
@@ -14,6 +14,34 @@ url_escape = function(str)
 end
 url_parse = function(str)
   return url.parse(str)
+end
+url_build = function(parts)
+  local out = parts.path or ""
+  if not (parts.query) then
+    out = out .. ("?" .. parts.query)
+  end
+  if not (parts.fragment) then
+    out = out .. ("#" .. parts.fragment)
+  end
+  do
+    local host = parts.host
+    if host then
+      host = "//" .. host
+      if parts.port then
+        host = host .. (":" .. parts.port)
+      end
+      if parts.scheme then
+        if parts.scheme ~= "" then
+          host = parts.scheme .. ":" .. host
+        end
+      end
+      if parts.path and out:sub(1, 1) ~= "/" then
+        out = "/" .. out
+      end
+      out = host .. out
+    end
+  end
+  return out
 end
 trim = function(str)
   if not (str) then
@@ -67,34 +95,6 @@ end
 from_json = function(obj)
   return cjson_safe.decode(obj)
 end
-build_url = function(parts)
-  local out = parts.path or ""
-  if parts.query then
-    out = out .. ("?" .. parts.query)
-  end
-  if parts.fragment then
-    out = out .. ("#" .. parts.fragment)
-  end
-  do
-    local host = parts.host
-    if host then
-      host = "//" .. host
-      if parts.port then
-        host = host .. (":" .. parts.port)
-      end
-      if parts.scheme then
-        if parts.scheme ~= "" then
-          host = parts.scheme .. ":" .. host
-        end
-      end
-      if parts.path and out:sub(1, 1) ~= "/" then
-        out = "/" .. out
-      end
-      out = host .. out
-    end
-  end
-  return out
-end
 query_string_encode = function(t, sep, quote)
   if sep == nil then
     sep = ""
@@ -141,6 +141,7 @@ return {
   url_escape = url_escape,
   url_unescape = url_unescape,
   url_parse = url_parse,
+  url_build = url_build,
   trim = trim,
   slugify = slugify,
   split = split,
@@ -148,7 +149,6 @@ return {
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
-  build_url = build_url,
   query_string_encode = query_string_encode,
   table_extend = table_extend
 }
