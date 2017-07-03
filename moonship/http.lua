@@ -1,4 +1,5 @@
 local http_handler = ngx and require("moonship.nginx.http" or require("socket.http"))
+local util = require("moonship.util")
 local string_upper = string.upper
 local qs_encode = util.query_string_encode
 local request
