@@ -39,6 +39,7 @@ luac.out
 *.x86_64
 *.hex
 
+# moon
 .tup
 logs/
 conf/
@@ -50,5 +51,13 @@ fastcgi_temp/
 client_body_temp/
 scgi_temp/
 uwsgi_temp/
-*.rockspec
-*.rock
+
+# openresty
+*.swp
+*.swo
+*~
+go
+t/servroot/
+reindex
+.DS_Store
+dockerfiles/app/codecache/*
