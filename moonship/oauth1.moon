@@ -37,15 +37,12 @@ sign = (body, method, query, base_uri, parameters) ->
 
 create_signature = (opts, oauth) ->
   -- parse url for query string
-  parsed_url = url_parse(opts.url)
-  query = parsed_url.query
+  parts = url_parse(opts.url)
+  query = parts.query
+  base_uri = url_build(parts, false)
 
-  -- uri without querystring
-  parsed_url.query = nil
-  parsed_url.fragment = nil
-  base_uri = url_build(parsed_url)
-
-  timestamp = os.time()
+  -- allow for unit testing by passing in timestamp
+  timestamp = oauth['timestamp'] or os.time()
   parameters = {
     oauth_consumer_key: oauth["consumerkey"],
     oauth_token: oauth["accesstoken"],

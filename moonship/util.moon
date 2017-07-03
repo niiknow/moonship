@@ -25,12 +25,13 @@ url_parse = (str) ->
 --     [fragment] = "!hash_bang"
 --     [query] = "hello=world"
 -- }
-url_build = (parts) ->
+url_build = (parts, includeQuery=true) ->
   out = parts.path or ""
-  unless parts.query
-    out ..= "?" .. parts.query
-  unless parts.fragment
-    out ..= "#" .. parts.fragment
+  unless includeQuery
+    unless parts.query
+      out ..= "?" .. parts.query
+    unless parts.fragment
+      out ..= "#" .. parts.fragment
 
   if host = parts.host
     host = "//" .. host

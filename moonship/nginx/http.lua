@@ -30,7 +30,7 @@ request_ngx = function(request_uri, opts)
   local rsp, err = ngx.location.capture(capture_url, req_t)
   return {
     body = rsp.body,
-    status = rsp.status,
+    status = tostring(rsp.status),
     code = rsp.status,
     headers = rsp.headers,
     error = err
@@ -60,7 +60,7 @@ local _ = {
     }
     return {
       body = rsp.body,
-      status = rsp.status,
+      status = rsp.reason,
       code = rsp.status,
       headers = rsp.headers,
       error = err

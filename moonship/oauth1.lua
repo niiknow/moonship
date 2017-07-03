@@ -43,12 +43,10 @@ sign = function(body, method, query, base_uri, parameters)
   return encode_base64(signedString)
 end
 create_signature = function(opts, oauth)
-  local parsed_url = url_parse(opts.url)
-  local query = parsed_url.query
-  parsed_url.query = nil
-  parsed_url.fragment = nil
-  local base_uri = url_build(parsed_url)
-  local timestamp = os.time()
+  local parts = url_parse(opts.url)
+  local query = parts.query
+  local base_uri = url_build(parts, false)
+  local timestamp = oauth['timestamp'] or os.time()
   local parameters = {
     oauth_consumer_key = oauth["consumerkey"],
     oauth_token = oauth["accesstoken"],

@@ -27,9 +27,9 @@ request_ngx = (request_uri, opts={}) ->
 
   rsp, err = ngx.location.capture(capture_url, req_t)
 
-  { body: rsp.body, status: rsp.status, code: rsp.status, headers: rsp.headers, error: err }
+  { body: rsp.body, status: "#{rsp.status}", code: rsp.status, headers: rsp.headers, error: err }
 
--- Simular socket http
+-- simulate socket.http
 --{
 --  method = string,
 --  url = string,
@@ -66,7 +66,7 @@ request: (opts) ->
 
   rsp, err = httpc:request_uri(opts.url, options)
 
-  { body: rsp.body, status: rsp.status, code: rsp.status, headers: rsp.headers, error: err }
+  { body: rsp.body, status: rsp.reason, code: rsp.status, headers: rsp.headers, error: err }
 
 {
   :request, :request_ngx

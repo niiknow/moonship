@@ -15,13 +15,18 @@ end
 url_parse = function(str)
   return url.parse(str)
 end
-url_build = function(parts)
-  local out = parts.path or ""
-  if not (parts.query) then
-    out = out .. ("?" .. parts.query)
+url_build = function(parts, includeQuery)
+  if includeQuery == nil then
+    includeQuery = true
   end
-  if not (parts.fragment) then
-    out = out .. ("#" .. parts.fragment)
+  local out = parts.path or ""
+  if not (includeQuery) then
+    if not (parts.query) then
+      out = out .. ("?" .. parts.query)
+    end
+    if not (parts.fragment) then
+      out = out .. ("#" .. parts.fragment)
+    end
   end
   do
     local host = parts.host
