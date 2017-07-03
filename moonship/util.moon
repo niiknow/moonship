@@ -121,5 +121,5 @@ query_string_encode = (t, sep="&", quote="") ->
 { :url_escape, :url_unescape, :url_parse, :url_build
   :trim, :slugify, :split, :sanitizePath,
   :json_encodable, :from_json, :to_json,
-  :query_string_encode, :table_extend
+  :query_string_encode
 }
