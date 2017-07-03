@@ -15,8 +15,8 @@ class AwsAuth
     options.request_method  = options.request_method or "GET"
     options.request_path    = options.request_path   or "/"
     options.request_body    = options.request_body   or ""
-    options.iso_date        = os.date("!%Y%m%d", microtime)
-    options.iso_tz          = os.date("!%Y%m%dT%H%M%SZ", microtime)
+    options.iso_date        = options.iso_date       or os.date("!%Y%m%d", microtime)
+    options.iso_tz          = options.iso_tz         or os.date("!%Y%m%dT%H%M%SZ", microtime)
     @options = options
 
   -- create canonical headers
