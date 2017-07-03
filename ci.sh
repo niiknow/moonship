@@ -9,9 +9,9 @@ luarocks-5.1 install moonscript
 luarocks-5.1 install luaposix
 luarocks-5.1 install date
 
-luarocks-5.1 install http
-luarocks-5.1 install bcrypt 2.1-4
 luarocks-5.1 install luacrypto 0.3.2-2
+luarocks-5.1 install http 0.2-0
+luarocks-5.1 install bcrypt 2.1-4
 luarocks-5.1 install md5 1.2-1
 luarocks-5.1 install penlight 1.4.1
 luarocks-5.1 install lua-resty-http 0.08-0
