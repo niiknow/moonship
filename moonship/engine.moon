@@ -31,7 +31,6 @@ class Engine
     unless rst
       return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  }
 
-
     @handleResponse(rst)
 
 {

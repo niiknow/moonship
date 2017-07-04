@@ -220,7 +220,5 @@ end
 return {
   CodeCacher = CodeCacher,
   myUrlHandler = myUrlHandler,
-  buildRequest = buildRequest,
-  require_new = require_new,
-  getSandboxEnv = getSandboxEnv
+  require_new = require_new
 }

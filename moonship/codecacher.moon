@@ -242,7 +242,5 @@ class CodeCacher
 {
   :CodeCacher,
   :myUrlHandler,
-  :buildRequest,
-  :require_new,
-  :getSandboxEnv
+  :require_new
 }
