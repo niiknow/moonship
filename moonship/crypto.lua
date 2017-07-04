@@ -21,13 +21,13 @@ crypto_wrapper = function(dtype, str)
     end
   }
 end
-hmac_wrapper = function(key, str, hasher)
+hmac_wrapper = function(key, str, algo)
   return {
     digest = function()
-      return crypto_hmac.digest(hasher, str, key, true)
+      return crypto_hmac.digest(algo, str, key, true)
     end,
     hex = function()
-      return crypto_hmac.digest(hasher, str, key, false)
+      return crypto_hmac.digest(algo, str, key, false)
     end
   }
 end
@@ -49,12 +49,12 @@ end
 sha256 = function(str)
   return crypto_wrapper("sha256", str)
 end
-hmac = function(key, str, hasher)
-  if hasher == md5 then
+hmac = function(key, str, algo)
+  if algo == md5 then
     return hmac_wrapper(key, str, "md5")
-  elseif hasher == sha1 then
+  elseif algo == sha1 then
     return hmac_wrapper(key, str, "sha1")
-  elseif hasher == sha256 then
+  elseif algo == sha256 then
     return hmac_wrapper(key, str, "sha256")
   end
 end

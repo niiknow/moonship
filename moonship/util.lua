@@ -1,11 +1,11 @@
 local url = require("socket.url")
 local cjson_safe = require("cjson.safe")
-local concat, insert
+local concat, insert, sort
 do
   local _obj_0 = table
-  concat, insert = _obj_0.concat, _obj_0.insert
+  concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults
+local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, encodeURIComponent, qsencode, query_string_encode, resolveGithubRaw, applyDefaults
 url_unescape = function(str)
   return url.unescape(str)
 end
@@ -103,6 +103,40 @@ end
 to_json = function(obj)
   return cjson_safe.encode((json_encodable(obj)))
 end
+encodeURIComponent = function(s)
+  local m
+  m = function(c)
+    return string.format("%%%02X", string.byte(c))
+  end
+  s = string.gsub(s, "([&=+%c])", m)
+  s = string.gsub(s, " ", "%20")
+  return s
+end
+qsencode = function(tab, sep, q)
+  if sep == nil then
+    sep = ""
+  end
+  if q == nil then
+    q = ""
+  end
+  local query = { }
+  local keys = { }
+  for k in pairs(tab) do
+    keys[#keys + 1] = k
+  end
+  sort(keys)
+  for _, name in ipairs(keys) do
+    local value = tab[name]
+    name = encodeURIComponent(tostring(name))
+    value = encodeURIComponent(tostring(value))
+    if value ~= "" then
+      query[#query + 1] = string.format('%s=%s', name, q .. value .. q)
+    else
+      query[#query + 1] = name
+    end
+  end
+  return concat(query, sep)
+end
 query_string_encode = function(t, sep, quote)
   if sep == nil then
     sep = "&"
@@ -175,6 +209,8 @@ return {
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
+  encodeURIComponent = encodeURIComponent,
+  qsencode = qsencode,
   query_string_encode = query_string_encode,
   resolveGithubRaw = resolveGithubRaw,
   applyDefaults = applyDefaults

@@ -32,6 +32,4 @@ class Engine
 
     @handleResponse(rst)
 
-{
-  :Engine
-}
+{ :Engine }

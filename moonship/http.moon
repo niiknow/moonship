@@ -1,5 +1,6 @@
 
 util         = require "moonship.util"
+oauth1       = require "moonship.oauth1"
 
 import concat from table
 import query_string_encode from util
@@ -26,24 +27,22 @@ request = (opts) ->
     body = concat(buff)
     opts["body"] = body
 
-
   -- auto add content length
   if opts["body"]
     opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
-    opts["Content-Length"] = strlen(opts["body"] or "")
+    opts.headers["Content-Length"] = strlen(opts["body"] or "")
 
+  opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
+  opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
-  unless ngx
-    resultChunks = {}
-    body = ""
-    opts.sink = ltn12.sink.table(resultChunks)
-    one, code, headers, status, x = http_handler.request(opts)
-    body = concat(resultChunks) if one
+  return http_handler.request(opts) if ngx
 
-    return {:body, :code, :headers, :status }
+  resp = {}
+  body = ""
+  opts.sink = ltn12.sink.table(resp)
+  one, code, headers, status = http_handler.request(opts)
+  body = concat(resp) if one
 
+  {:body, :code, :headers, :status }
 
-  http_handler.request(opts)
-{
-  :request
-}
+{ :request }

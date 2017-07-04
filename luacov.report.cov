@@ -42,9 +42,9 @@
     1     param  = {
     3       @options.request_method,
 ****0       @options.request_path,
-    6       "", -- canonical querystr
+    6       "", -- canonical query string
     3       @get_canonical_header(),
-            "",   -- required
+            "", -- content body?
     5       "content-type;host;x-amz-date",
     3       @get_signed_request_body()
           }
@@ -345,16 +345,16 @@
 ==============================================================================
 ./moonship/crypto.moon
 ==============================================================================
-    5 crypto        = require "crypto"
-    5 crypto_hmac   = require "crypto.hmac"
-    5 mybcrypt      = require "bcrypt"
-    5 mime          = require "mime"
+    6 crypto        = require "crypto"
+    6 crypto_hmac   = require "crypto.hmac"
+    6 mybcrypt      = require "bcrypt"
+    6 mime          = require "mime"
 
-    5 { :b64, :unb64 } = mime
+    6 { :b64, :unb64 } = mime
 
 ****0 local *
 
-    5 base64_encode = (...) -> (b64 ...)
+    6 base64_encode = (...) -> (b64 ...)
 
     1 base64_decode = (...) -> (unb64 ...)
 
@@ -364,10 +364,10 @@
     3     hex: () -> crypto.digest(dtype, str, false)
    10   }
 
-    7 hmac_wrapper = (key, str, hasher) ->
+    7 hmac_wrapper = (key, str, algo) ->
    10   {
-   10     digest: () -> crypto_hmac.digest(hasher, str, key, true)
-    5     hex: () -> crypto_hmac.digest(hasher, str, key, false)
+   10     digest: () -> crypto_hmac.digest(algo, str, key, true)
+    6     hex: () -> crypto_hmac.digest(algo, str, key, false)
         }
 
 ****0 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
@@ -375,17 +375,15 @@
    12 md5 = (str) -> crypto_wrapper("md5", str)
 ****0 sha1 = (str) -> crypto_wrapper("sha1", str)
     4 sha256 = (str) -> crypto_wrapper("sha256", str)
-   12 hmac = (key, str, hasher) ->
-   12   if hasher == md5
-    5     hmac_wrapper(key, str, "md5")
-****0   elseif hasher == sha1
+   12 hmac = (key, str, algo) ->
+   12   if algo == md5
+    6     hmac_wrapper(key, str, "md5")
+****0   elseif algo == sha1
     1     hmac_wrapper(key, str, "sha1")
-    1   elseif hasher == sha256
+    1   elseif algo == sha256
 ****0     hmac_wrapper(key, str, "sha256")
 
-    5 {
-****0   :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac
-    1 }
+    6 { :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac }
 
 ==============================================================================
 ./moonship/engine.moon
@@ -424,15 +422,14 @@
 
 ****0     @handleResponse(rst)
 
-    1 {
-****0   :Engine
-    1 }
+    1 { :Engine }
 
 ==============================================================================
 ./moonship/http.moon
 ==============================================================================
 
     3 util         = require "moonship.util"
+    3 oauth1       = require "moonship.oauth1"
 
     3 import concat from table
     3 import query_string_encode from util
@@ -459,74 +456,71 @@
     6     body = concat(buff)
     6     opts["body"] = body
 
-
         -- auto add content length
 ****0   if opts["body"]
 ****0     opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
-****0     opts["Content-Length"] = strlen(opts["body"] or "")
+****0     opts.headers["Content-Length"] = strlen(opts["body"] or "")
 
+****0   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
+    6   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
-        unless ngx
-****0     resultChunks = {}
-****0     body = ""
-    6     opts.sink = ltn12.sink.table(resultChunks)
-    6     one, code, headers, status, x = http_handler.request(opts)
-    6     body = concat(resultChunks) if one
+****0   return http_handler.request(opts) if ngx
 
-    6     return {:body, :code, :headers, :status }
+    6   resp = {}
+****0   body = ""
+****0   opts.sink = ltn12.sink.table(resp)
+    6   one, code, headers, status = http_handler.request(opts)
+****0   body = concat(resp) if one
 
+    6   {:body, :code, :headers, :status }
 
-****0   http_handler.request(opts)
-    6 {
-    6   :request
-    6 }
+****0 { :request }
 
 ==============================================================================
 ./moonship/oauth1.moon
 ==============================================================================
 
-    1 util              = require "moonship.util"
-    1 crypto            = require "moonship.crypto"
+    4 util              = require "moonship.util"
+    4 crypto            = require "moonship.crypto"
 
-    1 import string_split, query_string_encode, url_parse, url_build from util
+    4 import string_split, encodeURIComponent, qsencode, url_parse, url_build from util
 ****0 import sort, concat from table
 
-    1 escape_uri        = ngx and ngx.escape_uri or util.url_escape
+    4 escape_uri        = encodeURIComponent
 ****0 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
-    1 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
-    1 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
-    1 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
+    4 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
+    4 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
+    4 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
 
     2 local *
 
-    1 normalizeParameters = (parameters, body, query) ->
-    2   items = { query_string_encode(parameters, "&") }
-    1   string_split(body, "&", items) if body
-    1   string_split(query, "&", items) if query
+    4 normalizeParameters = (parameters, body, query) ->
+    2   items = { qsencode(parameters, "&") }
 
-    1   sort(items)
-    2   concat(items, "&")
+    4   string_split(body, "&", items) if body
+****0   string_split(query, "&", items) if query
 
-    1 calculateBaseString = (body, method, query, base_uri, parameters) ->
+    2   sort(items)
+****0   concat(items, "&")
+
+****0 calculateBaseString = (body, method, query, base_uri, parameters) ->
 ****0   escape_uri(method) .. "&" .. escape_uri(base_uri) .. "&" .. escape_uri(normalizeParameters(parameters, body, query))
 
-    1 secret = (oauth) ->
-    1   unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
+    1 secret = (oauth) -> unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
 
     1 sign = (body, method, query, base_uri, oauth, parameters) ->
     1   encode_base64(digest_hmac_sha1(secret(oauth), calculateBaseString(body, method, query, base_uri, parameters)))
 
 ****0 create_signature = (opts, oauth) ->
         -- parse url for query string
-    1   parts = url_parse(opts.url)
+    4   parts = url_parse(opts.url)
 ****0   base_uri = url_build(parts, false)
 
         -- allow for unit testing by passing in timestamp
 ****0   timestamp = oauth['timestamp'] or os.time()
     4   parameters = {
-    1     oauth_consumer_key: oauth["consumerkey"],
-****0     oauth_token: oauth["accesstoken"],
-    1     oauth_signature_method: "HMAC-SHA1",
+    4     oauth_consumer_key: oauth["consumerkey"],
+****0     oauth_signature_method: "HMAC-SHA1",
     1     oauth_timestamp: timestamp,
     1     oauth_nonce: digest_md5(timestamp .. ""),
     1     oauth_version: oauth["version"] or "1.0"
@@ -536,9 +530,9 @@
     1   parameters["oauth_callback"] = unescape_uri(oauth["callback"]) if oauth["callback"]
     2   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', parts.query, base_uri, oauth, parameters)
 
-****0   "OAuth " .. query_string_encode(parameters, ",", "\"")
+****0   "OAuth " .. qsencode(parameters, ",", "\"")
 
-****0 { :create_signature }
+    1 { :create_signature }
 
 ==============================================================================
 ./moonship/sandbox.moon
@@ -683,20 +677,17 @@
     7 url        = require "socket.url"
     7 cjson_safe = require "cjson.safe"
 
-    7 import concat, insert from table
+    7 import concat, insert, sort from table
 
       -- our utils lib, nothing here should depend on ngx
       -- for ngx stuff, put it inside ngin.lua file
 ****0 local *
 
-    7 url_unescape = (str) ->
-****0   url.unescape(str)
+    7 url_unescape = (str) -> url.unescape(str)
 
-    7 url_escape = (str) ->
-****0   url.escape(str)
+    9 url_escape = (str) -> url.escape(str)
 
-    7 url_parse = (str) ->
-****0   url.parse(str)
+****0 url_parse = (str) -> url.parse(str)
 
       -- {
       --     [path] = "/test"
@@ -708,107 +699,133 @@
       -- }
     1 url_build = (parts, includeQuery=true) ->
 ****0   out = parts.path or ""
-****0   if includeQuery
-****0     out ..= "?" .. parts.query if parts.query
-    2     out ..= "#" .. parts.fragment if parts.fragment
+    1   if includeQuery
+    1     out ..= "?" .. parts.query if parts.query
+****0     out ..= "#" .. parts.fragment if parts.fragment
 
-    2   if host = parts.host
+****0   if host = parts.host
     2     host = "//" .. host
-    1     host ..= ":" .. parts.port if parts.port
-****0     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
+    2     host ..= ":" .. parts.port if parts.port
+    2     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
     2     out = "/" .. out if parts.path and out\sub(1,1) != "/"
-    2     out = host .. out
+    1     out = host .. out
 
-    4   out
+    2   out
 
 
-    2 trim = (str, regex="%s*") ->
+    4 trim = (str, regex="%s*") ->
 ****0   str = tostring str
 
     2   if #str > 200
-    7     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
+****0     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
         else
-    3     str\match "^#{regex}(.-)#{regex}$"
+    2     str\match "^#{regex}(.-)#{regex}$"
 
 ****0 path_sanitize = (str) ->
     3   str = tostring str
         -- path should not have double quote, single quote, period
         -- purposely left casing alone because paths are case-sensitive
         -- finally, remove double period and make single forward slash
-    2   str\gsub("[^a-zA-Z0-9.-_/]", "")\gsub("%.%.+", "")\gsub("//+", "/")
+    3   str\gsub("[^a-zA-Z0-9.-_/]", "")\gsub("%.%.+", "")\gsub("//+", "/")
 
-    7 slugify = (str) ->
-****0   str = tostring str
-   11   (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
+****0 slugify = (str) ->
+    2   str = tostring str
+****0   (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
-    7 string_split = (str, sep, dest={}) ->
-****0   str = tostring str
-    5   for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
-    5     insert(dest, str)
+****0 string_split = (str, sep, dest={}) ->
+   11   str = tostring str
+   11   for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
+    7     insert(dest, str)
 
-        dest
+    5   dest
 
-****0 json_encodable = (obj, seen={}) ->
+    7 json_encodable = (obj, seen={}) ->
 ****0   switch type obj
     1     when "table"
-    2       unless seen[obj]
-    1         seen[obj] = true
-****0         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
-    1     when "function", "userdata", "thread"
-    7       nil
+****0       unless seen[obj]
+****0         seen[obj] = true
+    1         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
+    2     when "function", "userdata", "thread"
+    1       nil
           else
-    5       obj
+    1       obj
 
 ****0 from_json = (obj) -> cjson_safe.decode obj
 
     5 to_json = (obj) -> cjson_safe.encode (json_encodable obj)
 
-    2 query_string_encode = (t, sep="&", quote="") ->
-    2   _escape = ngx and ngx.escape_uri or url_escape
+    5 encodeURIComponent = (s) ->
+    5   m = (c) -> string.format("%%%02X", string.byte(c))
+    2   s = string.gsub(s, "([&=+%c])", m)
+    2   s = string.gsub(s, " ", "%20")
+    2   s
 
-    4   i = 0
-    8   buf = {}
-****0   for k,v in pairs t
-****0     if type(k) == "number" and type(v) == "table"
-    2       {k,v} = v
-****0       v = true if v == nil -- symmetrical with parse
+    4 qsencode = (tab, sep="", q="") ->
+    8   query = {}
+****0   keys = {}
+****0   for k in pairs(tab) do
+    2     keys[#keys+1] = k
 
-    1     if v == false
-            continue
+    3   sort(keys)
+    1   for _,name in ipairs(keys) do
+****0     value = tab[name]
+    2     name = encodeURIComponent(tostring(name))
+
+    7     value = encodeURIComponent(tostring(value))
+****0     if value ~= "" then
+    1       query[#query+1] = string.format('%s=%s', name, q .. value .. q)
+          else
+****0       query[#query+1] = name
+
+
+****0   concat(query, sep)
+
+****0 query_string_encode = (t, sep="&", quote="") ->
+   14   _escape = ngx and ngx.escape_uri or url_escape
+
+   29   i = 0
+   29   buf = {}
+   29   for k,v in pairs t
+    7     if type(k) == "number" and type(v) == "table"
+****0       {k,v} = v
+    2       v = true if v == nil -- symmetrical with parse
+
+****0     if v == false
+    2       continue
 
 ****0     buf[i + 1] = _escape k
-    7     if v == true
-****0       buf[i + 2] = sep
-    1       i += 2
+    2     if v == true
+    2       buf[i + 2] = sep
+   15       i += 2
           else
 ****0       buf[i + 2] = "="
     2       buf[i + 3] = quote .. (_escape v) .. quote
-    7       buf[i + 4] = sep
-****0       i += 4
+   15       buf[i + 4] = sep
+   13       i += 4
 
-    4   buf[i] = nil
-        concat buf
+   26   buf[i] = nil
+   13   concat buf
 
-    5 resolveGithubRaw = (modname) ->
+****0 resolveGithubRaw = (modname) ->
 ****0   capturePath = "https://raw.githubusercontent.com/"
-    6   if string.find(modname, "github.com/")
-    6     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
-    6     path, file = string.match(pathx, "^(.*/)([^/]*)$")
-   24     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
+****0   if string.find(modname, "github.com/")
+****0     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
+    2     path, file = string.match(pathx, "^(.*/)([^/]*)$")
+    7     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
 
           -- convert period to folder before return
-   18     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
+    4     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
 
-    2   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
+    4   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
 ****0 applyDefaults = (opts, defOpts) ->
-****0   for k, v in pairs(defOpts) do
-   18     opts[k] = v unless opts[k]
-    2   opts
+    4   for k, v in pairs(defOpts) do
+    4     opts[k] = v unless opts[k]
+    4   opts
 
-****0 { :url_escape, :url_unescape, :url_parse, :url_build,
-   32   :trim, :path_sanitize, :slugify, :string_split,
-   16   :json_encodable, :from_json, :to_json,
+    7 { :url_escape, :url_unescape, :url_parse, :url_build,
+    7   :trim, :path_sanitize, :slugify, :string_split,
+    7   :json_encodable, :from_json, :to_json, :encodeURIComponent, :qsencode
     2   :query_string_encode, :resolveGithubRaw, :applyDefaults
     2 }
 
@@ -821,11 +838,11 @@ File                       Hits Missed Coverage
 ./moonship/awsauth.moon    41   15     73.21%
 ./moonship/codecacher.moon 72   55     56.69%
 ./moonship/config.moon     9    4      69.23%
-./moonship/crypto.moon     24   8      75.00%
-./moonship/engine.moon     12   14     46.15%
-./moonship/http.moon       18   14     56.25%
-./moonship/oauth1.moon     29   10     74.36%
+./moonship/crypto.moon     23   7      76.67%
+./moonship/engine.moon     11   13     45.83%
+./moonship/http.moon       16   17     48.48%
+./moonship/oauth1.moon     25   12     67.57%
 ./moonship/sandbox.moon    39   26     60.00%
-./moonship/util.moon       56   27     67.47%
+./moonship/util.moon       71   31     69.61%
 -----------------------------------------------
-Total                      300  173    63.42%
+Total                      307  180    63.04%

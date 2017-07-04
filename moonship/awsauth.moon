@@ -39,9 +39,9 @@ class AwsAuth
     param  = {
       @options.request_method,
       @options.request_path,
-      "", -- canonical querystr
+      "", -- canonical query string
       @get_canonical_header(),
-      "",   -- required
+      "", -- content body?
       "content-type;host;x-amz-date",
       @get_signed_request_body()
     }

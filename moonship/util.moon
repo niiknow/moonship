@@ -2,20 +2,17 @@
 url        = require "socket.url"
 cjson_safe = require "cjson.safe"
 
-import concat, insert from table
+import concat, insert, sort from table
 
 -- our utils lib, nothing here should depend on ngx
 -- for ngx stuff, put it inside ngin.lua file
 local *
 
-url_unescape = (str) ->
-  url.unescape(str)
+url_unescape = (str) -> url.unescape(str)
 
-url_escape = (str) ->
-  url.escape(str)
+url_escape = (str) -> url.escape(str)
 
-url_parse = (str) ->
-  url.parse(str)
+url_parse = (str) -> url.parse(str)
 
 -- {
 --     [path] = "/test"
@@ -82,6 +79,32 @@ from_json = (obj) -> cjson_safe.decode obj
 
 to_json = (obj) -> cjson_safe.encode (json_encodable obj)
 
+encodeURIComponent = (s) ->
+  m = (c) -> string.format("%%%02X", string.byte(c))
+  s = string.gsub(s, "([&=+%c])", m)
+  s = string.gsub(s, " ", "%20")
+  s
+
+qsencode = (tab, sep="", q="") ->
+  query = {}
+  keys = {}
+  for k in pairs(tab) do
+    keys[#keys+1] = k
+
+  sort(keys)
+  for _,name in ipairs(keys) do
+    value = tab[name]
+    name = encodeURIComponent(tostring(name))
+
+    value = encodeURIComponent(tostring(value))
+    if value ~= "" then
+      query[#query+1] = string.format('%s=%s', name, q .. value .. q)
+    else
+      query[#query+1] = name
+
+
+  concat(query, sep)
+
 query_string_encode = (t, sep="&", quote="") ->
   _escape = ngx and ngx.escape_uri or url_escape
 
@@ -127,6 +150,6 @@ applyDefaults = (opts, defOpts) ->
 
 { :url_escape, :url_unescape, :url_parse, :url_build,
   :trim, :path_sanitize, :slugify, :string_split,
-  :json_encodable, :from_json, :to_json,
+  :json_encodable, :from_json, :to_json, :encodeURIComponent, :qsencode
   :query_string_encode, :resolveGithubRaw, :applyDefaults
 }
