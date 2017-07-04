@@ -12,7 +12,7 @@ return {
 	['statsfile'] = 'luacov.stats.out',
 
 	-- filename to store report
-	['reportfile'] = 'luacov.report.out',
+	['reportfile'] = 'luacov.report.cov',
 
 	-- Run reporter on completion? (won't work for ticks)
 	runreport = true,
