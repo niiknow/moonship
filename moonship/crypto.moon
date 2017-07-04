@@ -1,5 +1,5 @@
 crypto        = require "crypto"
-bcrypt        = require "bcrypt"
+mybcrypt      = require "bcrypt"
 crypto_hmac   = require "crypto.hmac"
 mime          = require "mime"
 { :b64, :unb64 } = mime
@@ -28,8 +28,11 @@ hmac_wrapper = (key, str, hasher) ->
       crypto_hmac.digest(hasher, str, key, false)
   }
 
-bcrypt = (str, rounds) ->
-  bcrypt.digest(str, rounds or 12)
+bcrypt = (str, rounds=12) ->
+  mybcrypt.digest(str, rounds)
+
+bcrypt_verify = (str, digest) ->
+  mybcrypt.verify( str, digest )
 
 md5 = (str) ->
   crypto_wrapper("md5", str)
@@ -49,5 +52,5 @@ hmac = (key, str, hasher) ->
     hmac_wrapper(key, str, "sha256")
 
 {
-  :base64_encode, :base64_decode, :bcrypt, :md5, :sha1, :sha256, :hmac
+  :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac
 }

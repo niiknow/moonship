@@ -364,59 +364,62 @@
 ==============================================================================
 ./moonship/crypto.moon
 ==============================================================================
-   3 crypto        = require "crypto"
-   3 bcrypt        = require "bcrypt"
-   3 crypto_hmac   = require "crypto.hmac"
-   3 mime          = require "mime"
-   3 { :b64, :unb64 } = mime
+   4 crypto        = require "crypto"
+   4 mybcrypt      = require "bcrypt"
+   4 crypto_hmac   = require "crypto.hmac"
+   4 mime          = require "mime"
+   4 { :b64, :unb64 } = mime
 
-   3 local *
+   4 local *
 
-   1 base64_encode = (...) -> (b64 ...)
+   8 base64_encode = (...) -> (b64 ...)
 
 ***0 base64_decode = (...) -> (unb64 ...)
 
-   3 crypto_wrapper = (dtype, str) ->
+   4 crypto_wrapper = (dtype, str) ->
        {
-   4     digest: () ->
+  10     digest: () ->
 ***0       crypto.digest(dtype, str, true)
-         ,
-   4     hex: () ->
+   3     ,
+  10     hex: () ->
 ***0       crypto.digest(dtype, str, false)
-   4   }
+   7   }
 
-   4 hmac_wrapper = (key, str, hasher) ->
-   3   {
+  10 hmac_wrapper = (key, str, hasher) ->
+   4   {
 ***0     digest: () ->
-   6       crypto_hmac.digest(hasher, str, key, true)
+  12       crypto_hmac.digest(hasher, str, key, true)
          ,
-   5     hex: () ->
-   6       crypto_hmac.digest(hasher, str, key, false)
+   8     hex: () ->
+  12       crypto_hmac.digest(hasher, str, key, false)
        }
 
-   6 bcrypt = (str, rounds) ->
-   6   bcrypt.digest(str, rounds or 12)
+  12 bcrypt = (str, rounds=12) ->
+  12   mybcrypt.digest(str, rounds)
+
+***0 bcrypt_verify = (str, digest) ->
+   1   mybcrypt.verify( str, digest )
 
 ***0 md5 = (str) ->
-***0   crypto_wrapper("md5", str)
+   1   crypto_wrapper("md5", str)
 
 ***0 sha1 = (str) ->
    1   crypto_wrapper("sha1", str)
 
 ***0 sha256 = (str) ->
-***0   crypto_wrapper("sha256", str)
+   3   crypto_wrapper("sha256", str)
 
 ***0 hmac = (key, str, hasher) ->
-   3   if hasher == md5
-   3     hmac_wrapper(key, str, "md5")
+   2   if hasher == md5
+   4     hmac_wrapper(key, str, "md5")
 ***0   elseif hasher == sha1
-   6     hmac_wrapper(key, str, "sha1")
-***0   elseif hasher == sha256
-   6     hmac_wrapper(key, str, "sha256")
+   5     hmac_wrapper(key, str, "sha1")
+   4   elseif hasher == sha256
+***0     hmac_wrapper(key, str, "sha256")
 
-   5 {
-   5   :base64_encode, :base64_decode, :bcrypt, :md5, :sha1, :sha256, :hmac
-     }
+   2 {
+  10   :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac
+   3 }
 
 ==============================================================================
 ./moonship/http.moon
@@ -845,10 +848,10 @@ File                       Hits Missed Coverage
 -----------------------------------------------
 ./moonship/awsauth.moon    58   18     76.32%
 ./moonship/codecacher.moon 72   68     51.43%
-./moonship/crypto.moon     25   12     67.57%
+./moonship/crypto.moon     30   11     73.17%
 ./moonship/http.moon       22   12     64.71%
 ./moonship/oauth1.moon     38   11     77.55%
 ./moonship/sandbox.moon    45   29     60.81%
 ./moonship/util.moon       59   32     64.84%
 -----------------------------------------------
-Total                      319  182    63.67%
+Total                      324  181    64.16%
