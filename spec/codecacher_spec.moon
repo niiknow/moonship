@@ -21,7 +21,7 @@ describe "moonship.codecacher", ->
   it "CodeCacher correctly request and cache remote file", ->
     expected = "hello from github"
     opts = {
-      app_path: plpath.abspath('./t')
+      app_path: plpath.abspath('./t'),
       remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
     }
     cc = codecacher.CodeCacher(opts)

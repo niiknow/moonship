@@ -1,5 +1,6 @@
 -- local web server demonstrates using github
 engine = require "moonship.engine"
+plpath = require "pl.path"
 
 port = 4000
 http_server = require "http.server"
@@ -31,11 +32,8 @@ reply = (myserver, stream) ->
     req.user_agent
   )))
 
-  io.stderr\write('--ho--\n')
-  yo = engine.Engine(myopts)
-
-  io.stderr\write("#{req.host}\n#{req.path}")
-  rst = yo\engage(req)
+  ngin = engine.Engine(myopts)
+  rst = ngin\engage(req)
 
   -- Build response headers
   res_headers = http_headers.new()
@@ -48,7 +46,6 @@ reply = (myserver, stream) ->
   -- Send headers to client; end the stream immediately if this was a HEAD request
   assert(stream\write_headers(res_headers, req.method == "HEAD"))
 
-  io.stderr\write("debug\n#{rst.body}")
   if req.method  ~= "HEAD" and rst.body
     -- Send body, ending the stream
     assert(stream\write_chunk(rst.body, true))
@@ -71,5 +68,6 @@ runserver = (opts) ->
   assert(myserver\loop())
 
 runserver  {
+  app_path: plpath.abspath('./t'),
   remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
 }
