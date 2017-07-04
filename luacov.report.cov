@@ -359,24 +359,24 @@
     1 base64_decode = (...) -> (unb64 ...)
 
 ****0 crypto_wrapper = (dtype, str) ->
-   11   {
+   10   {
 ****0     digest: () -> crypto.digest(dtype, str, true)
     3     hex: () -> crypto.digest(dtype, str, false)
-   11   }
+   10   }
 
-    8 hmac_wrapper = (key, str, algo) ->
-   11   {
-   11     digest: () -> crypto_hmac.digest(algo, str, key, true)
+    7 hmac_wrapper = (key, str, algo) ->
+   10   {
+   10     digest: () -> crypto_hmac.digest(algo, str, key, true)
     6     hex: () -> crypto_hmac.digest(algo, str, key, false)
         }
 
 ****0 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
-    9 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
-   13 md5 = (str) -> crypto_wrapper("md5", str)
+    8 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
+   12 md5 = (str) -> crypto_wrapper("md5", str)
 ****0 sha1 = (str) -> crypto_wrapper("sha1", str)
     4 sha256 = (str) -> crypto_wrapper("sha256", str)
-   13 hmac = (key, str, algo) ->
-   13   if algo == md5
+   12 hmac = (key, str, algo) ->
+   12   if algo == md5
     6     hmac_wrapper(key, str, "md5")
 ****0   elseif algo == sha1
     1     hmac_wrapper(key, str, "sha1")
@@ -451,46 +451,46 @@
 
 ****0   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
-    7   return { code: 0, err: "url is required" } unless opts.url
+    6   return { code: 0, err: "url is required" } unless opts.url
 
-    7   hc = http.new()
+    6   hc = http.new()
 
-    7   opts["method"] = string_upper(opts["method"] or 'GET')
-    7   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
-    7   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
+    6   opts["method"] = string_upper(opts["method"] or 'GET')
+    6   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
+    6   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
         -- auto add content length
-    7   if opts["body"]
+    6   if opts["body"]
 ****0     opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
 
-    7   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
-    2   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
+    6   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
+****0   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
-    7   opts.ssl_opts = {verify: "none"} unless opts["ssl_opts"]
+    6   opts.ssl_opts = {verify: "none"} unless opts["ssl_opts"]
 
 ****0   if has_zlib then
-    7     opts.headers["accept-encoding"] = "gzip, deflate"
+    6     opts.headers["accept-encoding"] = "gzip, deflate"
 
-    7   if ngx and opts.capture_url
-    7     hc = http.new('httpclient.ngx_driver')
+    6   if ngx and opts.capture_url
+    6     hc = http.new('httpclient.ngx_driver')
 ****0     hc\set_default('capture_url', opts.capture_url)
-    7     hc\set_default('capture_variable', opts.capture_variable or "url")
+    6     hc\set_default('capture_variable', opts.capture_variable or "url")
 
 ****0   util.applyDefaults(opts, hc\get_defaults())
 ****0   params = opts.params or nil
 
-   14   res = hc.client\request(opts.url, params, opts.method, opts)
-    7   if has_zlib and res.body
-    7     encoding = res.headers["content-encoding"] or ""
-    7     deflated = encoding\find("deflate")
-    7     gziped = encoding\find("gzip")
-    7     bodys = res.body
-    7     if (gziped or deflated)
-    7       stream = zlib.inflate()
-    7       status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
-    6       res.body = output
+   12   res = hc.client\request(opts.url, params, opts.method, opts)
+    6   if has_zlib and res.body
+    6     encoding = res.headers["content-encoding"] or ""
+    6     deflated = encoding\find("deflate")
+    6     gziped = encoding\find("gzip")
+    6     bodys = res.body
+    6     if (gziped or deflated)
+    6       stream = zlib.inflate()
+    6       status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
+    5       res.body = output
 
-    6   res
+    5   res
 ****0 { :request }
 
 ==============================================================================
@@ -509,48 +509,48 @@
     4 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
     4 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
 
-    4 local *
+    2 local *
 
     4 normalizeParameters = (parameters, body, query) ->
-    4   items = { query_string_encode(parameters, "&") }
+    2   items = { query_string_encode(parameters, "&") }
 
     4   string_split(body, "&", items) if body
 ****0   string_split(query, "&", items) if query
 
-    4   sort(items)
+    2   sort(items)
 ****0   concat(items, "&")
 
 ****0 calculateBaseString = (body, method, query, base_uri, parameters) ->
 ****0   escape_uri(method) .. "&" .. escape_uri(base_uri) .. "&" .. escape_uri(normalizeParameters(parameters, body, query))
 
-    2 secret = (oauth) -> unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
+    1 secret = (oauth) -> unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
 
-    2 sign = (body, method, query, base_uri, oauth, parameters) ->
-    2   oauth.stringToSign = calculateBaseString(body, method, query, base_uri, parameters)
+    1 sign = (body, method, query, base_uri, oauth, parameters) ->
+    1   oauth.stringToSign = calculateBaseString(body, method, query, base_uri, parameters)
     4   encode_base64(digest_hmac_sha1(secret(oauth), oauth.stringToSign))
 
-   10 create_signature = (opts, oauth) ->
+    5 create_signature = (opts, oauth) ->
         -- parse url for query string
 ****0   parts = url_parse(opts.url)
-    6   base_uri = url_build(parts, false)
+    3   base_uri = url_build(parts, false)
 
         -- allow for unit testing by passing in timestamp
-    4   timestamp = oauth['timestamp'] or os.time()
-    6   parameters = {
+    2   timestamp = oauth['timestamp'] or os.time()
+    3   parameters = {
     4     oauth_consumer_key: oauth["consumerkey"],
 ****0     oauth_signature_method: "HMAC-SHA1",
-    2     oauth_timestamp: timestamp,
-    2     oauth_nonce: digest_md5(timestamp .. ""),
-    2     oauth_version: oauth["version"] or "1.0"
-    2   }
+    1     oauth_timestamp: timestamp,
+    1     oauth_nonce: digest_md5(timestamp .. ""),
+    1     oauth_version: oauth["version"] or "1.0"
+    1   }
 
 ****0   parameters["oauth_token"] = oauth["accesstoken"] if oauth["accesstoken"]
-    2   parameters["oauth_callback"] = unescape_uri(oauth["callback"]) if oauth["callback"]
-    4   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', parts.query, base_uri, oauth, parameters)
+    1   parameters["oauth_callback"] = unescape_uri(oauth["callback"]) if oauth["callback"]
+    2   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', parts.query, base_uri, oauth, parameters)
 
 ****0   "OAuth " .. query_string_encode(parameters, ",", "\"")
 
-    2 { :create_signature }
+    1 { :create_signature }
 
 ==============================================================================
 ./moonship/sandbox.moon
@@ -705,7 +705,7 @@
     7 url_unescape = (str) -> url.unescape(str)
 
       -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
-   44 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]])", (c) -> string.format("%%%02X", string.byte(c)))
+   23 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]])", (c) -> string.format("%%%02X", string.byte(c)))
 
     7 url_parse = (str) -> url.parse(str)
 
@@ -725,19 +725,19 @@
 
 ****0   if host = parts.host
 ****0     host = "//" .. host
-    3     host ..= ":" .. parts.port if parts.port
-    3     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
-    3     out = "/" .. out if parts.path and out\sub(1,1) != "/"
-    3     out = host .. out
+    2     host ..= ":" .. parts.port if parts.port
+    2     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
+    2     out = "/" .. out if parts.path and out\sub(1,1) != "/"
+    2     out = host .. out
 
         out
 
 
 ****0 trim = (str, regex="%s*") ->
-    6   str = tostring str
+    4   str = tostring str
 
 ****0   if #str > 200
-    3     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
+    2     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
         else
 ****0     str\match "^#{regex}(.-)#{regex}$"
 
@@ -762,11 +762,11 @@
     5 json_encodable = (obj, seen={}) ->
     7   switch type obj
           when "table"
-    2       unless seen[obj]
+    1       unless seen[obj]
 ****0         seen[obj] = true
 ****0         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
-    2     when "function", "userdata", "thread"
-    4       nil
+    1     when "function", "userdata", "thread"
+    2       nil
           else
             obj
 
@@ -803,28 +803,28 @@
 
     4   concat(query, sep)
 
-    8 resolveGithubRaw = (modname) ->
-    6   capturePath = "https://raw.githubusercontent.com/"
+    6 resolveGithubRaw = (modname) ->
+    5   capturePath = "https://raw.githubusercontent.com/"
 ****0   if string.find(modname, "github.com/")
-    8     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
-    8     path, file = string.match(pathx, "^(.*/)([^/]*)$")
+    6     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
+    6     path, file = string.match(pathx, "^(.*/)([^/]*)$")
 ****0     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
 
           -- convert period to folder before return
-   41     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
+   26     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
 
 ****0   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
-   41 applyDefaults = (opts, defOpts) ->
-   33   for k, v in pairs(defOpts) do
-   33     opts[k] = v unless opts[k]
-   33   opts
+   26 applyDefaults = (opts, defOpts) ->
+   20   for k, v in pairs(defOpts) do
+   20     opts[k] = v unless opts[k]
+   20   opts
 
 ****0 { :url_escape, :url_unescape, :url_parse, :url_build,
 ****0   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
 ****0   :json_encodable, :from_json, :to_json,
 ****0   :query_string_encode, :resolveGithubRaw, :applyDefaults
-   33 }
+   20 }
 
 ==============================================================================
 Summary
@@ -837,9 +837,9 @@ File                       Hits Missed Coverage
 ./moonship/config.moon     9    4      69.23%
 ./moonship/crypto.moon     23   7      76.67%
 ./moonship/engine.moon     11   13     45.83%
-./moonship/http.moon       32   9      78.05%
+./moonship/http.moon       31   10     75.61%
 ./moonship/oauth1.moon     28   10     73.68%
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/util.moon       55   25     68.75%
 -----------------------------------------------
-Total                      310  164    65.40%
+Total                      309  165    65.19%

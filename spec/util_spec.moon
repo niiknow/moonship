@@ -119,6 +119,7 @@ tests = {
     }
   }
 
+  -- do not handle numerical index, must be key value pair
   {
     ->
       util.query_string_encode {

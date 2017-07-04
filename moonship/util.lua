@@ -119,7 +119,7 @@ query_string_encode = function(t, sep, quote, seen)
   local query = { }
   local keys = { }
   for k in pairs(t) do
-    keys[#keys + 1] = k
+    keys[#keys + 1] = tostring(k)
   end
   sort(keys)
   for _, k in ipairs(keys) do
