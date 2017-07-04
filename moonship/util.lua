@@ -103,12 +103,10 @@ end
 to_json = function(obj)
   return cjson_safe.encode((json_encodable(obj)))
 end
-encodeURIComponent = function(s)
-  local m
-  m = function(c)
+encodeURIComponent = function(str)
+  local s = string.gsub(str, "([&=+%c:/])", function(c)
     return string.format("%%%02X", string.byte(c))
-  end
-  s = string.gsub(s, "([&=+%c])", m)
+  end)
   s = string.gsub(s, " ", "%20")
   return s
 end

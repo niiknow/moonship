@@ -37,7 +37,8 @@ secret = function(oauth)
   return unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
 end
 sign = function(body, method, query, base_uri, oauth, parameters)
-  return encode_base64(digest_hmac_sha1(secret(oauth), calculateBaseString(body, method, query, base_uri, parameters)))
+  oauth.stringToSign = calculateBaseString(body, method, query, base_uri, parameters)
+  return encode_base64(digest_hmac_sha1(secret(oauth), oauth.stringToSign))
 end
 create_signature = function(opts, oauth)
   local parts = url_parse(opts.url)

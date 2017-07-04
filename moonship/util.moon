@@ -79,11 +79,10 @@ from_json = (obj) -> cjson_safe.decode obj
 
 to_json = (obj) -> cjson_safe.encode (json_encodable obj)
 
-encodeURIComponent = (s) ->
-  m = (c) -> string.format("%%%02X", string.byte(c))
-  s = string.gsub(s, "([&=+%c])", m)
+encodeURIComponent = (str) ->
+  s = string.gsub(str, "([&=+%c:/])", (c) -> string.format("%%%02X", string.byte(c)))
   s = string.gsub(s, " ", "%20")
-  s
+  return s
 
 qsencode = (tab, sep="", q="") ->
   query = {}

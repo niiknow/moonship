@@ -8,7 +8,10 @@ osx, install lua/luarocks:
 ```
 brew update
 brew install lua
+brew install openssl
+brew install zlib
 luarocks install http 0.2-0 CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
+luarocks install lua-zlib ZLIB_DIR=/usr/local/opt/zlib
 
 luarocks install busted
 luarocks install lpeg 0.10.2

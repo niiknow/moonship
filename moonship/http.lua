@@ -1,10 +1,11 @@
 local util = require("moonship.util")
 local oauth1 = require("moonship.oauth1")
+local http = require("httpclient")
+local has_zlib, zlib = pcall(require, "zlib")
 local concat
 concat = table.concat
 local query_string_encode
 query_string_encode = util.query_string_encode
-local ltn12 = require("ltn12")
 local string_upper = string.upper
 local http_handler = (ngx and require("moonship.nginx.http")) or require("http.compat.socket")
 local request
@@ -18,24 +19,17 @@ request = function(opts)
   if not (opts.url) then
     return {
       code = 0,
-      error = "url is required"
+      err = "url is required"
     }
   end
+  local hc = http.new()
   opts["method"] = string_upper(opts["method"] or 'GET')
   opts["headers"] = opts["headers"] or {
     ["Accept"] = "*/*"
   }
   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
-  if opts.source then
-    local buff = { }
-    local sink = ltn12.sink.table(buff)
-    ltn12.pump.all(req.source, sink)
-    local body = concat(buff)
-    opts["body"] = body
-  end
   if opts["body"] then
     opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
-    opts.headers["Content-Length"] = strlen(opts["body"] or "")
   end
   if opts["auth"] then
     opts.headers["Authorization"] = "Basic " .. tostring(encode_base64(concat(opts.auth, '\n')))
@@ -43,22 +37,34 @@ request = function(opts)
   if opts["oauth"] then
     opts.headers["Authorization"] = oauth1.create_signature(opts, opts["oauth"])
   end
-  if ngx then
-    return http_handler.request(opts)
+  if not (opts["ssl_opts"]) then
+    opts.ssl_opts = {
+      verify = "none"
+    }
   end
-  local resp = { }
-  local body = ""
-  opts.sink = ltn12.sink.table(resp)
-  local one, code, headers, status = http_handler.request(opts)
-  if one then
-    body = concat(resp)
+  if has_zlib then
+    opts.headers["accept-encoding"] = "gzip, deflate"
   end
-  return {
-    body = body,
-    code = code,
-    headers = headers,
-    status = status
-  }
+  if ngx and opts.capture_url then
+    hc = http.new('httpclient.ngx_driver')
+    hc:set_default('capture_url', opts.capture_url)
+    hc:set_default('capture_variable', opts.capture_variable or "url")
+  end
+  util.applyDefaults(opts, hc:get_defaults())
+  local params = opts.params or nil
+  local res = hc.client:request(opts.url, params, opts.method, opts)
+  if has_zlib and res.body then
+    local encoding = res.headers["content-encoding"] or ""
+    local deflated = encoding:find("deflate")
+    local gziped = encoding:find("gzip")
+    local bodys = res.body
+    if (gziped or deflated) then
+      local stream = zlib.inflate()
+      local status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
+      res.body = output
+    end
+  end
+  return res
 end
 return {
   request = request

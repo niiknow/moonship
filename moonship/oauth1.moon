@@ -28,7 +28,8 @@ calculateBaseString = (body, method, query, base_uri, parameters) ->
 secret = (oauth) -> unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
 
 sign = (body, method, query, base_uri, oauth, parameters) ->
-  encode_base64(digest_hmac_sha1(secret(oauth), calculateBaseString(body, method, query, base_uri, parameters)))
+  oauth.stringToSign = calculateBaseString(body, method, query, base_uri, parameters)
+  encode_base64(digest_hmac_sha1(secret(oauth), oauth.stringToSign))
 
 create_signature = (opts, oauth) ->
   -- parse url for query string
