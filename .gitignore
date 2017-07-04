@@ -57,6 +57,8 @@ uwsgi_temp/
 *.swo
 *~
 go
+t/servroot/
+t/
 reindex
 .DS_Store
 dockerfiles/app/codecache/*
