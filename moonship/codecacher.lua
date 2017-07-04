@@ -5,7 +5,23 @@ local sandbox = require("moonship.sandbox")
 local util = require("moonship.util")
 local plpath = require("pl.path")
 local aws_auth = require("moonship.awsauth")
-local myUrlHandler, buildRequest, require_new, getSandboxEnv, CodeCacher
+local loadCode, myUrlHandler, buildRequest, getSandboxEnv, require_new, CodeCacher
+loadCode = function(url)
+  local req = {
+    url = url,
+    method = "GET",
+    capture_url = "/__ghraw",
+    headers = { }
+  }
+  local res, err = httpc.request(req)
+  if not (err) then
+    return res
+  end
+  return {
+    code = 0,
+    body = err
+  }
+end
 myUrlHandler = function(opts)
   local cleanPath, querystring = string.match(opts.url, "([^?#]*)(.*)")
   local full_path = util.path_sanitize(cleanPath)
@@ -63,26 +79,6 @@ buildRequest = function()
   end
   return { }
 end
-require_new = function(modname)
-  if not (_G[modname]) then
-    local base, file, query = util.resolveGithubRaw(modname)
-    if base then
-      local code = self:loadCode(tostring(base) .. tostring(file) .. tostring(query))
-      _G["__ghrawbase"] = base
-      local fn, err = sandbox.loadmoon(code)
-      if not (fn) then
-        return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
-      end
-      local rst
-      rst, err = sandbox.exec(fn, modname)
-      if not (rst) then
-        return nil, "error executing '" .. tostring(modname) .. "' with message: " .. tostring(err)
-      end
-      _G[modname] = rst
-    end
-  end
-  return _G[modname]
-end
 getSandboxEnv = function(req)
   local env = {
     http = httpc,
@@ -93,6 +89,29 @@ getSandboxEnv = function(req)
     __ghrawbase = __ghrawbase
   }
   return sandbox.build_env(_G, env, sandbox.whitelist)
+end
+require_new = function(modname)
+  if not (_G[modname]) then
+    local base, file, query = util.resolveGithubRaw(modname)
+    if base then
+      local loadPath = tostring(base) .. tostring(file) .. tostring(query)
+      local rsp = loadCode(loadPath)
+      if (rsp.code == 200) then
+        local fn, err = sandbox.loadmoon(rsp.body, loadPath, getSandboxEnv())
+        _G["__ghrawbase"] = base
+        if not (fn) then
+          return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
+        end
+        local rst
+        rst, err = sandbox.exec(fn)
+        if not (rst) then
+          return nil, "error executing '" .. tostring(modname) .. "' with message: " .. tostring(err)
+        end
+        _G[modname] = rst
+      end
+    end
+  end
+  return _G[modname]
 end
 do
   local _class_0

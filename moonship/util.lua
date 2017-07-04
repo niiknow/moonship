@@ -151,7 +151,7 @@ end
 resolveGithubRaw = function(modname)
   local capturePath = "https://raw.githubusercontent.com/"
   if string.find(modname, "github.com/") then
-    local user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/blob(/[^/]+)(/[^?#]*)(.*)")
+    local user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
     local path, file = string.match(pathx, "^(.*/)([^/]*)$")
     local base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query

@@ -79,6 +79,17 @@ buildRequest = () ->
 
   {}
 
+getSandboxEnv = (req) ->
+  env = {
+    http: httpc,
+    require: require_new,
+    util: util,
+    crypto: crypto,
+    request: req or buildRequest(),
+    __ghrawbase: __ghrawbase
+  }
+  sandbox.build_env(_G, env, sandbox.whitelist)
+
 require_new = (modname) ->
   unless _G[modname]
     base, file, query = util.resolveGithubRaw(modname)
@@ -86,7 +97,7 @@ require_new = (modname) ->
       loadPath = "#{base}#{file}#{query}"
       rsp = loadCode(loadPath)
       if (rsp.code == 200)
-        fn, err = sandbox.loadmoon rsp.body, loadPath
+        fn, err = sandbox.loadmoon rsp.body, loadPath, getSandboxEnv()
         _G["__ghrawbase"] = base
         unless fn
           return nil, "error loading '#{modname}' with message: #{err}"
@@ -99,16 +110,6 @@ require_new = (modname) ->
 
   _G[modname]
 
-getSandboxEnv = (req) ->
-  env = {
-    http: httpc,
-    require: require_new,
-    util: util,
-    crypto: crypto,
-    request: req or buildRequest(),
-    __ghrawbase: __ghrawbase
-  }
-  sandbox.build_env(_G, env, sandbox.whitelist)
 
 --
 -- the strategy of this cache is to:

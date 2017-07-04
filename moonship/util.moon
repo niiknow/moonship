@@ -125,7 +125,6 @@ resolveGithubRaw = (modname) ->
     path, file = string.match(pathx, "^(.*/)([^/]*)$")
     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
 
-    io.stderr\write("file:#{file}\nxx")
     -- convert period to folder before return
     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
 
