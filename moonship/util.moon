@@ -136,7 +136,7 @@ applyDefaults = (opts, defOpts) ->
       opts[k] = v
   opts
 
-{ :url_escape, :url_unescape, :url_parse, :url_build
+{ :url_escape, :url_unescape, :url_parse, :url_build,
   :trim, :path_sanitize, :slugify, :split,
   :json_encodable, :from_json, :to_json,
   :query_string_encode, :resolveGithubRaw, :applyDefaults

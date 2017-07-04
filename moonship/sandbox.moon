@@ -53,8 +53,8 @@ utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 local *
 
 -- Builds the environment table for a sandbox.
-build_env = (src_env, dest_env={}, wl=whitelist) ->
-  assert(getmetatable(dest_env) == nil, "env has a metatable")
+build_env = (src_env, dest_env, wl=whitelist) ->
+  -- assert(getmetatable(dest_env) == nil, "env has a metatable")
 
   env = {}
   for name in wl\gmatch "%S+" do
@@ -116,17 +116,19 @@ loadfile_safe = (file, env, wl) ->
   loadfile(file, env)
 
 
-exec = (code, name, env, wl) ->
-  fn = loadstring_safe(code, name, env, wl)
-  ok, ret = pack_1(pcall(fn))
+exec = (fn) ->
+  ok, ret = pcall(fn)
 
   unless ok
-    return nil, ret[1]
+    return nil, ret
 
   ret
 
+exec_code = (code, name, env, wl) ->
+  fn = loadstring_safe(code, name, env, wl)
+  exec(fn)
 
-loadmoon = (moon_code) ->
+loadmoon = (moon_code, name, env, wl) ->
   tree, err = parse.string moon_code
   unless tree
     return nil, "Parse error: " .. err
@@ -135,18 +137,9 @@ loadmoon = (moon_code) ->
   unless lua_code
     return nil, compile.format_error err, pos, moon_code
 
-  lua_code
-
-
-execmoon = (code, name, env, wl) ->
-  lua_code, err = loadmoon(code)
-
-  unless lua_code
-    return nil, err
-
-  exec(lua_code, name, env, wl)
+  loadstring_safe(lua_code, name, env, wl)
 
 {
   :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe,
-  :loadmoon, :exec, :execmoon
+  :loadmoon, :exec
 }

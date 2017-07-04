@@ -51,15 +51,11 @@ table.concat table.insert table.maxn table.pack table.remove table.sort table.un
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
-local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec, loadmoon, execmoon
+local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec, exec_code, loadmoon
 build_env = function(src_env, dest_env, wl)
-  if dest_env == nil then
-    dest_env = { }
-  end
   if wl == nil then
     wl = whitelist
   end
-  assert(getmetatable(dest_env) == nil, "env has a metatable")
   local env = { }
   for name in wl:gmatch("%S+") do
     local t_name, field = name:match("^([^%.]+)%.([^%.]+)$")
@@ -113,15 +109,18 @@ loadfile_safe = function(file, env, wl)
   env = build_env(_G, env, wl)
   return loadfile(file, env)
 end
-exec = function(code, name, env, wl)
-  local fn = loadstring_safe(code, name, env, wl)
-  local ok, ret = pack_1(pcall(fn))
+exec = function(fn)
+  local ok, ret = pcall(fn)
   if not (ok) then
-    return nil, ret[1]
+    return nil, ret
   end
   return ret
 end
-loadmoon = function(moon_code)
+exec_code = function(code, name, env, wl)
+  local fn = loadstring_safe(code, name, env, wl)
+  return exec(fn)
+end
+loadmoon = function(moon_code, name, env, wl)
   local tree, err = parse.string(moon_code)
   if not (tree) then
     return nil, "Parse error: " .. err
@@ -131,14 +130,7 @@ loadmoon = function(moon_code)
   if not (lua_code) then
     return nil, compile.format_error(err, pos, moon_code)
   end
-  return lua_code
-end
-execmoon = function(code, name, env, wl)
-  local lua_code, err = loadmoon(code)
-  if not (lua_code) then
-    return nil, err
-  end
-  return exec(lua_code, name, env, wl)
+  return loadstring_safe(lua_code, name, env, wl)
 end
 return {
   build_env = build_env,
@@ -148,6 +140,5 @@ return {
   loadfile = loadfile,
   loadfile_safe = loadfile_safe,
   loadmoon = loadmoon,
-  exec = exec,
-  execmoon = execmoon
+  exec = exec
 }

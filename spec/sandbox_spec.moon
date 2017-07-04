@@ -30,12 +30,3 @@ describe "moonship.sandbox", ->
     actual = fn!
     assert.same expected, actual
 
-  it "fail to execute restricted moonscript function", ->
-    expected = "mfail"
-    data = "hi = () -> \n"
-    data ..= "  'hello world'\n"
-    data ..= "\nstring.dump(hi)"
-    ignore, actual = sandbox.execmoon data, expected
-    hasMatch = actual\match(expected)
-    -- actual is error message
-    assert.same "mfail", hasMatch

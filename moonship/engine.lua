@@ -16,27 +16,23 @@ do
           }
         }
       end
+      io.stderr:write("\nyo" .. tostring(rst.body) .. "\n")
       rst.code = rst.code or 200
+      rst.headers = rst.headers or { }
       rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"
       return rst
     end,
-    engage = function(self, host, uri)
-      if host == nil then
-        host = (ngx and ngx.var.host)
+    engage = function(self, req)
+      local rst = self.codeCache:get(req)
+      if not (rst) then
+        return {
+          error = err,
+          code = 500,
+          status = "500 Engine.engage error",
+          headers = { }
+        }
       end
-      if uri == nil then
-        uri = (ngx and ngx.var.uri)
-      end
-      local path = util.sanitizePath(string.format("%s/%s", host, uri))
-      local rst = self.codeCache.get(path)
-      if not (rst and rst.value) then
-        return self:handleResponse(rst)
-      end
-      return {
-        error = err,
-        code = 500,
-        status = "500 Engine.engage error"
-      }
+      return self:handleResponse(rst)
     end
   }
   _base_0.__index = _base_0
@@ -45,7 +41,6 @@ do
       if options == nil then
         options = { }
       end
-      self.options = config.Config:new(options)
       if (options.useS3) then
         options.aws = {
           aws_access_key_id = options.aws_access_key_id,
@@ -53,7 +48,8 @@ do
           aws_s3_code_path = options.aws_s3_code_path
         }
       end
-      self.codeCache = codecacher.CodeCacher:new(self.options)
+      self.options = config.Config(options)
+      self.codeCache = codecacher.CodeCacher(self.options.data)
     end,
     __base = _base_0,
     __name = "Engine"

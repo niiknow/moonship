@@ -1,7 +1,6 @@
 lfs               = require "lfs"
 lru               = require "lru"
-httpc             = require "moonship.httpclient"
-ngin              = require "moonship.ngin"
+httpc             = require "moonship.http"
 sandbox           = require "moonship.sandbox"
 util              = require "moonship.util"
 plpath            = require "pl.path"
@@ -11,17 +10,19 @@ local *
 myUrlHandler = (opts) ->
   -- ngx.log(ngx.ERR, "mydebug: " .. secret_key)
   cleanPath, querystring  = string.match(opts.url, "([^?#]*)(.*)")
-  full_path               = cleanPath
+  full_path               = util.path_sanitize(cleanPath)
   authHeaders             = {}
 
   if opts.aws and opts.aws.aws_s3_code_path
     -- process s3 stuff
-    aws = aws_auth.AwsAuth\new(opts.aws)
-    full_path = "https://${aws.aws_host}/#{opts.aws.aws_s3_code_path}/#{full_path)"
+    aws = aws_auth.AwsAuth(opts.aws)
+    full_path = "https://#{aws.aws_host}/#{opts.aws.aws_s3_code_path}/#{full_path}"
     authHeaders = aws\get_auth_headers()
+  else
+    full_path = "#{opts.remote_path}/#{full_path}"
 
   -- cleanup path, remove double forward slash and double periods from path
-  full_path = util.sanitizePath("#{fullpath}/index.moon")
+  full_path = "#{full_path}/index.moon"
 
   req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
 
@@ -31,12 +32,16 @@ myUrlHandler = (opts) ->
   for k, v in pairs(authHeaders) do
     req.headers[k] = v
 
-  res = httpc.request(req)
+  res, err = httpc.request(req)
 
-  if res.status == 200
-    return res.body
+  unless err
+    return res
 
-  "{code: 0}"
+  {
+    code: 0,
+    body: err
+  }
+
 
 buildRequest = () ->
   if ngx
@@ -44,7 +49,8 @@ buildRequest = () ->
     req_wrapper = {
       body: ngx.req.get_body_data(),
       form: ngx.req.get_post_args(),
-      headers: ngx.req.get_headers()
+      headers: ngx.req.get_headers(),
+      host: ngx.var.host,
       method: ngx.req.get_method(),
       path: ngx.var.uri,
       port: ngx.var.server_port,
@@ -67,11 +73,11 @@ require_new = (modname) ->
     if base
       code = @loadCode("#{base}#{file}#{query}")
       _G["__ghrawbase"] = base
-      fn, err = sandbox.loadstring(code, nil, _G)
+      fn, err = sandbox.loadmoon(code)
       unless fn
         return nil, "error loading '#{modname}' with message: #{err}"
 
-      rst, err = sandbox.exec(fn)
+      rst, err = sandbox.exec(fn, modname)
       unless rst
         return nil, "error executing '#{modname}' with message: #{err}"
 
@@ -79,7 +85,7 @@ require_new = (modname) ->
 
   _G[modname]
 
-getSandboxEnv: () ->
+getSandboxEnv = () ->
   env = {
     http: httpc,
     require: require_new,
@@ -102,19 +108,20 @@ class CodeCacher
 
   new: (opts={}) =>
     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
-    opts = utils.applyDefaults(opts, defOpts)
+    opts = util.applyDefaults(opts, defOpts)
 
     -- should not be lower than 2 minutes
     -- user should use cache clearing mechanism
     if (opts.ttl < 120)
       opts.ttl = 120
 
-    opts.localBasePath = plpath.abspath(opts.appPath)
-    @options = opts
+    opts.localBasePath = plpath.abspath(opts.app_path)
     @codeCache = lru.new(opts.code_cache_size)
 
-    if (@defaultTtl < 120)
-      @defaultTtl = 120
+    if (opts.ttl < 120)
+      opts.ttl = 120
+
+    @options = opts
 
 --
 --if value holder is nil, initialize value holder
@@ -134,7 +141,8 @@ class CodeCacher
 
   doCheckRemoteFile: (valHolder) =>
     opts = {
-      url: valHolder.url
+      url: valHolder.url,
+      remote_path: @options.remote_path
     }
 
     if (valHolder.fileMod ~= nil)
@@ -143,9 +151,10 @@ class CodeCacher
     os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
 
     -- if remote return 200
-    rsp, err = @urlHandler(opts)
+    rsp, err = @options.codeHandler(opts)
 
-    if (rsp.status == 200)
+
+    if (rsp.code == 200)
       -- ngx.say(valHolder.localPath)
       -- write file, load data
 
@@ -154,23 +163,24 @@ class CodeCacher
         \close()
 
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-      valHolder.value = sandbox.loadmoon rsp.body, opts.url, getSandboxEnv()
-    elseif (rsp.status == 404)
+      valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv()
+    elseif (rsp.code == 404)
       -- on 404 - set nil and delete local file
       valHolder.value = nil
       os.remove(valHolder.localFullPath)
 
-  get: (url) =>
-    valHolder = @codeCache\get(url)
+  get: (req=buildRequest()) =>
+    url = util.path_sanitize("#{req.host}/#{req.path}")
+    valHolder = @codeCache\get()
 
     -- initialize valHolder
-    if (valHolder == nil)
+    unless valHolder
       -- strip query string and http/https://
       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
 
       -- expect directory
-      fileBasePath = utils.sanitizePath(@options.localBasePath .. "/" .. domainAndPath)
+      fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
 
       -- must store locally as index.lua
       -- this way, a path can contain other paths
@@ -191,9 +201,9 @@ class CodeCacher
     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
       -- load file if it exists
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-      if (valHolder.fileMod ~= nil)
+      if valHolder.fileMod
 
-        valHolder.value = sandbox.loadfile valHolder.localFullPath, getSandboxEnv()
+        valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv()
 
         -- set it back immediately for the next guy
         -- set next ttl
@@ -208,6 +218,9 @@ class CodeCacher
     -- remove from cache if not found
     if valHolder.value == nil
       @codeCache\delete(url)
+
+    if (type(valHolder.value) == "function")
+      return sandbox.exec(valHolder.value)
 
     valHolder.value
 

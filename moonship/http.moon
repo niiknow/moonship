@@ -41,6 +41,7 @@ request = (opts) ->
 
     return {:body, :code, :headers, :status }
 
+
   http_handler.request(opts)
 {
   :request
