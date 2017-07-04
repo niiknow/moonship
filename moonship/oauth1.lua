@@ -1,3 +1,8 @@
+local sort, concat
+do
+  local _obj_0 = table
+  sort, concat = _obj_0.sort, _obj_0.concat
+end
 local util = require("moonship.util")
 local crypto = require("moonship.crypto")
 local escape_uri = ngx and ngx.escape_uri or util.url_escape
@@ -24,8 +29,8 @@ normalizeParameters = function(parameters, body, query)
   if query then
     string_split(query, "&", items)
   end
-  table.sort(items)
-  return table.concat(items, "&")
+  sort(items)
+  return concat(items, "&")
 end
 calculateBaseString = function(body, method, query, base_uri, parameters)
   local parms = normalizeParameters(parameters, body, query)

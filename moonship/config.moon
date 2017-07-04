@@ -14,6 +14,4 @@ class Config
     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path }
     @data = util.applyDefaults(newOpts, defaultOpts)
 
-{
-  :Config
-}
+{ :Config }

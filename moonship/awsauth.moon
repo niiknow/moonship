@@ -1,6 +1,7 @@
 -- derived from https://github.com/paragasu/lua-resty-aws-auth
 -- modified to use our own crypto
 
+import sort, concat from table
 crypto = require "moonship.crypto"
 util = require "moonship.util"
 
@@ -26,12 +27,12 @@ class AwsAuth
       "host:" .. @options.aws_host,
       "x-amz-date:" .. @options.iso_tz
     }
-    table.concat(h, "\n")
+    concat(h, "\n")
 
   get_signed_request_body: () =>
     params = @options.request_body
     if type(@options.request_body) == "table"
-      table.sort(params)
+      sort(params)
       params = util.query_string_encode(params)
 
     digest = @get_sha256_digest(params or "")
@@ -49,7 +50,7 @@ class AwsAuth
       "content-type;host;x-amz-date",
       @get_signed_request_body()
     }
-    canonical_request = table.concat(param, "\n")
+    canonical_request = concat(param, "\n")
     @get_sha256_digest(canonical_request)
 
   -- generate sha256 from the given string
@@ -70,9 +71,9 @@ class AwsAuth
   -- get string
   get_string_to_sign: () =>
     param = { @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
-    cred  = table.concat(param, "/")
+    cred  = concat(param, "/")
     req   = @get_canonical_request()
-    table.concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
+    concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
 
   -- generate signature
   get_signature: () =>
@@ -85,11 +86,11 @@ class AwsAuth
   get_authorization_header: () =>
     param = { @options.aws_access_key_id, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
     header = {
-      "AWS4-HMAC-SHA256 Credential=" .. table.concat(param, "/"),
+      "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"),
       "SignedHeaders=content-type;host;x-amz-date",
       "Signature=" .. @get_signature()
     }
-    table.concat(header, ", ")
+    concat(header, ", ")
 
   get_auth_headers: () =>
     {

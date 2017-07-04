@@ -7,16 +7,11 @@ has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builti
 pack_1 = (first, ...) -> first, table_pack(...)
 
 loads = has_52_compatible_load and load or (code, name, mode, env) ->
-  if code.byte(code, 1) ~= 27
-    chunk, err = loadstring(code, name)
+  return nil, "can't load binary chunk" if code.byte(code, 1) == 27
 
-    if chunk and env
-      setfenv(chunk, env)
-
-    return chunk, err
-
-  nil, "can't load binary chunk"
-
+  chunk, err = loadstring(code, name)
+  setfenv(chunk, env) if chunk and env
+  chunk, err
 
 readfile = (file) ->
   f = io.open(file, "rb")
@@ -117,9 +112,7 @@ loadfile_safe = (file, env={}, wl) ->
 
 exec = (fn) ->
   ok, ret = pcall(fn)
-
-  unless ok
-    return nil, ret
+  return nil, ret unless ok
 
   ret
 
@@ -129,16 +122,11 @@ exec_code = (code, name, env={}, wl) ->
 
 loadmoon = (moon_code, name, env={}, wl) ->
   tree, err = parse.string moon_code
-  unless tree
-    return nil, "Parse error: " .. err
+  return nil, "Parse error: " .. err unless tree
 
   lua_code, err, pos = compile.tree tree
-  unless lua_code
-    return nil, compile.format_error err, pos, moon_code
+  return nil, compile.format_error err, pos, moon_code unless lua_code
 
   loadstring_safe(lua_code, name, env, wl)
 
-{
-  :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe,
-  :loadmoon, :exec, :exec_code
-}
+{ :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :loadmoon, :exec, :exec_code }

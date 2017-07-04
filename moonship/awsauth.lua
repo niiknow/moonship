@@ -1,3 +1,8 @@
+local sort, concat
+do
+  local _obj_0 = table
+  sort, concat = _obj_0.sort, _obj_0.concat
+end
 local crypto = require("moonship.crypto")
 local util = require("moonship.util")
 local AwsAuth
@@ -10,12 +15,12 @@ do
         "host:" .. self.options.aws_host,
         "x-amz-date:" .. self.options.iso_tz
       }
-      return table.concat(h, "\n")
+      return concat(h, "\n")
     end,
     get_signed_request_body = function(self)
       local params = self.options.request_body
       if type(self.options.request_body) == "table" then
-        table.sort(params)
+        sort(params)
         params = util.query_string_encode(params)
       end
       local digest = self:get_sha256_digest(params or "")
@@ -31,7 +36,7 @@ do
         "content-type;host;x-amz-date",
         self:get_signed_request_body()
       }
-      local canonical_request = table.concat(param, "\n")
+      local canonical_request = concat(param, "\n")
       return self:get_sha256_digest(canonical_request)
     end,
     get_sha256_digest = function(self, s)
@@ -53,9 +58,9 @@ do
         self.options.aws_service,
         "aws4_request"
       }
-      local cred = table.concat(param, "/")
+      local cred = concat(param, "/")
       local req = self:get_canonical_request()
-      return table.concat({
+      return concat({
         "AWS4-HMAC-SHA256",
         self.options.iso_tz,
         cred,
@@ -76,11 +81,11 @@ do
         "aws4_request"
       }
       local header = {
-        "AWS4-HMAC-SHA256 Credential=" .. table.concat(param, "/"),
+        "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"),
         "SignedHeaders=content-type;host;x-amz-date",
         "Signature=" .. self:get_signature()
       }
-      return table.concat(header, ", ")
+      return concat(header, ", ")
     end,
     get_auth_headers = function(self)
       return {

@@ -29,23 +29,14 @@ url_parse = (str) ->
 url_build = (parts, includeQuery=true) ->
   out = parts.path or ""
   if includeQuery
-    if parts.query
-      out ..= "?" .. parts.query
-    if parts.fragment
-      out ..= "#" .. parts.fragment
+    out ..= "?" .. parts.query if parts.query
+    out ..= "#" .. parts.fragment if parts.fragment
 
   if host = parts.host
     host = "//" .. host
-    if parts.port
-      host ..= ":" .. parts.port
-
-    if parts.scheme
-      if parts.scheme != ""
-        host = parts.scheme .. ":" .. host
-
-    if parts.path and out\sub(1,1) != "/"
-      out = "/" .. out
-
+    host ..= ":" .. parts.port if parts.port
+    host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
+    out = "/" .. out if parts.path and out\sub(1,1) != "/"
     out = host .. out
 
   out
@@ -132,8 +123,7 @@ resolveGithubRaw = (modname) ->
 
 applyDefaults = (opts, defOpts) ->
   for k, v in pairs(defOpts) do
-    unless opts[k]
-      opts[k] = v
+    opts[k] = v unless opts[k]
   opts
 
 { :url_escape, :url_unescape, :url_parse, :url_build,

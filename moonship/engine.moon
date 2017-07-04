@@ -17,8 +17,7 @@ class Engine
     @codeCache = codecacher.CodeCacher(@options.data)
 
   handleResponse: (rst) =>
-    if type(rst) ~= 'table'
-      return {body: rst, code: 500, status: "500 unexpected response", headers: {'Content-Type': "text/plain"}}
+    return {body: rst, code: 500, status: "500 unexpected response", headers: {'Content-Type': "text/plain"}} if type(rst) ~= 'table'
 
     rst.code = rst.code or 200
     rst.headers = rst.headers or {}
@@ -28,11 +27,8 @@ class Engine
   engage: (req) =>
     rst, err = @codeCache\get(req)
 
-    if err
-      return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  }
-
-    unless rst
-      return { code: 404, headers: {}  }
+    return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
+    return { code: 404, headers: {}  } unless rst
 
     @handleResponse(rst)
 

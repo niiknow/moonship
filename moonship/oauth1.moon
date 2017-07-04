@@ -1,3 +1,4 @@
+import sort, concat from table
 util              = require "moonship.util"
 crypto            = require "moonship.crypto"
 
@@ -14,15 +15,12 @@ url_build         = util.url_build
 local *
 
 normalizeParameters = (parameters, body, query) ->
-  items = {qs_encode(parameters, "&")}
-  if body
-    string_split(body, "&", items)
+  items = { qs_encode(parameters, "&") }
+  string_split(body, "&", items) if body
+  string_split(query, "&", items) if query
 
-  if query
-    string_split(query, "&", items)
-
-  table.sort(items)
-  table.concat(items, "&")
+  sort(items)
+  concat(items, "&")
 
 calculateBaseString = (body, method, query, base_uri, parameters) ->
   parms = normalizeParameters(parameters, body, query)
@@ -53,16 +51,10 @@ create_signature = (opts, oauth) ->
     oauth_version: oauth["version"] or "1.0"
   }
 
-  if oauth["accesstoken"]
-    parameters["oauth_token"] = oauth["accesstoken"]
-
-  if oauth["callback"]
-    parameters["oauth_callback"] = unescape_uri(oauth["callback"])
-
+  parameters["oauth_token"] = oauth["accesstoken"] if oauth["accesstoken"]
+  parameters["oauth_callback"] = unescape_uri(oauth["callback"]) if oauth["callback"]
   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', query, base_uri, oauth, parameters)
 
   "OAuth " .. qs_encode(parameters, ",", "\"")
 
-{
-  :create_signature
-}
+{ :create_signature }

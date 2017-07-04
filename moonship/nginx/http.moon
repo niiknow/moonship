@@ -23,9 +23,7 @@ request_ngx = (request_uri, opts={}) ->
   for k,v in pairs(h) do
     ngx.req.set_header(k, v)
 
-  if opts.body
-    req_t.body = opts.body
-
+  req_t.body = opts.body if opts.body
   rsp, err = ngx.location.capture(capture_url, req_t)
 
   { body: rsp.body, status: "#{rsp.status}", code: rsp.status, headers: rsp.headers, error: err }
@@ -49,8 +47,7 @@ request_ngx = (request_uri, opts={}) ->
 --  error = string
 --}
 request: (opts) ->
-  if type(opts) == 'string'
-    opts = { url: opts, method: 'GET' }
+  opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
   -- clean args
   options = {
@@ -62,13 +59,9 @@ request: (opts) ->
     capture_variable: opts.capture_variable
   }
 
-  if (opts.capture_url)
-    return ngx_request(opts.url, options)
+  return request_ngx(opts.url, options) if (opts.capture_url)
 
   rsp, err = httpc:request_uri(opts.url, options)
-
   { body: rsp.body, status: rsp.reason, code: rsp.status, headers: rsp.headers, error: err }
 
-{
-  :request, :request_ngx
-}
+{ :request, :request_ngx }

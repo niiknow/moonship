@@ -1,17 +1,16 @@
-http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
+import concat from table
 ltn12 = require('ltn12')
-
 util         = require "moonship.util"
 string_upper = string.upper
 qs_encode    = util.query_string_encode
+http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
 
 local *
 request = (opts) ->
-  if type(opts) == 'string'
-    opts = { url: opts, method: 'GET' }
 
-  unless opts.url
-    return { code: 0, error: "url is required" }
+  opts = { url: opts, method: 'GET' } if type(opts) == 'string'
+
+  return { code: 0, error: "url is required" } unless opts.url
 
   opts["method"] = string_upper(opts["method"] or 'GET')
   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
@@ -21,7 +20,7 @@ request = (opts) ->
     buff = { }
     sink = ltn12.sink.table(buff)
     ltn12.pump.all(req.source, sink)
-    body = table.concat(buff)
+    body = concat(buff)
     opts["body"] = body
 
 
@@ -36,8 +35,7 @@ request = (opts) ->
     body = ""
     opts.sink = ltn12.sink.table(resultChunks)
     one, code, headers, status, x = http_handler.request(opts)
-    if one
-      body = table.concat(resultChunks)
+    body = concat(resultChunks) if one
 
     return {:body, :code, :headers, :status }
 

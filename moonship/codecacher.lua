@@ -199,9 +199,6 @@ do
       end
       opts.localBasePath = plpath.abspath(opts.app_path)
       self.codeCache = lru.new(opts.code_cache_size)
-      if (opts.ttl < 120) then
-        opts.ttl = 120
-      end
       self.options = opts
     end,
     __base = _base_0,

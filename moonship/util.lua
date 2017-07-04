@@ -36,10 +36,8 @@ url_build = function(parts, includeQuery)
       if parts.port then
         host = host .. (":" .. parts.port)
       end
-      if parts.scheme then
-        if parts.scheme ~= "" then
-          host = parts.scheme .. ":" .. host
-        end
+      if parts.scheme and parts.scheme ~= "" then
+        host = parts.scheme .. ":" .. host
       end
       if parts.path and out:sub(1, 1) ~= "/" then
         out = "/" .. out

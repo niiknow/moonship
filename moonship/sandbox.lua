@@ -13,14 +13,14 @@ pack_1 = function(first, ...)
   return first, table_pack(...)
 end
 local loads = has_52_compatible_load and load or function(code, name, mode, env)
-  if code.byte(code, 1) ~= 27 then
-    local chunk, err = loadstring(code, name)
-    if chunk and env then
-      setfenv(chunk, env)
-    end
-    return chunk, err
+  if code.byte(code, 1) == 27 then
+    return nil, "can't load binary chunk"
   end
-  return nil, "can't load binary chunk"
+  local chunk, err = loadstring(code, name)
+  if chunk and env then
+    setfenv(chunk, env)
+  end
+  return chunk, err
 end
 local readfile
 readfile = function(file)

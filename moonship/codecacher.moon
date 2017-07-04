@@ -11,8 +11,7 @@ loadCode = (url) ->
   req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
   res, err = httpc.request(req)
 
-  unless err
-    return res
+  return res unless err
 
   {
     code: 0,
@@ -37,17 +36,14 @@ myUrlHandler = (opts) ->
   full_path = "#{full_path}/index.moon"
 
   req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
-
-  if opts.last_modified
-    req.headers["If-Modified-Since"] = opts.last_modified
+  req.headers["If-Modified-Since"] = opts.last_modified if opts.last_modified
 
   for k, v in pairs(authHeaders) do
     req.headers[k] = v
 
   res, err = httpc.request(req)
 
-  unless err
-    return res
+  return res unless err
 
   {
     code: 0,
@@ -98,13 +94,12 @@ require_new = (modname) ->
       rsp = loadCode(loadPath)
       if (rsp.code == 200)
         fn, err = sandbox.loadmoon rsp.body, loadPath, getSandboxEnv()
+
         _G["__ghrawbase"] = base
-        unless fn
-          return nil, "error loading '#{modname}' with message: #{err}"
+        return nil, "error loading '#{modname}' with message: #{err}" unless fn
 
         rst, err = sandbox.exec(fn)
-        unless rst
-          return nil, "error executing '#{modname}' with message: #{err}"
+        return nil, "error executing '#{modname}' with message: #{err}" unless rst
 
         _G[modname] = rst
 
@@ -127,15 +122,10 @@ class CodeCacher
 
     -- should not be lower than 2 minutes
     -- user should use cache clearing mechanism
-    if (opts.ttl < 120)
-      opts.ttl = 120
+    opts.ttl = 120 if (opts.ttl < 120)
 
     opts.localBasePath = plpath.abspath(opts.app_path)
     @codeCache = lru.new(opts.code_cache_size)
-
-    if (opts.ttl < 120)
-      opts.ttl = 120
-
     @options = opts
 
 --
@@ -160,8 +150,8 @@ class CodeCacher
       remote_path: @options.remote_path
     }
 
-    if (valHolder.fileMod ~= nil)
-      opts["last_modified"] = os.date("%c", valHolder.fileMod)
+
+    opts["last_modified"] = os.date("%c", valHolder.fileMod) if (valHolder.fileMod ~= nil)
 
     os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
 
@@ -179,6 +169,7 @@ class CodeCacher
 
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
       valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv(req)
+
     elseif (rsp.code == 404)
       -- on 404 - set nil and delete local file
       valHolder.value = nil
@@ -210,8 +201,7 @@ class CodeCacher
       }
 
       -- use aws s3 if available
-      if (@options.aws)
-        valHolder["aws"] = @options.aws
+      valHolder["aws"] = @options.aws if (@options.aws)
 
     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
       -- load file if it exists
@@ -231,16 +221,9 @@ class CodeCacher
       @doCheckRemoteFile(valHolder, req)
 
     -- remove from cache if not found
-    if valHolder.value == nil
-      @codeCache\delete(url)
-
-    if (type(valHolder.value) == "function")
-      return sandbox.exec(valHolder.value)
+    @codeCache\delete(url) if valHolder.value == nil
+    return sandbox.exec(valHolder.value) if (type(valHolder.value) == "function")
 
     valHolder.value
 
-{
-  :CodeCacher,
-  :myUrlHandler,
-  :require_new
-}
+{ :CodeCacher, :myUrlHandler, :require_new }

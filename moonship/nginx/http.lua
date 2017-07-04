@@ -53,7 +53,7 @@ local _ = {
       capture_variable = opts.capture_variable
     }
     if (opts.capture_url) then
-      return ngx_request(opts.url, options)
+      return request_ngx(opts.url, options)
     end
     local rsp, err = {
       httpc = request_uri(opts.url, options)

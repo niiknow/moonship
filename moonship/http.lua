@@ -1,8 +1,10 @@
-local http_handler = (ngx and require("moonship.nginx.http")) or require("http.compat.socket")
+local concat
+concat = table.concat
 local ltn12 = require('ltn12')
 local util = require("moonship.util")
 local string_upper = string.upper
 local qs_encode = util.query_string_encode
+local http_handler = (ngx and require("moonship.nginx.http")) or require("http.compat.socket")
 local request
 request = function(opts)
   if type(opts) == 'string' then
@@ -26,7 +28,7 @@ request = function(opts)
     local buff = { }
     local sink = ltn12.sink.table(buff)
     ltn12.pump.all(req.source, sink)
-    local body = table.concat(buff)
+    local body = concat(buff)
     opts["body"] = body
   end
   if opts["body"] then
@@ -39,7 +41,7 @@ request = function(opts)
     opts.sink = ltn12.sink.table(resultChunks)
     local one, code, headers, status, x = http_handler.request(opts)
     if one then
-      body = table.concat(resultChunks)
+      body = concat(resultChunks)
     end
     return {
       body = body,
