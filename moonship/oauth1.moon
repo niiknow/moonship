@@ -2,10 +2,10 @@
 util              = require "moonship.util"
 crypto            = require "moonship.crypto"
 
-import string_split, encodeURIComponent, qsencode, url_parse, url_build from util
+import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build from util
 import sort, concat from table
 
-escape_uri        = encodeURIComponent
+escape_uri        = url_escape
 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
@@ -14,7 +14,7 @@ digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
 local *
 
 normalizeParameters = (parameters, body, query) ->
-  items = { qsencode(parameters, "&") }
+  items = { query_string_encode(parameters, "&") }
 
   string_split(body, "&", items) if body
   string_split(query, "&", items) if query
@@ -50,6 +50,6 @@ create_signature = (opts, oauth) ->
   parameters["oauth_callback"] = unescape_uri(oauth["callback"]) if oauth["callback"]
   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', parts.query, base_uri, oauth, parameters)
 
-  "OAuth " .. qsencode(parameters, ",", "\"")
+  "OAuth " .. query_string_encode(parameters, ",", "\"")
 
 { :create_signature }

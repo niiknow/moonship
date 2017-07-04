@@ -7,7 +7,7 @@ tests = {
     ->
       util.url_escape "fly me=to"
 
-    "fly%20me%3dto"
+    "fly%20me%3Dto"
   }
 
   {
@@ -126,7 +126,7 @@ tests = {
         "hello[cruel]": "wor=ld"
       }
 
-    "first=arg&hello%5bcruel%5d=wor%3dld"
+    "1=nil&hello%5Bcruel%5D=wor%3Dld"
   }
 
   {
@@ -137,7 +137,7 @@ tests = {
         "hell": false
       }
 
-    "cold=day&in"
+    "1=nil&hell=false&in=true"
   }
 
   {
@@ -146,7 +146,7 @@ tests = {
         "ignore_me": false
       }
 
-    ""
+    "ignore_me=false"
   }
 
   {
@@ -155,7 +155,7 @@ tests = {
         "show_me": true
       }
 
-    "show_me"
+    "show_me=true"
   }
 }
 

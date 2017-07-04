@@ -1,16 +1,19 @@
 local url = require("socket.url")
 local cjson_safe = require("cjson.safe")
+local tablex = require("pl.tablex")
 local concat, insert, sort
 do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, encodeURIComponent, qsencode, query_string_encode, resolveGithubRaw, applyDefaults
+local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults
 url_unescape = function(str)
   return url.unescape(str)
 end
 url_escape = function(str)
-  return url.escape(str)
+  return string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]])", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
 end
 url_parse = function(str)
   return url.parse(str)
@@ -103,79 +106,44 @@ end
 to_json = function(obj)
   return cjson_safe.encode((json_encodable(obj)))
 end
-encodeURIComponent = function(str)
-  local s = string.gsub(str, "([&=+%c:/])", function(c)
-    return string.format("%%%02X", string.byte(c))
-  end)
-  s = string.gsub(s, " ", "%20")
-  return s
-end
-qsencode = function(tab, sep, q)
-  if sep == nil then
-    sep = ""
-  end
-  if q == nil then
-    q = ""
-  end
-  local query = { }
-  local keys = { }
-  for k in pairs(tab) do
-    keys[#keys + 1] = k
-  end
-  sort(keys)
-  for _, name in ipairs(keys) do
-    local value = tab[name]
-    name = encodeURIComponent(tostring(name))
-    value = encodeURIComponent(tostring(value))
-    if value ~= "" then
-      query[#query + 1] = string.format('%s=%s', name, q .. value .. q)
-    else
-      query[#query + 1] = name
-    end
-  end
-  return concat(query, sep)
-end
-query_string_encode = function(t, sep, quote)
+query_string_encode = function(t, sep, quote, seen)
   if sep == nil then
     sep = "&"
   end
   if quote == nil then
     quote = ""
   end
-  local _escape = ngx and ngx.escape_uri or url_escape
-  local i = 0
-  local buf = { }
-  for k, v in pairs(t) do
-    local _continue_0 = false
-    repeat
-      if type(k) == "number" and type(v) == "table" then
-        k, v = v[1], v[2]
-        if v == nil then
-          v = true
-        end
+  if seen == nil then
+    seen = { }
+  end
+  local query = { }
+  local keys = { }
+  for k in pairs(t) do
+    keys[#keys + 1] = k
+  end
+  sort(keys)
+  for _, k in ipairs(keys) do
+    local v = t[k]
+    local _exp_0 = type(v)
+    if "table" == _exp_0 then
+      if not (seen[v]) then
+        seen[v] = true
+        local tv = query_string_encode(v, sep, quote, seen)
+        v = tv
       end
-      if v == false then
-        _continue_0 = true
-        break
-      end
-      buf[i + 1] = _escape(k)
-      if v == true then
-        buf[i + 2] = sep
-        i = i + 2
-      else
-        buf[i + 2] = "="
-        buf[i + 3] = quote .. (_escape(v)) .. quote
-        buf[i + 4] = sep
-        i = i + 4
-      end
-      _continue_0 = true
-    until true
-    if not _continue_0 then
-      break
+    elseif "function" == _exp_0 or "userdata" == _exp_0 or "thread" == _exp_0 then
+      _ = nil
+    else
+      v = url_escape(tostring(v))
+    end
+    k = url_escape(tostring(k))
+    if v ~= "" then
+      query[#query + 1] = string.format('%s=%s', k, quote .. v .. quote)
+    else
+      query[#query + 1] = name
     end
   end
-  buf[i] = nil
-  return concat(buf)
+  return concat(query, sep)
 end
 resolveGithubRaw = function(modname)
   local capturePath = "https://raw.githubusercontent.com/"
@@ -204,11 +172,10 @@ return {
   path_sanitize = path_sanitize,
   slugify = slugify,
   string_split = string_split,
+  table_sort_keys = table_sort_keys,
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
-  encodeURIComponent = encodeURIComponent,
-  qsencode = qsencode,
   query_string_encode = query_string_encode,
   resolveGithubRaw = resolveGithubRaw,
   applyDefaults = applyDefaults

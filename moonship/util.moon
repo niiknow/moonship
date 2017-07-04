@@ -1,6 +1,7 @@
 
-url        = require "socket.url"
-cjson_safe = require "cjson.safe"
+url              = require "socket.url"
+cjson_safe       = require "cjson.safe"
+tablex           = require "pl.tablex"
 
 import concat, insert, sort from table
 
@@ -10,7 +11,8 @@ local *
 
 url_unescape = (str) -> url.unescape(str)
 
-url_escape = (str) -> url.escape(str)
+-- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
+url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]])", (c) -> string.format("%%%02X", string.byte(c)))
 
 url_parse = (str) -> url.parse(str)
 
@@ -79,56 +81,34 @@ from_json = (obj) -> cjson_safe.decode obj
 
 to_json = (obj) -> cjson_safe.encode (json_encodable obj)
 
-encodeURIComponent = (str) ->
-  s = string.gsub(str, "([&=+%c:/])", (c) -> string.format("%%%02X", string.byte(c)))
-  s = string.gsub(s, " ", "%20")
-  return s
-
-qsencode = (tab, sep="", q="") ->
+query_string_encode = (t, sep="&", quote="", seen={}) ->
   query = {}
   keys = {}
-  for k in pairs(tab) do
-    keys[#keys+1] = k
-
+  for k in pairs(t) do keys[#keys+1] = tostring(k)
   sort(keys)
-  for _,name in ipairs(keys) do
-    value = tab[name]
-    name = encodeURIComponent(tostring(name))
 
-    value = encodeURIComponent(tostring(value))
-    if value ~= "" then
-      query[#query+1] = string.format('%s=%s', name, q .. value .. q)
+  for _,k in ipairs(keys) do
+    v = t[k]
+
+    switch type v
+      when "table"
+        unless seen[v]
+          seen[v] = true
+          tv = query_string_encode(v, sep, quote, seen)
+          v = tv
+      when "function", "userdata", "thread"
+        nil
+      else
+        v = url_escape(tostring(v))
+
+    k = url_escape(tostring(k))
+
+    if v ~= "" then
+      query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
     else
       query[#query+1] = name
 
-
   concat(query, sep)
-
-query_string_encode = (t, sep="&", quote="") ->
-  _escape = ngx and ngx.escape_uri or url_escape
-
-  i = 0
-  buf = {}
-  for k,v in pairs t
-    if type(k) == "number" and type(v) == "table"
-      {k,v} = v
-      v = true if v == nil -- symmetrical with parse
-
-    if v == false
-      continue
-
-    buf[i + 1] = _escape k
-    if v == true
-      buf[i + 2] = sep
-      i += 2
-    else
-      buf[i + 2] = "="
-      buf[i + 3] = quote .. (_escape v) .. quote
-      buf[i + 4] = sep
-      i += 4
-
-  buf[i] = nil
-  concat buf
 
 resolveGithubRaw = (modname) ->
   capturePath = "https://raw.githubusercontent.com/"
@@ -148,7 +128,7 @@ applyDefaults = (opts, defOpts) ->
   opts
 
 { :url_escape, :url_unescape, :url_parse, :url_build,
-  :trim, :path_sanitize, :slugify, :string_split,
-  :json_encodable, :from_json, :to_json, :encodeURIComponent, :qsencode
+  :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
+  :json_encodable, :from_json, :to_json,
   :query_string_encode, :resolveGithubRaw, :applyDefaults
 }
