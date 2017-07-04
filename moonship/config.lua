@@ -5,6 +5,7 @@ local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local app_path = os.getenv("MOONSHIP_APP_PATH")
 local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
+local util = require("moonship.util")
 local Config
 do
   local _class_0
@@ -15,14 +16,16 @@ do
       if newOpts == nil then
         newOpts = { }
       end
-      newOpts.aws_region = newOpts.aws_region or aws_region
-      newOpts.aws_access_key_id = newOpts.aws_access_key_id or aws_access_key_id
-      newOpts.aws_secret_access_key = newOpts.aws_secret_access_key or aws_secret_access_key
-      newOpts.aws_s3_code_path = newOpts.aws_s3_code_path or aws_s3_code_path
-      newOpts.code_cache_size = newOpts.code_cache_size or code_cache_size
-      newOpts.app_path = newOpts.app_path or app_path
-      newOpts.remote_path = newOpts.remote_path or remote_path
-      self.data = newOpts
+      local defaultOpts = {
+        aws_region = aws_region,
+        aws_access_key_id = aws_access_key_id,
+        aws_secret_access_key = aws_secret_access_key,
+        aws_s3_code_path = aws_s3_code_path,
+        app_path = app_path,
+        code_cache_size = code_cache_size,
+        remote_path = remote_path
+      }
+      self.data = util.applyDefaults(newOpts, defaultOpts)
     end,
     __base = _base_0,
     __name = "Config"

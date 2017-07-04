@@ -121,10 +121,11 @@ query_string_encode = (t, sep="&", quote="") ->
 resolveGithubRaw = (modname) ->
   capturePath = "https://raw.githubusercontent.com/"
   if string.find(modname, "github.com/")
-    user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/blob(/[^/]+)(/[^?#]*)(.*)")
+    user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
     path, file = string.match(pathx, "^(.*/)([^/]*)$")
     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
 
+    io.stderr\write("file:#{file}\nxx")
     -- convert period to folder before return
     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
 

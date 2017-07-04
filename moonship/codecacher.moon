@@ -7,6 +7,18 @@ plpath            = require "pl.path"
 aws_auth          = require "moonship.awsauth"
 
 local *
+loadCode = (url) ->
+  req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
+  res, err = httpc.request(req)
+
+  unless err
+    return res
+
+  {
+    code: 0,
+    body: err
+  }
+
 myUrlHandler = (opts) ->
   -- ngx.log(ngx.ERR, "mydebug: " .. secret_key)
   cleanPath, querystring  = string.match(opts.url, "([^?#]*)(.*)")
@@ -71,29 +83,31 @@ require_new = (modname) ->
   unless _G[modname]
     base, file, query = util.resolveGithubRaw(modname)
     if base
-      code = @loadCode("#{base}#{file}#{query}")
-      _G["__ghrawbase"] = base
-      fn, err = sandbox.loadmoon(code)
-      unless fn
-        return nil, "error loading '#{modname}' with message: #{err}"
+      loadPath = "#{base}#{file}#{query}"
+      rsp = loadCode(loadPath)
+      if (rsp.code == 200)
+        fn, err = sandbox.loadmoon rsp.body, loadPath
+        _G["__ghrawbase"] = base
+        unless fn
+          return nil, "error loading '#{modname}' with message: #{err}"
 
-      rst, err = sandbox.exec(fn, modname)
-      unless rst
-        return nil, "error executing '#{modname}' with message: #{err}"
+        rst, err = sandbox.exec(fn)
+        unless rst
+          return nil, "error executing '#{modname}' with message: #{err}"
 
-      _G[modname] = rst
+        _G[modname] = rst
 
   _G[modname]
 
 getSandboxEnv = (req) ->
-  env = setmetatable({}, nil)
-  env.http = httpc
-  env.require = require_new
-  env.util = util
-  env.crypto = crypto
-  env.request = req or buildRequest()
-  env.__ghrawbase = __ghrawbase
-  setmetatable(env, nil)
+  env = {
+    http: httpc,
+    require: require_new,
+    util: util,
+    crypto: crypto,
+    request: req or buildRequest(),
+    __ghrawbase: __ghrawbase
+  }
   sandbox.build_env(_G, env, sandbox.whitelist)
 
 --
@@ -139,7 +153,7 @@ class CodeCacher
 
 --NOTE: urlHandler should use capture to simulate debounce
 
-  doCheckRemoteFile: (valHolder) =>
+  doCheckRemoteFile: (valHolder, req) =>
     opts = {
       url: valHolder.url,
       remote_path: @options.remote_path
@@ -163,7 +177,7 @@ class CodeCacher
         \close()
 
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-      valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv()
+      valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv(req)
     elseif (rsp.code == 404)
       -- on 404 - set nil and delete local file
       valHolder.value = nil
@@ -203,7 +217,7 @@ class CodeCacher
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
       if valHolder.fileMod
 
-        valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv()
+        valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
 
         -- set it back immediately for the next guy
         -- set next ttl
@@ -213,7 +227,7 @@ class CodeCacher
         -- delete reference if file no longer exists/purged
         valHolder.value = nil
 
-      @doCheckRemoteFile(valHolder)
+      @doCheckRemoteFile(valHolder, req)
 
     -- remove from cache if not found
     if valHolder.value == nil
@@ -225,5 +239,9 @@ class CodeCacher
     valHolder.value
 
 {
-  :CodeCacher
+  :CodeCacher,
+  :myUrlHandler,
+  :buildRequest,
+  :require_new,
+  :getSandboxEnv
 }

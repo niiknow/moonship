@@ -84,20 +84,20 @@ require_new = function(modname)
   return _G[modname]
 end
 getSandboxEnv = function(req)
-  local env = setmetatable({ }, nil)
-  env.http = httpc
-  env.require = require_new
-  env.util = util
-  env.crypto = crypto
-  env.request = req or buildRequest()
-  env.__ghrawbase = __ghrawbase
-  setmetatable(env, nil)
+  local env = {
+    http = httpc,
+    require = require_new,
+    util = util,
+    crypto = crypto,
+    request = req or buildRequest(),
+    __ghrawbase = __ghrawbase
+  }
   return sandbox.build_env(_G, env, sandbox.whitelist)
 end
 do
   local _class_0
   local _base_0 = {
-    doCheckRemoteFile = function(self, valHolder)
+    doCheckRemoteFile = function(self, valHolder, req)
       local opts = {
         url = valHolder.url,
         remote_path = self.options.remote_path
@@ -114,7 +114,7 @@ do
           _with_0:close()
         end
         valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
-        valHolder.value = sandbox.loadmoon(rsp.body, valHolder.localFullPath, getSandboxEnv())
+        valHolder.value = sandbox.loadmoon(rsp.body, valHolder.localFullPath, getSandboxEnv(req))
       elseif (rsp.code == 404) then
         valHolder.value = nil
         return os.remove(valHolder.localFullPath)
@@ -145,13 +145,13 @@ do
       if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - self.options.ttl))) then
         valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
         if valHolder.fileMod then
-          valHolder.value = sandbox.loadfile_safe(valHolder.localFullPath, getSandboxEnv())
+          valHolder.value = sandbox.loadfile_safe(valHolder.localFullPath, getSandboxEnv(req))
           valHolder.lastCheck = os.time()
           self.codeCache:set(url, valHolder)
         else
           valHolder.value = nil
         end
-        self:doCheckRemoteFile(valHolder)
+        self:doCheckRemoteFile(valHolder, req)
       end
       if valHolder.value == nil then
         self.codeCache:delete(url)
@@ -199,5 +199,9 @@ do
   CodeCacher = _class_0
 end
 return {
-  CodeCacher = CodeCacher
+  CodeCacher = CodeCacher,
+  myUrlHandler = myUrlHandler,
+  buildRequest = buildRequest,
+  require_new = require_new,
+  getSandboxEnv = getSandboxEnv
 }
