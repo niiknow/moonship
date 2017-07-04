@@ -1,4 +1,5 @@
 codecacher = require "moonship.codecacher"
+plpath = require "pl.path"
 
 describe "moonship.codecacher", ->
 
@@ -19,5 +20,20 @@ describe "moonship.codecacher", ->
 
   it "CodeCacher correctly request and cache remote file", ->
     expected = "hello from github"
-    res = codecacher.require_new("github.com/niiknow/moonship/tree/master/remote/localhost/hello/index.moon")
+    opts = {
+      app_path: plpath.abspath('./t')
+      remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
+    }
+    cc = codecacher.CodeCacher(opts)
+    res = cc\get({
+      host: 'localhost',
+      path: '/hello'
+    })
+
+    -- validate remote response
     assert.same expected, res.body
+
+    -- validate local file cache exists
+    f=io.open("#{opts.app_path}/localhost/hello/index.lua","r")
+    assert.same true, f~=nil
+    io.close(f)

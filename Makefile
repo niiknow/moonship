@@ -19,3 +19,5 @@ watch: build
 
 clean:
 	rm $$(find src/ | grep \.lua$$)
+	mkdir -p ./t/localhost
+	rm -rf ./t/localhost
