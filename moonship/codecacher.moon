@@ -65,7 +65,7 @@ buildRequest = () ->
     req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
     return req_wrapper
 
-  _G["request"] or {}
+  {}
 
 require_new = (modname) ->
   unless _G[modname]
@@ -85,15 +85,15 @@ require_new = (modname) ->
 
   _G[modname]
 
-getSandboxEnv = () ->
-  env = {
-    http: httpc,
-    require: require_new,
-    util: util,
-    crypto: crypto,
-    request: buildRequest(),
-    __ghrawbase: __ghrawbase
-  }
+getSandboxEnv = (req) ->
+  env = setmetatable({}, nil)
+  env.http = httpc
+  env.require = require_new
+  env.util = util
+  env.crypto = crypto
+  env.request = req or buildRequest()
+  env.__ghrawbase = __ghrawbase
+  setmetatable(env, nil)
   sandbox.build_env(_G, env, sandbox.whitelist)
 
 --

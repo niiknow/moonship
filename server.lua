@@ -26,7 +26,7 @@ reply = function(myserver, stream)
     res_headers:append(k, v)
   end
   assert(stream:write_headers(res_headers, req.method == "HEAD"))
-  io.stderr:write("yoyoyo\n" .. tostring(rst.body))
+  io.stderr:write("debug\n" .. tostring(rst.body))
   if req.method ~= "HEAD" and rst.body then
     return assert(stream:write_chunk(rst.body, true))
   end
@@ -44,6 +44,6 @@ runserver = function(opts)
   assert(io.stderr:write(string.format("Now listening on port %d\n", bound_port)))
   return assert(myserver:loop())
 end
-return {
-  runserver = runserver
-}
+return runserver({
+  remote_path = "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
+})

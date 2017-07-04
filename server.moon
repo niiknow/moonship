@@ -1,4 +1,4 @@
--- local web server for debugging purpose only
+-- local web server demonstrates using github
 engine = require "moonship.engine"
 
 port = 4000
@@ -48,7 +48,7 @@ reply = (myserver, stream) ->
   -- Send headers to client; end the stream immediately if this was a HEAD request
   assert(stream\write_headers(res_headers, req.method == "HEAD"))
 
-  io.stderr\write("yoyoyo\n#{rst.body}")
+  io.stderr\write("debug\n#{rst.body}")
   if req.method  ~= "HEAD" and rst.body
     -- Send body, ending the stream
     assert(stream\write_chunk(rst.body, true))
@@ -70,6 +70,6 @@ runserver = (opts) ->
   -- Start the main server loop
   assert(myserver\loop())
 
-{
-  :runserver
+runserver  {
+  remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
 }

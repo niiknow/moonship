@@ -6,8 +6,7 @@ util = require "moonship.util"
 
 class AwsAuth
   new: (options={}) =>
-    microtime = os.time()
-
+    options.timestamp       = options.timestamp      or os.time()
     options.aws_host        = options.aws_host       or "s3.amazonaws.com"
     options.aws_region      = options.aws_region     or "us-east-1"
     options.aws_service     = options.aws_service    or "s3"
@@ -15,8 +14,8 @@ class AwsAuth
     options.request_method  = options.request_method or "GET"
     options.request_path    = options.request_path   or "/"
     options.request_body    = options.request_body   or ""
-    options.iso_date        = options.iso_date       or os.date("!%Y%m%d", microtime)
-    options.iso_tz          = options.iso_tz         or os.date("!%Y%m%dT%H%M%SZ", microtime)
+    options.iso_date        = os.date("!%Y%m%d", options.timestamp)
+    options.iso_tz          = os.date("!%Y%m%dT%H%M%SZ", options.timestamp)
     @options = options
 
   -- create canonical headers
@@ -105,6 +104,6 @@ class AwsAuth
     @options.iso_tz
 
   get_content_sha256: () =>
-    get_sha256_digest("")
+    @get_sha256_digest("")
 
 { :AwsAuth }

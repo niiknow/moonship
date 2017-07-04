@@ -16,7 +16,6 @@ do
           }
         }
       end
-      io.stderr:write("\nyo" .. tostring(rst.body) .. "\n")
       rst.code = rst.code or 200
       rst.headers = rst.headers or { }
       rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"

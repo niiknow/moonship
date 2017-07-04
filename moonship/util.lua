@@ -104,7 +104,7 @@ from_json = function(obj)
   return cjson_safe.decode(obj)
 end
 to_json = function(obj)
-  return cjson_safe.encode(json_encodable(obj))
+  return cjson_safe.encode((json_encodable(obj)))
 end
 query_string_encode = function(t, sep, quote)
   if sep == nil then

@@ -1,5 +1,6 @@
 parse = require "moonscript.parse"
 compile = require "moonscript.compile"
+util = require "moonship.util"
 
 table_pack = table.pack or (...) -> { n: select("#", ...), ... }
 has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"
@@ -53,9 +54,7 @@ utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 local *
 
 -- Builds the environment table for a sandbox.
-build_env = (src_env, dest_env, wl=whitelist) ->
-  -- assert(getmetatable(dest_env) == nil, "env has a metatable")
-
+build_env = (src_env, dest_env={}, wl=whitelist) ->
   env = {}
   for name in wl\gmatch "%S+" do
     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
@@ -98,7 +97,7 @@ loadstring = (code, name, env=_G) ->
 -- @param wl        String with a list of library functions imported from the global namespace (default `sandbox.whitelist`).
 -- @return          The `env` where the code was ran, or `nil` in case of error.
 -- @return          The chunk return values, or an error message.
-loadstring_safe = (code, name, env, wl) ->
+loadstring_safe = (code, name, env={}, wl) ->
   env = build_env(_G, env, wl)
   loadstring(code, name, env)
 
@@ -111,7 +110,7 @@ loadfile = (file, env=_G) ->
   loadstring(code, file, env)
 
 
-loadfile_safe = (file, env, wl) ->
+loadfile_safe = (file, env={}, wl) ->
   env = build_env(_G, env, wl)
   loadfile(file, env)
 
@@ -124,11 +123,11 @@ exec = (fn) ->
 
   ret
 
-exec_code = (code, name, env, wl) ->
+exec_code = (code, name, env={}, wl) ->
   fn = loadstring_safe(code, name, env, wl)
   exec(fn)
 
-loadmoon = (moon_code, name, env, wl) ->
+loadmoon = (moon_code, name, env={}, wl) ->
   tree, err = parse.string moon_code
   unless tree
     return nil, "Parse error: " .. err
@@ -141,5 +140,5 @@ loadmoon = (moon_code, name, env, wl) ->
 
 {
   :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe,
-  :loadmoon, :exec
+  :loadmoon, :exec, :exec_code
 }

@@ -18,7 +18,7 @@ describe "moonship.sandbox", ->
     data = "local function hi()\n"
     data ..= "  return 'hello world'\n"
     data ..= "end\nreturn string.dump(hi)"
-    ignore, actual = sandbox.exec data, expected
+    ignore, actual = sandbox.exec_code data, expected
     hasMatch = actual\match(expected)
 
     -- actual is error message

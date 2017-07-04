@@ -1,5 +1,6 @@
 local parse = require("moonscript.parse")
 local compile = require("moonscript.compile")
+local util = require("moonship.util")
 local table_pack = table.pack or function(...)
   return {
     n = select("#", ...),
@@ -53,6 +54,9 @@ utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
 local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec, exec_code, loadmoon
 build_env = function(src_env, dest_env, wl)
+  if dest_env == nil then
+    dest_env = { }
+  end
   if wl == nil then
     wl = whitelist
   end
@@ -93,6 +97,9 @@ loadstring = function(code, name, env)
   return loads(code, name or "sandbox", "t", env)
 end
 loadstring_safe = function(code, name, env, wl)
+  if env == nil then
+    env = { }
+  end
   env = build_env(_G, env, wl)
   return loadstring(code, name, env)
 end
@@ -106,6 +113,9 @@ loadfile = function(file, env)
   return loadstring(code, file, env)
 end
 loadfile_safe = function(file, env, wl)
+  if env == nil then
+    env = { }
+  end
   env = build_env(_G, env, wl)
   return loadfile(file, env)
 end
@@ -117,10 +127,16 @@ exec = function(fn)
   return ret
 end
 exec_code = function(code, name, env, wl)
+  if env == nil then
+    env = { }
+  end
   local fn = loadstring_safe(code, name, env, wl)
   return exec(fn)
 end
 loadmoon = function(moon_code, name, env, wl)
+  if env == nil then
+    env = { }
+  end
   local tree, err = parse.string(moon_code)
   if not (tree) then
     return nil, "Parse error: " .. err
@@ -140,5 +156,6 @@ return {
   loadfile = loadfile,
   loadfile_safe = loadfile_safe,
   loadmoon = loadmoon,
-  exec = exec
+  exec = exec,
+  exec_code = exec_code
 }

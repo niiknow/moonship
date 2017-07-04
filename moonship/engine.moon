@@ -20,7 +20,6 @@ class Engine
     if type(rst) ~= 'table'
       return {body: rst, code: 500, status: "500 unexpected response", headers: {'Content-Type': "text/plain"}}
 
-    io.stderr\write("\nyo#{rst.body}\n")
     rst.code = rst.code or 200
     rst.headers = rst.headers or {}
     rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"

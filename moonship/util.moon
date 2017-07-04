@@ -90,7 +90,7 @@ json_encodable = (obj, seen={}) ->
 
 from_json = (obj) -> cjson_safe.decode obj
 
-to_json = (obj) -> cjson_safe.encode json_encodable obj
+to_json = (obj) -> cjson_safe.encode (json_encodable obj)
 
 query_string_encode = (t, sep="&", quote="") ->
   _escape = ngx and ngx.escape_uri or url_escape
