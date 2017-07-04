@@ -1,9 +1,10 @@
+local util = require("moonship.util")
 local concat
 concat = table.concat
-local ltn12 = require('ltn12')
-local util = require("moonship.util")
+local query_string_encode
+query_string_encode = util.query_string_encode
+local ltn12 = require("ltn12")
 local string_upper = string.upper
-local qs_encode = util.query_string_encode
 local http_handler = (ngx and require("moonship.nginx.http")) or require("http.compat.socket")
 local request
 request = function(opts)
@@ -32,7 +33,7 @@ request = function(opts)
     opts["body"] = body
   end
   if opts["body"] then
-    opts["body"] = (type(opts["body"]) == "table") and qs_encode(opts["body"]) or opts["body"]
+    opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
     opts["Content-Length"] = strlen(opts["body"] or "")
   end
   if not (ngx) then

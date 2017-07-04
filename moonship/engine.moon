@@ -1,6 +1,6 @@
-config = require "moonship.config"
+config     = require "moonship.config"
 codecacher = require "moonship.codecacher"
-util = require "moonship.util"
+util       = require "moonship.util"
 
 -- response with
 -- :body, :code, :headers, :status, :error

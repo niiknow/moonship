@@ -1,7 +1,8 @@
 crypto        = require "crypto"
-mybcrypt      = require "bcrypt"
 crypto_hmac   = require "crypto.hmac"
+mybcrypt      = require "bcrypt"
 mime          = require "mime"
+
 { :b64, :unb64 } = mime
 
 local *

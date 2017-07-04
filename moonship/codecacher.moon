@@ -1,10 +1,12 @@
-lfs               = require "lfs"
-lru               = require "lru"
-httpc             = require "moonship.http"
-sandbox           = require "moonship.sandbox"
-util              = require "moonship.util"
-plpath            = require "pl.path"
-aws_auth          = require "moonship.awsauth"
+
+aws_auth      = require "moonship.awsauth"
+httpc         = require "moonship.http"
+sandbox       = require "moonship.sandbox"
+util          = require "moonship.util"
+
+lfs           = require "lfs"
+lru           = require "lru"
+plpath        = require "pl.path"
 
 local *
 loadCode = (url) ->
@@ -13,10 +15,7 @@ loadCode = (url) ->
 
   return res unless err
 
-  {
-    code: 0,
-    body: err
-  }
+  { code: 0, body: err }
 
 myUrlHandler = (opts) ->
   -- ngx.log(ngx.ERR, "mydebug: " .. secret_key)

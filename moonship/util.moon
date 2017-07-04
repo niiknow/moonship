@@ -1,7 +1,6 @@
 
-url = require "socket.url"
+url        = require "socket.url"
 cjson_safe = require "cjson.safe"
-moonscript = require "moonscript.base"
 
 import concat, insert from table
 
@@ -61,7 +60,7 @@ slugify = (str) ->
   str = tostring str
   (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
-split = (str, sep, dest={}) ->
+string_split = (str, sep, dest={}) ->
   str = tostring str
   for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
     insert(dest, str)
@@ -127,7 +126,7 @@ applyDefaults = (opts, defOpts) ->
   opts
 
 { :url_escape, :url_unescape, :url_parse, :url_build,
-  :trim, :path_sanitize, :slugify, :split,
+  :trim, :path_sanitize, :slugify, :string_split,
   :json_encodable, :from_json, :to_json,
   :query_string_encode, :resolveGithubRaw, :applyDefaults
 }

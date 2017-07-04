@@ -1,12 +1,11 @@
 local url = require("socket.url")
 local cjson_safe = require("cjson.safe")
-local moonscript = require("moonscript.base")
 local concat, insert
 do
   local _obj_0 = table
   concat, insert = _obj_0.concat, _obj_0.insert
 end
-local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults
+local url_unescape, url_escape, url_parse, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults
 url_unescape = function(str)
   return url.unescape(str)
 end
@@ -66,7 +65,7 @@ slugify = function(str)
   str = tostring(str)
   return (str:gsub("[%s_]+", "-"):gsub("[^%w%-]+", ""):gsub("-+", "-")):lower()
 end
-split = function(str, sep, dest)
+string_split = function(str, sep, dest)
   if dest == nil then
     dest = { }
   end
@@ -172,7 +171,7 @@ return {
   trim = trim,
   path_sanitize = path_sanitize,
   slugify = slugify,
-  split = split,
+  string_split = string_split,
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,

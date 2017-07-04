@@ -1,6 +1,6 @@
-parse = require "moonscript.parse"
+parse   = require "moonscript.parse"
 compile = require "moonscript.compile"
-util = require "moonship.util"
+util    = require "moonship.util"
 
 table_pack = table.pack or (...) -> { n: select("#", ...), ... }
 has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"

@@ -3,7 +3,7 @@
 
 import sort, concat from table
 crypto = require "moonship.crypto"
-util = require "moonship.util"
+util   = require "moonship.util"
 
 class AwsAuth
   new: (options={}) =>
@@ -22,12 +22,7 @@ class AwsAuth
   -- create canonical headers
   -- header must be sorted asc
   get_canonical_header: () =>
-    h = {
-      "content-type:" .. @options.content_type,
-      "host:" .. @options.aws_host,
-      "x-amz-date:" .. @options.iso_tz
-    }
-    concat(h, "\n")
+    concat { "content-type:" .. @options.content_type, "host:" .. @options.aws_host, "x-amz-date:" .. @options.iso_tz }, "\n"
 
   get_signed_request_body: () =>
     params = @options.request_body
@@ -54,11 +49,8 @@ class AwsAuth
     @get_sha256_digest(canonical_request)
 
   -- generate sha256 from the given string
-  get_sha256_digest: (s) =>
-    crypto.sha256(s).hex()
-
-  hmac: (secret, message) =>
-    crypto.hmac(secret, message, crypto.sha256)
+  get_sha256_digest: (s) => crypto.sha256(s).hex()
+  hmac: (secret, message) => crypto.hmac(secret, message, crypto.sha256)
 
   -- get signing key
   -- https://docs.aws.amazon.com/general/latest/gr/sigv4-calculate-signature.html
@@ -76,35 +68,19 @@ class AwsAuth
     concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
 
   -- generate signature
-  get_signature: () =>
-    signing_key = @get_signing_key()
-    string_to_sign = @get_string_to_sign()
-    @hmac(signing_key, string_to_sign).hex()
+  get_signature: () => @hmac(@get_signing_key(), @get_string_to_sign()).hex()
 
   -- get authorization string
   -- x-amz-content-sha256 required by s3
-  get_authorization_header: () =>
+  get_auth_header: () =>
     param = { @options.aws_access_key_id, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
-    header = {
-      "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"),
-      "SignedHeaders=content-type;host;x-amz-date",
-      "Signature=" .. @get_signature()
-    }
-    concat(header, ", ")
+    concat { "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"), "SignedHeaders=content-type;host;x-amz-date", "Signature=" .. @get_signature() }, ", "
 
   get_auth_headers: () =>
-    {
-      "Authorization": @get_authorization_header(),
-      "x-amz-date": @get_date_header(),
-      "x-amz-content-sha256": @get_content_sha256(),
-      "Content-Type": @options.content_type
-    }
+    { "Authorization": @get_auth_header(), "x-amz-date": @get_date_header(), "x-amz-content-sha256": @get_content_sha256(), "Content-Type": @options.content_type }
 
   -- get the current timestamp in iso8601 basic format
-  get_date_header: () =>
-    @options.iso_tz
-
-  get_content_sha256: () =>
-    @get_sha256_digest("")
+  get_date_header: () => @options.iso_tz
+  get_content_sha256: () => @get_sha256_digest("")
 
 { :AwsAuth }

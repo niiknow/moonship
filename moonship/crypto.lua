@@ -1,6 +1,6 @@
 local crypto = require("crypto")
-local mybcrypt = require("bcrypt")
 local crypto_hmac = require("crypto.hmac")
+local mybcrypt = require("bcrypt")
 local mime = require("mime")
 local b64, unb64
 b64, unb64 = mime.b64, mime.unb64

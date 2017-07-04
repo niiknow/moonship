@@ -1,8 +1,11 @@
-import concat from table
-ltn12 = require('ltn12')
+
 util         = require "moonship.util"
+
+import concat from table
+import query_string_encode from util
+
+ltn12        = require "ltn12"
 string_upper = string.upper
-qs_encode    = util.query_string_encode
 http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
 
 local *
@@ -26,7 +29,7 @@ request = (opts) ->
 
   -- auto add content length
   if opts["body"]
-    opts["body"] = (type(opts["body"]) == "table") and qs_encode(opts["body"]) or opts["body"]
+    opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
     opts["Content-Length"] = strlen(opts["body"] or "")
 
 

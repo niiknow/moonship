@@ -10,12 +10,11 @@ do
   local _class_0
   local _base_0 = {
     get_canonical_header = function(self)
-      local h = {
+      return concat({
         "content-type:" .. self.options.content_type,
         "host:" .. self.options.aws_host,
         "x-amz-date:" .. self.options.iso_tz
-      }
-      return concat(h, "\n")
+      }, "\n")
     end,
     get_signed_request_body = function(self)
       local params = self.options.request_body
@@ -68,11 +67,9 @@ do
       }, "\n")
     end,
     get_signature = function(self)
-      local signing_key = self:get_signing_key()
-      local string_to_sign = self:get_string_to_sign()
-      return self:hmac(signing_key, string_to_sign).hex()
+      return self:hmac(self:get_signing_key(), self:get_string_to_sign()).hex()
     end,
-    get_authorization_header = function(self)
+    get_auth_header = function(self)
       local param = {
         self.options.aws_access_key_id,
         self.options.iso_date,
@@ -80,16 +77,15 @@ do
         self.options.aws_service,
         "aws4_request"
       }
-      local header = {
+      return concat({
         "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"),
         "SignedHeaders=content-type;host;x-amz-date",
         "Signature=" .. self:get_signature()
-      }
-      return concat(header, ", ")
+      }, ", ")
     end,
     get_auth_headers = function(self)
       return {
-        ["Authorization"] = self:get_authorization_header(),
+        ["Authorization"] = self:get_auth_header(),
         ["x-amz-date"] = self:get_date_header(),
         ["x-amz-content-sha256"] = self:get_content_sha256(),
         ["Content-Type"] = self.options.content_type

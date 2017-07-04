@@ -1,10 +1,10 @@
-local lfs = require("lfs")
-local lru = require("lru")
+local aws_auth = require("moonship.awsauth")
 local httpc = require("moonship.http")
 local sandbox = require("moonship.sandbox")
 local util = require("moonship.util")
+local lfs = require("lfs")
+local lru = require("lru")
 local plpath = require("pl.path")
-local aws_auth = require("moonship.awsauth")
 local loadCode, myUrlHandler, buildRequest, getSandboxEnv, require_new, CodeCacher
 loadCode = function(url)
   local req = {
