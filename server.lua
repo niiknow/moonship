@@ -1,4 +1,5 @@
 local engine = require("moonship.engine")
+local plpath = require("pl.path")
 local port = 4000
 local http_server = require("http.server")
 local http_headers = require("http.headers")
@@ -16,17 +17,14 @@ reply = function(myserver, stream)
     host = "localhost"
   }
   assert(io.stdout:write(string.format('[%s] "%s %s HTTP/%g"  "%s" "%s"\n', os.date("%d/%b/%Y:%H:%M:%S %z"), req.method, req.path, req.version, req.version, req.referer, req.user_agent)))
-  io.stderr:write('--ho--\n')
-  local yo = engine.Engine(myopts)
-  io.stderr:write(tostring(req.host) .. "\n" .. tostring(req.path))
-  local rst = yo:engage(req)
+  local ngin = engine.Engine(myopts)
+  local rst = ngin:engage(req)
   local res_headers = http_headers.new()
   res_headers:append(":status", tostring(rst.code))
   for k, v in pairs(rst.headers) do
     res_headers:append(k, v)
   end
   assert(stream:write_headers(res_headers, req.method == "HEAD"))
-  io.stderr:write("debug\n" .. tostring(rst.body))
   if req.method ~= "HEAD" and rst.body then
     return assert(stream:write_chunk(rst.body, true))
   end
@@ -45,5 +43,6 @@ runserver = function(opts)
   return assert(myserver:loop())
 end
 return runserver({
+  app_path = plpath.abspath('./t'),
   remote_path = "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
 })

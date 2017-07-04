@@ -1,10 +1,10 @@
 local crypto = require("crypto")
-local bcrypt = require("bcrypt")
+local mybcrypt = require("bcrypt")
 local crypto_hmac = require("crypto.hmac")
 local mime = require("mime")
 local b64, unb64
 b64, unb64 = mime.b64, mime.unb64
-local base64_encode, base64_decode, crypto_wrapper, hmac_wrapper, md5, sha1, sha256, hmac
+local base64_encode, base64_decode, crypto_wrapper, hmac_wrapper, bcrypt, bcrypt_verify, md5, sha1, sha256, hmac
 base64_encode = function(...)
   return (b64(...))
 end
@@ -32,7 +32,13 @@ hmac_wrapper = function(key, str, hasher)
   }
 end
 bcrypt = function(str, rounds)
-  return bcrypt.digest(str, rounds or 12)
+  if rounds == nil then
+    rounds = 12
+  end
+  return mybcrypt.digest(str, rounds)
+end
+bcrypt_verify = function(str, digest)
+  return mybcrypt.verify(str, digest)
 end
 md5 = function(str)
   return crypto_wrapper("md5", str)
@@ -56,6 +62,7 @@ return {
   base64_encode = base64_encode,
   base64_decode = base64_decode,
   bcrypt = bcrypt,
+  bcrypt_verify = bcrypt_verify,
   md5 = md5,
   sha1 = sha1,
   sha256 = sha256,

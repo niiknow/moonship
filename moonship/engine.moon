@@ -26,10 +26,13 @@ class Engine
     rst
 
   engage: (req) =>
-    rst = @codeCache\get(req)
+    rst, err = @codeCache\get(req)
+
+    if err
+      return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  }
 
     unless rst
-      return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  }
+      return { code: 404, headers: {}  }
 
     @handleResponse(rst)
 

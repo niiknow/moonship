@@ -22,12 +22,18 @@ do
       return rst
     end,
     engage = function(self, req)
-      local rst = self.codeCache:get(req)
-      if not (rst) then
+      local rst, err = self.codeCache:get(req)
+      if err then
         return {
           error = err,
           code = 500,
           status = "500 Engine.engage error",
+          headers = { }
+        }
+      end
+      if not (rst) then
+        return {
+          code = 404,
           headers = { }
         }
       end
