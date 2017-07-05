@@ -1,20 +1,46 @@
 local cjson_safe = require("cjson.safe")
-local printLogger, COLOR_DEBUG, COLOR_TRACE, COLOR_INFO, COLOR_WARN, COLOR_ERROR, COLOR_FATAL, FATAL, ERROR, WARN, INFO, TRACE, DEBUG, Log
-printLogger = function(...)
-  return print(...)
-end
+local COLOR_DEBUG, COLOR_INFO, COLOR_WARN, COLOR_ERROR, COLOR_FATAL, FATAL, ERROR, WARN, INFO, DEBUG, printLogger, Log
 COLOR_DEBUG = "[0m[44m[37m DEBUG [0m[0m"
-COLOR_TRACE = "[0m[42m[37m TRACE [0m[0m"
-COLOR_INFO = "[0m[30m[30m  INFO [0m[0m"
+COLOR_INFO = "[0m[42m[37m  INFO [0m[0m"
 COLOR_WARN = "[0m[43m[30m  WARN [0m[0m"
 COLOR_ERROR = "[0m[41m[37m ERROR [0m[0m"
-COLOR_FATAL = "[0m[45m[37m[5m FATAL[0m[0m"
+COLOR_FATAL = "[0m[45m[37m FATAL [0m[0m"
 FATAL = 10
 ERROR = 20
 WARN = 30
 INFO = 40
-TRACE = 50
-DEBUG = 60
+DEBUG = 50
+printLogger = function(level, ...)
+  if ngx then
+    local _exp_0 = level
+    if FATAL == _exp_0 then
+      return ngx.log(ngx.CRIT, ...)
+    elseif ERROR == _exp_0 then
+      return ngx.log(ngx.ERR, ...)
+    elseif WARN == _exp_0 then
+      return ngx.log(ngx.WARN, ...)
+    elseif INFO == _exp_0 then
+      return ngx.log(ngx.INFO, ...)
+    elseif DEBUG == _exp_0 then
+      return ngx.log(ngx.DEBUG, ...)
+    end
+  else
+    local lvl = COLOR_INFO
+    local _exp_0 = level
+    if FATAL == _exp_0 then
+      lvl = COLOR_FATAL
+    elseif ERROR == _exp_0 then
+      lvl = COLOR_ERROR
+    elseif WARN == _exp_0 then
+      lvl = COLOR_WARN
+    elseif INFO == _exp_0 then
+      lvl = COLOR_INFO
+    elseif DEBUG == _exp_0 then
+      lvl = COLOR_DEBUG
+    end
+    return print(lvl, ...)
+  end
+end
 do
   local _class_0
   local _base_0 = {
@@ -33,45 +59,25 @@ do
       end
       return tostring(p)
     end,
-    doLogInternal = function(self, ...)
-      local params
-      do
-        local _accum_0 = { }
-        local _len_0 = 1
-        local _list_0 = {
-          ...
-        }
-        for _index_0 = 1, #_list_0 do
-          local v = _list_0[_index_0]
-          _accum_0[_len_0] = self:doFormat(v)
-          _len_0 = _len_0 + 1
-        end
-        params = _accum_0
-      end
-      for _, logger in ipairs(self.loggers) do
-        logger(unpack(params))
-      end
-    end,
     doLog = function(self, req_level, level, ...)
       if req_level >= level then
-        local lvl = "INFO"
-        local _exp_0 = level
-        if FATAL == _exp_0 then
-          lvl = COLOR_FATAL
-        elseif ERROR == _exp_0 then
-          lvl = COLOR_ERROR
-        elseif WARN == _exp_0 then
-          lvl = COLOR_WARN
-        elseif INFO == _exp_0 then
-          lvl = COLOR_INFO
-        elseif TRACE == _exp_0 then
-          lvl = COLOR_TRACE
-        elseif DEBUG == _exp_0 then
-          lvl = COLOR_DEBUG
-        else
-          lvl = tostring(level)
+        local params
+        do
+          local _accum_0 = { }
+          local _len_0 = 1
+          local _list_0 = {
+            ...
+          }
+          for _index_0 = 1, #_list_0 do
+            local v = _list_0[_index_0]
+            _accum_0[_len_0] = self:doFormat(v)
+            _len_0 = _len_0 + 1
+          end
+          params = _accum_0
         end
-        return self:doLogInternal(lvl, ...)
+        for _, logger in ipairs(self.loggers) do
+          logger(level, unpack(params))
+        end
       end
     end,
     level = function(self, ll)
@@ -94,9 +100,6 @@ do
     end,
     info = function(self, ...)
       return self:doLog(self.log_level, INFO, ...)
-    end,
-    trace = function(self, ...)
-      return self:doLog(self.log_level, TRACE, ...)
     end,
     debug = function(self, ...)
       return self:doLog(self.log_level, DEBUG, ...)

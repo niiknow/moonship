@@ -29,13 +29,6 @@ return {
       return _fn_0(_base_0, ...)
     end
   end)(),
-  TRACE = (function()
-    local _base_0 = log
-    local _fn_0 = _base_0.DEBUG
-    return function(...)
-      return _fn_0(_base_0, ...)
-    end
-  end)(),
   DEBUG = (function()
     local _base_0 = log
     local _fn_0 = _base_0.DEBUG
@@ -67,13 +60,6 @@ return {
   info = (function()
     local _base_0 = log
     local _fn_0 = _base_0.info
-    return function(...)
-      return _fn_0(_base_0, ...)
-    end
-  end)(),
-  trace = (function()
-    local _base_0 = log
-    local _fn_0 = _base_0.trace
     return function(...)
       return _fn_0(_base_0, ...)
     end

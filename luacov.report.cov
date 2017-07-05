@@ -505,8 +505,8 @@
     3 log = logger()
 
     3 {
-    3   FATAL: log\FATAL, ERROR: log\ERROR, WARN: log\WARN, INFO: log\INFO, TRACE: log\DEBUG, DEBUG: log\DEBUG,
-****0   fatal: log\fatal, error: log\error, warn: log\warn, info: log\info, trace: log\trace, debug: log\debug,
+    3   FATAL: log\FATAL, ERROR: log\ERROR, WARN: log\WARN, INFO: log\INFO, DEBUG: log\DEBUG,
+****0   fatal: log\fatal, error: log\error, warn: log\warn, info: log\info, debug: log\debug,
 ****0   write: log\write, level: log\level, attachLogger: log\attachLogger, getLoggers: log\getLoggers, doLog: log\doLog
     3 }
 
@@ -516,98 +516,103 @@
 
     3 cjson_safe       = require "cjson.safe"
 
-    6 local *
-
-    3 printLogger = (...) -> print ...
+    3 local *
 
     3 COLOR_DEBUG = "[0m[44m[37m DEBUG [0m[0m" -- blue
-    3 COLOR_TRACE = "[0m[42m[37m TRACE [0m[0m" -- green
-    3 COLOR_INFO = "[0m[30m[30m  INFO [0m[0m" -- black
-    3 COLOR_WARN = "[0m[43m[30m  WARN [0m[0m" -- yellow
+    3 COLOR_INFO  = "[0m[42m[37m  INFO [0m[0m" -- green
+    3 COLOR_WARN  = "[0m[43m[30m  WARN [0m[0m" -- yellow
     3 COLOR_ERROR = "[0m[41m[37m ERROR [0m[0m" -- red
-    3 COLOR_FATAL = "[0m[45m[37m[5m FATAL [0m[0m" -- red blink
+    3 COLOR_FATAL = "[0m[45m[37m FATAL [0m[0m" -- red blink
 
     3 FATAL = 10
-    3 ERROR = 20
-    3 WARN = 30
+****0 ERROR = 20
+    5 WARN = 30
 ****0 INFO = 40
-    3 TRACE = 50
-    3 DEBUG = 60
+****0 DEBUG = 50
 
-      class Log
-    3   new: (log_level = INFO, loggers = { printLogger }) =>
+****0 printLogger = (level, ...) ->
+****0   if ngx
+          switch level
+            when FATAL
+****0         ngx.log(ngx.CRIT, ...)
+            when ERROR
+****0         ngx.log(ngx.ERR, ...)
+            when WARN
+****0         ngx.log(ngx.WARN, ...)
+            when INFO
+    5         ngx.log(ngx.INFO, ...)
+    5       when DEBUG
+    5         ngx.log(ngx.DEBUG, ...)
+
+        else
+    1     lvl = COLOR_INFO
+    3     switch level
+    1       when FATAL
+    2         lvl = COLOR_FATAL
+    1       when ERROR
+    1         lvl = COLOR_ERROR
+    1       when WARN
+****0         lvl = COLOR_WARN
+    5       when INFO
+****0         lvl = COLOR_INFO
+    3       when DEBUG
+****0         lvl = COLOR_DEBUG
+
+    3     print lvl, ...
+
+
+    3 class Log
+****0   new: (log_level = INFO, loggers = { printLogger }) =>
 ****0     @loggers = loggers
-****0     @log_level = log_level
+    3     @log_level = log_level
 
-****0   attachLogger: (lgr) =>
-   12     @loggers[#@loggers+1] = lgr
+    5   attachLogger: (lgr) =>
+****0     @loggers[#@loggers+1] = lgr
 
-****0   getLoggers: () =>
-   12     @loggers
+    5   getLoggers: () =>
+****0     @loggers
 
-****0   doFormat: (p) =>
-   12     if type(p) == 'table'
-    3       return cjson_safe.decode p
+    5   doFormat: (p) =>
+    3     if type(p) == 'table'
+****0       return cjson_safe.decode p
 
-    6     if p == nil
+    5     if p == nil
 ****0       return "nil"
 
-    6     tostring(p)
+    5     tostring(p)
 
-    6   doLogInternal: (...) =>
-****0     params = [@doFormat(v) for v in *{...}]
-   18     for _, logger in ipairs(@loggers)
-   12       logger unpack params
-
-   12   doLog: (req_level, level, ...) =>
+    5   doLog: (req_level, level, ...) =>
 ****0     if req_level >= level
-    6       lvl = "INFO"
-            switch level
-   12         when FATAL
-    6           lvl = COLOR_FATAL
-              when ERROR
-    9           lvl = COLOR_ERROR
-              when WARN
-   10           lvl = COLOR_WARN
-    6         when INFO
-    6           lvl = COLOR_INFO
-    6         when TRACE
-    1           lvl = COLOR_TRACE
-    5         when DEBUG
-    1           lvl = COLOR_DEBUG
-              else
-    1           lvl = tostring(level)
+   10       params = [@doFormat(v) for v in *{...}]
+    5       for _, logger in ipairs(@loggers)
+   10         logger level, unpack params
 
-    1       @doLogInternal(lvl, ...)
+****0   level: (ll) =>
+    5     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
+****0     ll = FATAL if ll < FATAL
 
-    1   level: (ll) =>
-    1     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
-    1     ll = FATAL if ll < FATAL
+    5     @log_level = ll
 
-****0     @log_level = ll
+****0   fatal: (...) =>
+   12     @doLog(@log_level, FATAL, ...)
 
-    6   fatal: (...) =>
-****0     @doLog(@log_level, FATAL, ...)
-
-****0   error: (...) =>
+    1   error: (...) =>
     1     @doLog(@log_level, ERROR, ...)
 
-****0   warn: (...) =>
-    1     @doLog(@log_level, WARN, ...)
+    1   warn: (...) =>
+****0     @doLog(@log_level, WARN, ...)
 
-****0   info: (...) =>
-    1     @doLog(@log_level, INFO, ...)
+    1   info: (...) =>
+    4     @doLog(@log_level, INFO, ...)
 
-****0   trace: (...) =>
-    1     @doLog(@log_level, TRACE, ...)
 
-****0   debug: (...) =>
-    1     @doLog(@log_level, DEBUG, ...)
+    3   debug: (...) =>
+****0     @doLog(@log_level, DEBUG, ...)
 
-****0   write: (...) =>
-    1     @info ...
+    3   write: (...) =>
+****0     @info ...
 
-      Log
+    3 Log
 
 ==============================================================================
 ./moonship/oauth1.moon
@@ -955,9 +960,9 @@ File                       Hits Missed Coverage
 ./moonship/engine.moon     11   13     45.83%
 ./moonship/http.moon       31   10     75.61%
 ./moonship/log.moon        5    2      71.43%
-./moonship/logger.moon     48   17     73.85%
+./moonship/logger.moon     45   24     65.22%
 ./moonship/oauth1.moon     28   10     73.68%
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/util.moon       55   25     68.75%
 -----------------------------------------------
-Total                      367  180    67.09%
+Total                      364  187    66.06%

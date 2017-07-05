@@ -7,7 +7,6 @@ describe "moonship.log", ->
   it "it should log to console", ->
     print "\n"
     log.debug "test"
-    log.trace "test"
     log.info "test"
     log.warn "test"
     log.error "test"

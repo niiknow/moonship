@@ -3,21 +3,48 @@ cjson_safe       = require "cjson.safe"
 
 local *
 
-printLogger = (...) -> print ...
-
 COLOR_DEBUG = "[0m[44m[37m DEBUG [0m[0m" -- blue
-COLOR_TRACE = "[0m[42m[37m TRACE [0m[0m" -- green
-COLOR_INFO = "[0m[30m[30m  INFO [0m[0m" -- black
-COLOR_WARN = "[0m[43m[30m  WARN [0m[0m" -- yellow
+COLOR_INFO  = "[0m[42m[37m  INFO [0m[0m" -- green
+COLOR_WARN  = "[0m[43m[30m  WARN [0m[0m" -- yellow
 COLOR_ERROR = "[0m[41m[37m ERROR [0m[0m" -- red
-COLOR_FATAL = "[0m[45m[37m[5m FATAL [0m[0m" -- red blink
+COLOR_FATAL = "[0m[45m[37m FATAL [0m[0m" -- red blink
 
 FATAL = 10
 ERROR = 20
 WARN = 30
 INFO = 40
-TRACE = 50
-DEBUG = 60
+DEBUG = 50
+
+printLogger = (level, ...) ->
+  if ngx
+    switch level
+      when FATAL
+        ngx.log(ngx.CRIT, ...)
+      when ERROR
+        ngx.log(ngx.ERR, ...)
+      when WARN
+        ngx.log(ngx.WARN, ...)
+      when INFO
+        ngx.log(ngx.INFO, ...)
+      when DEBUG
+        ngx.log(ngx.DEBUG, ...)
+
+  else
+    lvl = COLOR_INFO
+    switch level
+      when FATAL
+        lvl = COLOR_FATAL
+      when ERROR
+        lvl = COLOR_ERROR
+      when WARN
+        lvl = COLOR_WARN
+      when INFO
+        lvl = COLOR_INFO
+      when DEBUG
+        lvl = COLOR_DEBUG
+
+    print lvl, ...
+
 
 class Log
   new: (log_level = INFO, loggers = { printLogger }) =>
@@ -39,31 +66,11 @@ class Log
 
     tostring(p)
 
-  doLogInternal: (...) =>
-    params = [@doFormat(v) for v in *{...}]
-    for _, logger in ipairs(@loggers)
-      logger unpack params
-
   doLog: (req_level, level, ...) =>
     if req_level >= level
-      lvl = "INFO"
-      switch level
-        when FATAL
-          lvl = COLOR_FATAL
-        when ERROR
-          lvl = COLOR_ERROR
-        when WARN
-          lvl = COLOR_WARN
-        when INFO
-          lvl = COLOR_INFO
-        when TRACE
-          lvl = COLOR_TRACE
-        when DEBUG
-          lvl = COLOR_DEBUG
-        else
-          lvl = tostring(level)
-
-      @doLogInternal(lvl, ...)
+      params = [@doFormat(v) for v in *{...}]
+      for _, logger in ipairs(@loggers)
+        logger level, unpack params
 
   level: (ll) =>
     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
@@ -83,8 +90,6 @@ class Log
   info: (...) =>
     @doLog(@log_level, INFO, ...)
 
-  trace: (...) =>
-    @doLog(@log_level, TRACE, ...)
 
   debug: (...) =>
     @doLog(@log_level, DEBUG, ...)
