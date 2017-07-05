@@ -36,6 +36,6 @@ make
 
 run demo local web server, then open: http://localhost:4000/hello
 ```
-moon server.moon
+moon lib/server.moon
 ```
 

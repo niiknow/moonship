@@ -446,7 +446,6 @@
     3 import query_string_encode from util
 
     3 string_upper = string.upper
-    3 http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
 
       --{
       --  body = <response body>,
@@ -963,11 +962,11 @@ File                       Hits Missed Coverage
 ./moonship/config.moon     9    4      69.23%
 ./moonship/crypto.moon     23   7      76.67%
 ./moonship/engine.moon     11   13     45.83%
-./moonship/http.moon       31   10     75.61%
+./moonship/http.moon       30   10     75.00%
 ./moonship/log.moon        5    2      71.43%
 ./moonship/logger.moon     45   24     65.22%
 ./moonship/oauth1.moon     28   10     73.68%
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/util.moon       55   25     68.75%
 -----------------------------------------------
-Total                      357  197    64.44%
+Total                      356  197    64.38%

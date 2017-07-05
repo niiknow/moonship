@@ -7,7 +7,6 @@ concat = table.concat
 local query_string_encode
 query_string_encode = util.query_string_encode
 local string_upper = string.upper
-local http_handler = (ngx and require("moonship.nginx.http")) or require("http.compat.socket")
 local request
 request = function(opts)
   if type(opts) == 'string' then

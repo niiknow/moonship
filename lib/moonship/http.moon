@@ -8,7 +8,6 @@ import concat from table
 import query_string_encode from util
 
 string_upper = string.upper
-http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
 
 --{
 --  body = <response body>,
