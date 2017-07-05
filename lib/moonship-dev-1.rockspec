@@ -40,13 +40,7 @@ dependencies = {
 build = {
 	type = "builtin",
 	modules = {
-		["moonship"] = "moonship/init.lua",
-		["moonship.engine"] = "moonship/engine.lua",
-		["moonship.util"] = "moonship/util.lua",
-		["moonship.version"] = "moonship/version.lua"
-	},
-	install = {
-		bin = { "bin/moonship" }
-	},
+		["moonship"] = "lib/moonship/init.lua"
+	}
 }
 
