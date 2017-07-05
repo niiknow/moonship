@@ -1,3 +1,6 @@
+print(package.path)
+print(package.cpath)
+package.path = package.path .. ";lib/?.lua"
 local engine = require("moonship.engine")
 local plpath = require("pl.path")
 local log = require("moonship.log")

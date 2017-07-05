@@ -5,9 +5,9 @@ LUA_INCLUDE_DIR ?= $(PREFIX)/include
 LUA_LIB_DIR ?=     $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL ?= install
 
-.PHONY: all test install build
+.PHONY: all test test-moon install build
 
-all: ;
+all: build
 
 install: all
 	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/moonship
@@ -19,4 +19,7 @@ test: all
 	PATH=$(OPENRESTY_PREFIX)/nginx/sbin:$$PATH prove -I../test-nginx/lib -r t
 
 build:
-	cd lib && $(MAKE)
+	cd lib && $(MAKE) build
+
+test-moon:
+	cd lib && $(MAKE) test
