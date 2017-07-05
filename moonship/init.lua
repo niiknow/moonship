@@ -7,7 +7,7 @@ local http = require("moonship.http")
 local oauth1 = require("moonship.oauth1")
 local sandbox = require("moonship.sandbox")
 local util = require("moonship.util")
-local version = require("moonship.version")
+local _VERSION = require("moonship.version")
 return {
   aws_auth = aws_auth,
   codecacher = codecacher,
@@ -18,5 +18,5 @@ return {
   oauth1 = oauth1,
   sandbox = sandbox,
   util = util,
-  version = version
+  _VERSION = _VERSION
 }

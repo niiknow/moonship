@@ -104,18 +104,19 @@ do
       if options == nil then
         options = { }
       end
-      local defaultOpts = {
+      local defOpts = {
         timestamp = os.time(),
         aws_host = "s3.amazonaws.com",
-        aws_region = "us-east-01",
+        aws_region = "us-east-1",
         aws_service = "s3",
         content_type = "application/x-www-form-urlencoded",
         request_method = "GET",
+        request_path = "/",
         request_body = "",
         aws_secret_access_key = "",
         aws_access_key_id = ""
       }
-      util.applyDefaults(options, defaultOpts)
+      util.applyDefaults(options, defOpts)
       options.iso_date = os.date("!%Y%m%d", options.timestamp)
       options.iso_tz = os.date("!%Y%m%dT%H%M%SZ", options.timestamp)
       self.options = options

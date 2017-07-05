@@ -100,7 +100,12 @@ require_new = function(modname)
       local loadPath = tostring(base) .. tostring(file) .. tostring(query)
       local rsp = loadCode(loadPath)
       if (rsp.code == 200) then
-        local fn, err = sandbox.loadmoon(rsp.body, loadPath, getSandboxEnv())
+        local lua_src, err = sandbox.compile_moon(rsp.body)
+        if not (lua_src) then
+          return nil, "error compiling '" .. tostring(modname) .. "' with message: " .. tostring(err)
+        end
+        local fn
+        fn, err = sandbox.loadstring_safe(lua_src, loadPath, getSandboxEnv())
         _G["__ghrawbase"] = base
         if not (fn) then
           return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
@@ -127,16 +132,21 @@ do
       if (valHolder.fileMod ~= nil) then
         opts["last_modified"] = os.date("%c", valHolder.fileMod)
       end
-      os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
       local rsp, err = self.options.codeHandler(opts)
       if (rsp.code == 200) then
-        do
-          local _with_0 = io.open(valHolder.localFullPath, "w")
-          _with_0:write(rsp.body)
-          _with_0:close()
+        if (rsp.body) then
+          local lua_src = sandbox.compile_moon(rsp.body)
+          if (lua_src) then
+            os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
+            do
+              local _with_0 = io.open(valHolder.localFullPath, "w")
+              _with_0:write(lua_src)
+              _with_0:close()
+            end
+            valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
+            valHolder.value = sandbox.loadstring_safe(lua_src, valHolder.localFullPath, getSandboxEnv(req))
+          end
         end
-        valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
-        valHolder.value = sandbox.loadmoon(rsp.body, valHolder.localFullPath, getSandboxEnv(req))
       elseif (rsp.code == 404) then
         valHolder.value = nil
         return os.remove(valHolder.localFullPath)
@@ -167,6 +177,7 @@ do
       if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - self.options.ttl))) then
         valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
         if valHolder.fileMod then
+          log.debug(tostring(valHolder.fileMod))
           valHolder.value = sandbox.loadfile_safe(valHolder.localFullPath, getSandboxEnv(req))
           valHolder.lastCheck = os.time()
           self.codeCache:set(url, valHolder)

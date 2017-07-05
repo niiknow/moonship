@@ -188,17 +188,21 @@
 ****0       loadPath = "#{base}#{file}#{query}"
     1       rsp = loadCode(loadPath)
     1       if (rsp.code == 200)
-    1         fn, err = sandbox.loadmoon rsp.body, loadPath, getSandboxEnv()
+    1         lua_src, err = sandbox.compile_moon rsp.body
 
-    1         _G["__ghrawbase"] = base
-    1         return nil, "error loading '#{modname}' with message: #{err}" unless fn
+    1         return nil, "error compiling '#{modname}' with message: #{err}" unless lua_src
 
-    1         rst, err = sandbox.exec(fn)
+    1         fn, err = sandbox.loadstring_safe lua_src, loadPath, getSandboxEnv()
+
+****0         _G["__ghrawbase"] = base
+****0         return nil, "error loading '#{modname}' with message: #{err}" unless fn
+
+    3         rst, err = sandbox.exec(fn)
     1         return nil, "error executing '#{modname}' with message: #{err}" unless rst
 
 ****0         _G[modname] = rst
 
-    2   _G[modname]
+    1   _G[modname]
 
 
       --
@@ -209,17 +213,17 @@
       --4. use ttl (in seconds) to determine how often to check remote file
       -- when we have the file, it is recommended to check every hour
       -- when we don't have the file, check every x seconds - limit by proxy
-    2 class CodeCacher
+      class CodeCacher
 
-****0   new: (opts={}) =>
-    3     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
+    2   new: (opts={}) =>
+****0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
     3     opts = util.applyDefaults(opts, defOpts)
 
           -- should not be lower than 2 minutes
           -- user should use cache clearing mechanism
-    2     opts.ttl = 120 if (opts.ttl < 120)
+    3     opts.ttl = 120 if (opts.ttl < 120)
 
-    3     opts.localBasePath = plpath.abspath(opts.app_path)
+****0     opts.localBasePath = plpath.abspath(opts.app_path)
     3     @codeCache = lru.new(opts.code_cache_size)
     3     @options = opts
 
@@ -239,85 +243,87 @@
 
       --NOTE: urlHandler should use capture to simulate debounce
 
-    3   doCheckRemoteFile: (valHolder, req) =>
-    3     opts = {
+    4   doCheckRemoteFile: (valHolder, req) =>
+****0     opts = {
     3       url: valHolder.url,
-    3       remote_path: @options.remote_path
-    3     }
+****0       remote_path: @options.remote_path
+          }
 
 
     3     opts["last_modified"] = os.date("%c", valHolder.fileMod) if (valHolder.fileMod ~= nil)
 
-    3     os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
 
           -- if remote return 200
     3     rsp, err = @options.codeHandler(opts)
 
 
-****0     if (rsp.code == 200)
+    3     if (rsp.code == 200)
             -- ngx.say(valHolder.localPath)
             -- write file, load data
+    3       if (rsp.body)
+    3         lua_src = sandbox.compile_moon rsp.body
+    3         if (lua_src)
+****0           os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
+****0           with io.open(valHolder.localFullPath, "w")
+****0             \write(lua_src)
+    3             \close()
 
-    3       with io.open(valHolder.localFullPath, "w")
-    6         \write(rsp.body)
-    2         \close()
+    3           valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+    2           valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, getSandboxEnv(req)
 
-****0       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-    1       valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv(req)
-
-    3     elseif (rsp.code == 404)
+    2     elseif (rsp.code == 404)
             -- on 404 - set nil and delete local file
-    3       valHolder.value = nil
+****0       valHolder.value = nil
     1       os.remove(valHolder.localFullPath)
 
     3   get: (req=buildRequest()) =>
-    2     url = util.path_sanitize("#{req.host}/#{req.path}")
-****0     valHolder = @codeCache\get()
+****0     url = util.path_sanitize("#{req.host}/#{req.path}")
+    3     valHolder = @codeCache\get()
 
           -- initialize valHolder
-          unless valHolder
+    3     unless valHolder
             -- strip query string and http/https://
-    4       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
-****0       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
+****0       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
+    1       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
 
             -- expect directory
-****0       fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
+    2       fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
 
             -- must store locally as index.lua
             -- this way, a path can contain other paths
-    3       localFullPath = fileBasePath .. "/index.lua"
+****0       localFullPath = fileBasePath .. "/index.lua"
 
-****0       valHolder = {
-    6         url: url,
-    3         localPath: fileBasePath,
-****0         localFullPath: localFullPath,
+    3       valHolder = {
+****0         url: url,
+****0         localPath: fileBasePath,
+    3         localFullPath: localFullPath,
 ****0         lastCheck: os.time(),
-    6         fileMod: lfs.attributes localFullPath, "modification"
+****0         fileMod: lfs.attributes localFullPath, "modification"
     6       }
 
             -- use aws s3 if available
-    2       valHolder["aws"] = @options.aws if (@options.aws)
+****0       valHolder["aws"] = @options.aws if (@options.aws)
 
-    2     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
+    6     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
             -- load file if it exists
-****0       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-    3       if valHolder.fileMod
-
-    3         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
+    5       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+    2       if valHolder.fileMod
+****0         log.debug tostring(valHolder.fileMod)
+    2         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
 
               -- set it back immediately for the next guy
               -- set next ttl
-    2         valHolder.lastCheck = os.time()
-****0         @codeCache\set url, valHolder
+    3         valHolder.lastCheck = os.time()
+    3         @codeCache\set url, valHolder
             else
               -- delete reference if file no longer exists/purged
     2         valHolder.value = nil
 
-    2       @doCheckRemoteFile(valHolder, req)
+****0       @doCheckRemoteFile(valHolder, req)
 
           -- remove from cache if not found
-****0     @codeCache\delete(url) if valHolder.value == nil
-****0     return sandbox.exec(valHolder.value) if (type(valHolder.value) == "function")
+    2     @codeCache\delete(url) if valHolder.value == nil
+    2     return sandbox.exec(valHolder.value) if (type(valHolder.value) == "function")
 
           valHolder.value
 
@@ -593,7 +599,7 @@
     5     @log_level = ll
 
 ****0   fatal: (...) =>
-   12     @doLog(@log_level, FATAL, ...)
+   14     @doLog(@log_level, FATAL, ...)
 
     1   error: (...) =>
     1     @doLog(@log_level, ERROR, ...)
@@ -797,16 +803,16 @@
     2   fn = loadstring_safe(code, name, env, wl)
     3   exec(fn)
 
-    4 loadmoon = (moon_code, name, env={}, wl) ->
+    4 compile_moon = (moon_code) ->
     4   tree, err = parse.string moon_code
     1   return nil, "Parse error: " .. err unless tree
 
     3   lua_code, err, pos = compile.tree tree
     3   return nil, compile.format_error err, pos, moon_code unless lua_code
 
-    1   loadstring_safe(lua_code, name, env, wl)
+    1   lua_code
 
-****0 { :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :loadmoon, :exec, :exec_code }
+****0 { :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :compile_moon, :exec, :exec_code }
 
 ==============================================================================
 ./moonship/util.moon
@@ -953,7 +959,7 @@ Summary
 File                       Hits Missed Coverage
 -----------------------------------------------
 ./moonship/awsauth.moon    36   18     66.67%
-./moonship/codecacher.moon 77   51     60.16%
+./moonship/codecacher.moon 75   58     56.39%
 ./moonship/config.moon     9    4      69.23%
 ./moonship/crypto.moon     23   7      76.67%
 ./moonship/engine.moon     11   13     45.83%
@@ -964,4 +970,4 @@ File                       Hits Missed Coverage
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/util.moon       55   25     68.75%
 -----------------------------------------------
-Total                      359  190    65.39%
+Total                      357  197    64.44%

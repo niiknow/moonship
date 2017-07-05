@@ -8,6 +8,6 @@ http          = require "moonship.http"
 oauth1        = require "moonship.oauth1"
 sandbox       = require "moonship.sandbox"
 util          = require "moonship.util"
-version       = require "moonship.version"
+_VERSION      = require "moonship.version"
 
-{ :aws_auth, :codecacher, :config, :crypto, :engine, :http, :oauth1, :sandbox, :util, :version }
+{ :aws_auth, :codecacher, :config, :crypto, :engine, :http, :oauth1, :sandbox, :util, :_VERSION }

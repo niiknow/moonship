@@ -28,6 +28,7 @@ init:
 	luarocks install moonscript
 	luarocks install luaposix
 	luarocks install date
+
 	luarocks install luacrypto 0.3.2-2
 	luarocks install http 0.2-0
 	luarocks install bcrypt 2.1-4

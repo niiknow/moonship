@@ -52,7 +52,7 @@ table.concat table.insert table.maxn table.pack table.remove table.sort table.un
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
-local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec, exec_code, loadmoon
+local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec, exec_code, compile_moon
 build_env = function(src_env, dest_env, wl)
   if dest_env == nil then
     dest_env = { }
@@ -133,10 +133,7 @@ exec_code = function(code, name, env, wl)
   local fn = loadstring_safe(code, name, env, wl)
   return exec(fn)
 end
-loadmoon = function(moon_code, name, env, wl)
-  if env == nil then
-    env = { }
-  end
+compile_moon = function(moon_code)
   local tree, err = parse.string(moon_code)
   if not (tree) then
     return nil, "Parse error: " .. err
@@ -146,7 +143,7 @@ loadmoon = function(moon_code, name, env, wl)
   if not (lua_code) then
     return nil, compile.format_error(err, pos, moon_code)
   end
-  return loadstring_safe(lua_code, name, env, wl)
+  return lua_code
 end
 return {
   build_env = build_env,
@@ -155,7 +152,7 @@ return {
   loadstring_safe = loadstring_safe,
   loadfile = loadfile,
   loadfile_safe = loadfile_safe,
-  loadmoon = loadmoon,
+  compile_moon = compile_moon,
   exec = exec,
   exec_code = exec_code
 }

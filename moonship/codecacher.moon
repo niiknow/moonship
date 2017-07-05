@@ -96,7 +96,11 @@ require_new = (modname) ->
       loadPath = "#{base}#{file}#{query}"
       rsp = loadCode(loadPath)
       if (rsp.code == 200)
-        fn, err = sandbox.loadmoon rsp.body, loadPath, getSandboxEnv()
+        lua_src, err = sandbox.compile_moon rsp.body
+
+        return nil, "error compiling '#{modname}' with message: #{err}" unless lua_src
+
+        fn, err = sandbox.loadstring_safe lua_src, loadPath, getSandboxEnv()
 
         _G["__ghrawbase"] = base
         return nil, "error loading '#{modname}' with message: #{err}" unless fn
@@ -156,7 +160,6 @@ class CodeCacher
 
     opts["last_modified"] = os.date("%c", valHolder.fileMod) if (valHolder.fileMod ~= nil)
 
-    os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
 
     -- if remote return 200
     rsp, err = @options.codeHandler(opts)
@@ -165,13 +168,16 @@ class CodeCacher
     if (rsp.code == 200)
       -- ngx.say(valHolder.localPath)
       -- write file, load data
+      if (rsp.body)
+        lua_src = sandbox.compile_moon rsp.body
+        if (lua_src)
+          os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
+          with io.open(valHolder.localFullPath, "w")
+            \write(lua_src)
+            \close()
 
-      with io.open(valHolder.localFullPath, "w")
-        \write(rsp.body)
-        \close()
-
-      valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-      valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv(req)
+          valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+          valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, getSandboxEnv(req)
 
     elseif (rsp.code == 404)
       -- on 404 - set nil and delete local file
@@ -210,7 +216,7 @@ class CodeCacher
       -- load file if it exists
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
       if valHolder.fileMod
-
+        log.debug tostring(valHolder.fileMod)
         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
 
         -- set it back immediately for the next guy

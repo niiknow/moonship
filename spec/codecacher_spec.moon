@@ -1,13 +1,14 @@
 codecacher = require "moonship.codecacher"
 plpath = require "pl.path"
+os.execute("mkdir -p \"" .. plpath.abspath("./t/localhost") .. "\"")
 
 describe "moonship.codecacher", ->
 
   it "myUrlHandler correctly request remote file", ->
     expected = 200
     opts = {
-      url: 'localhost/hello?yo=dawg',
-      remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
+      url: "localhost/hello?yo=dawg",
+      remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
     }
 
     res = codecacher.myUrlHandler(opts)
@@ -21,13 +22,13 @@ describe "moonship.codecacher", ->
   it "CodeCacher correctly request and cache remote file", ->
     expected = "hello from github"
     opts = {
-      app_path: plpath.abspath('./t'),
-      remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
+      app_path: plpath.abspath("./t"),
+      remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
     }
     cc = codecacher.CodeCacher(opts)
     res = cc\get({
-      host: 'localhost',
-      path: '/hello'
+      host: "localhost",
+      path: "/hello"
     })
 
     -- validate remote response

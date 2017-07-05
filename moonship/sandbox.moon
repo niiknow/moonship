@@ -120,13 +120,13 @@ exec_code = (code, name, env={}, wl) ->
   fn = loadstring_safe(code, name, env, wl)
   exec(fn)
 
-loadmoon = (moon_code, name, env={}, wl) ->
+compile_moon = (moon_code) ->
   tree, err = parse.string moon_code
   return nil, "Parse error: " .. err unless tree
 
   lua_code, err, pos = compile.tree tree
   return nil, compile.format_error err, pos, moon_code unless lua_code
 
-  loadstring_safe(lua_code, name, env, wl)
+  lua_code
 
-{ :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :loadmoon, :exec, :exec_code }
+{ :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :compile_moon, :exec, :exec_code }
