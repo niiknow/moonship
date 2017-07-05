@@ -10,68 +10,67 @@
 
     3 class AwsAuth
 ****0   new: (options={}) =>
-****0     options.timestamp       = options.timestamp      or os.time()
-    3     options.aws_host        = options.aws_host       or "s3.amazonaws.com"
-****0     options.aws_region      = options.aws_region     or "us-east-1"
-    1     options.aws_service     = options.aws_service    or "s3"
-    1     options.content_type    = options.content_type   or "application/x-www-form-urlencoded"
-    1     options.request_method  = options.request_method or "GET"
-    1     options.request_path    = options.request_path   or "/"
-    1     options.request_body    = options.request_body   or ""
-    3     options.iso_date        = os.date("!%Y%m%d", options.timestamp)
-****0     options.iso_tz          = os.date("!%Y%m%dT%H%M%SZ", options.timestamp)
-    1     @options = options
+****0     defOpts = {
+    3       timestamp: os.time(), aws_host: "s3.amazonaws.com", aws_region: "us-east-1",
+****0       aws_service: "s3", content_type: "application/x-www-form-urlencoded", request_method: "GET",
+    1       request_path: "/", request_body: "", aws_secret_access_key: "", aws_access_key_id: ""
+    1     }
+
+    1     util.applyDefaults(options, defOpts)
+    1     options.iso_date        = os.date("!%Y%m%d", options.timestamp)
+    3     options.iso_tz          = os.date("!%Y%m%dT%H%M%SZ", options.timestamp)
+****0     @options = options
 
         -- create canonical headers
         -- header must be sorted asc
 ****0   get_canonical_header: () =>
-    1     concat { "content-type:" .. @options.content_type, "host:" .. @options.aws_host, "x-amz-date:" .. @options.iso_tz }, "\n"
+****0     concat { "content-type:" .. @options.content_type, "host:" .. @options.aws_host, "x-amz-date:" .. @options.iso_tz }, "\n"
 
-    3   get_signed_request_body: () =>
-****0     params = @options.request_body
-    1     if type(@options.request_body) == "table"
+    1   get_signed_request_body: () =>
+    3     params = @options.request_body
+****0     if type(@options.request_body) == "table"
     1       sort(params)
     1       params = util.query_string_encode(params)
 
-    2     digest = @get_sha256_digest(params or "")
-****0     string.lower(digest) -- hash must be in lowercase hex string
+****0     digest = @get_sha256_digest(params or "")
+    2     string.lower(digest) -- hash must be in lowercase hex string
 
         -- get canonical request
         -- https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-    1   get_canonical_request: () =>
+****0   get_canonical_request: () =>
     1     param  = {
-    3       @options.request_method,
-****0       @options.request_path,
-    6       "", -- canonical query string
-    3       @get_canonical_header(),
-            "", -- content body?
-    5       "content-type;host;x-amz-date",
-    3       @get_signed_request_body()
-          }
-    2     canonical_request = concat(param, "\n")
+    1       @options.request_method,
+    3       @options.request_path,
+            "", -- canonical query string
+    6       @get_canonical_header(),
+    3       "", -- content body?
+            "content-type;host;x-amz-date",
+    5       @get_signed_request_body()
+    3     }
+****0     canonical_request = concat(param, "\n")
     2     @get_sha256_digest(canonical_request)
 
         -- generate sha256 from the given string
-    3   get_sha256_digest: (s) => crypto.sha256(s).hex()
-****0   hmac: (secret, message) => crypto.hmac(secret, message, crypto.sha256)
+    2   get_sha256_digest: (s) => crypto.sha256(s).hex()
+    3   hmac: (secret, message) => crypto.hmac(secret, message, crypto.sha256)
 
         -- get signing key
         -- https://docs.aws.amazon.com/general/latest/gr/sigv4-calculate-signature.html
     1   get_signing_key: () =>
-****0     k_date    = @hmac("AWS4" .. @options.aws_secret_access_key, @options.iso_date).digest()
+    1     k_date    = @hmac("AWS4" .. @options.aws_secret_access_key, @options.iso_date).digest()
 ****0     k_region  = @hmac(k_date, @options.aws_region).digest()
-    1     k_service = @hmac(k_region, @options.aws_service).digest()
+****0     k_service = @hmac(k_region, @options.aws_service).digest()
     1     @hmac(k_service, "aws4_request").digest()
 
         -- get string
-    1   get_string_to_sign: () =>
+****0   get_string_to_sign: () =>
     1     param = { @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
-****0     cred  = concat(param, "/")
-    1     req   = @get_canonical_request()
-    3     concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
+    1     cred  = concat(param, "/")
+****0     req   = @get_canonical_request()
+    1     concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
 
         -- generate signature
-    3   get_signature: () => @hmac(@get_signing_key(), @get_string_to_sign()).hex()
+    4   get_signature: () => @hmac(@get_signing_key(), @get_string_to_sign()).hex()
 
         -- get authorization string
         -- x-amz-content-sha256 required by s3
@@ -80,13 +79,13 @@
     1     concat { "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"), "SignedHeaders=content-type;host;x-amz-date", "Signature=" .. @get_signature() }, ", "
 
 ****0   get_auth_headers: () =>
-    1     { "Authorization": @get_auth_header(), "x-amz-date": @get_date_header(), "x-amz-content-sha256": @get_content_sha256(), "Content-Type": @options.content_type }
+****0     { "Authorization": @get_auth_header(), "x-amz-date": @get_date_header(), "x-amz-content-sha256": @get_content_sha256(), "Content-Type": @options.content_type }
 
         -- get the current timestamp in iso8601 basic format
-    2   get_date_header: () => @options.iso_tz
-    1   get_content_sha256: () => @get_sha256_digest("")
+****0   get_date_header: () => @options.iso_tz
+    2   get_content_sha256: () => @get_sha256_digest("")
 
-****0 { :AwsAuth }
+    3 { :AwsAuth }
 
 ==============================================================================
 ./moonship/codecacher.moon
@@ -953,7 +952,7 @@ Summary
 
 File                       Hits Missed Coverage
 -----------------------------------------------
-./moonship/awsauth.moon    41   15     73.21%
+./moonship/awsauth.moon    36   18     66.67%
 ./moonship/codecacher.moon 77   51     60.16%
 ./moonship/config.moon     9    4      69.23%
 ./moonship/crypto.moon     23   7      76.67%
@@ -965,4 +964,4 @@ File                       Hits Missed Coverage
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/util.moon       55   25     68.75%
 -----------------------------------------------
-Total                      364  187    66.06%
+Total                      359  190    65.39%
