@@ -1,6 +1,9 @@
 -- local web server demonstrates using github
 engine = require "moonship.engine"
 plpath = require "pl.path"
+log = require "moonship.log"
+
+log.level(log.DEBUG)
 
 port = 4000
 http_server = require "http.server"
@@ -21,8 +24,7 @@ reply = (myserver, stream) ->
     host: "localhost"
   }
 
-  -- Log request to stdout
-  assert(io.stdout\write(string.format('[%s] "%s %s HTTP/%g"  "%s" "%s"\n',
+  log.write {
     os.date("%d/%b/%Y:%H:%M:%S %z"),
     req.method,
     req.path,
@@ -30,7 +32,7 @@ reply = (myserver, stream) ->
     req.version,
     req.referer,
     req.user_agent
-  )))
+  }
 
   ngin = engine.Engine(myopts)
   rst = ngin\engage(req)

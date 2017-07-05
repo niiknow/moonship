@@ -99,7 +99,8 @@
 
     2 lfs           = require "lfs"
     2 lru           = require "lru"
-****0 plpath        = require "pl.path"
+    2 plpath        = require "pl.path"
+****0 log           = require "moonship.log"
 
     1 local *
 ****0 loadCode = (url) ->
@@ -127,30 +128,31 @@
         -- cleanup path, remove double forward slash and double periods from path
 ****0   full_path = "#{full_path}/index.moon"
 
+    4   log.debug "code load: #{full_path}"
+
     4   req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
-    4   req.headers["If-Modified-Since"] = opts.last_modified if opts.last_modified
+****0   req.headers["If-Modified-Since"] = opts.last_modified if opts.last_modified
 
-****0   for k, v in pairs(authHeaders) do
-    4     req.headers[k] = v
+    4   for k, v in pairs(authHeaders) do
+****0     req.headers[k] = v
 
-    4   res, err = httpc.request(req)
+    2   res, err = httpc.request(req)
 
-****0   return res unless err
+    4   return res unless err
 
-        {
-****0     code: 0,
-    4     body: err
-    4   }
+****0   log.debug "code load error: #{err}"
+
+    4   { code: 0, body: err }
 
 
 ****0 buildRequest = () ->
 ****0   if ngx
 ****0     ngx.req.read_body()
 ****0     req_wrapper = {
-    2       body: ngx.req.get_body_data(),
-****0       form: ngx.req.get_post_args(),
-    1       headers: ngx.req.get_headers(),
-****0       host: ngx.var.host,
+****0       body: ngx.req.get_body_data(),
+    2       form: ngx.req.get_post_args(),
+****0       headers: ngx.req.get_headers(),
+    1       host: ngx.var.host,
 ****0       method: ngx.req.get_method(),
 ****0       path: ngx.var.uri,
 ****0       port: ngx.var.server_port,
@@ -167,6 +169,7 @@
 
         {}
 
+
 ****0 getSandboxEnv = (req) ->
 ****0   env = {
 ****0     http: httpc,
@@ -178,24 +181,25 @@
     5   }
     5   sandbox.build_env(_G, env, sandbox.whitelist)
 
-    6 require_new = (modname) ->
-    5   unless _G[modname]
-****0     base, file, query = util.resolveGithubRaw(modname)
-    5     if base
-    2       loadPath = "#{base}#{file}#{query}"
-****0       rsp = loadCode(loadPath)
+
+    5 require_new = (modname) ->
+****0   unless _G[modname]
+    5     base, file, query = util.resolveGithubRaw(modname)
+    2     if base
+****0       loadPath = "#{base}#{file}#{query}"
+    1       rsp = loadCode(loadPath)
     1       if (rsp.code == 200)
     1         fn, err = sandbox.loadmoon rsp.body, loadPath, getSandboxEnv()
 
     1         _G["__ghrawbase"] = base
     1         return nil, "error loading '#{modname}' with message: #{err}" unless fn
 
-    2         rst, err = sandbox.exec(fn)
+    1         rst, err = sandbox.exec(fn)
     1         return nil, "error executing '#{modname}' with message: #{err}" unless rst
 
 ****0         _G[modname] = rst
 
-    1   _G[modname]
+    2   _G[modname]
 
 
       --
@@ -206,17 +210,17 @@
       --4. use ttl (in seconds) to determine how often to check remote file
       -- when we have the file, it is recommended to check every hour
       -- when we don't have the file, check every x seconds - limit by proxy
-      class CodeCacher
+    2 class CodeCacher
 
-    2   new: (opts={}) =>
-****0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
+****0   new: (opts={}) =>
+    3     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
     3     opts = util.applyDefaults(opts, defOpts)
 
           -- should not be lower than 2 minutes
           -- user should use cache clearing mechanism
-    3     opts.ttl = 120 if (opts.ttl < 120)
+    2     opts.ttl = 120 if (opts.ttl < 120)
 
-****0     opts.localBasePath = plpath.abspath(opts.app_path)
+    3     opts.localBasePath = plpath.abspath(opts.app_path)
     3     @codeCache = lru.new(opts.code_cache_size)
     3     @options = opts
 
@@ -256,56 +260,56 @@
             -- write file, load data
 
     3       with io.open(valHolder.localFullPath, "w")
-    3         \write(rsp.body)
-    6         \close()
+    6         \write(rsp.body)
+    2         \close()
 
-    4       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-****0       valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv(req)
+****0       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+    1       valHolder.value = sandbox.loadmoon rsp.body, valHolder.localFullPath, getSandboxEnv(req)
 
-****0     elseif (rsp.code == 404)
+    3     elseif (rsp.code == 404)
             -- on 404 - set nil and delete local file
-****0       valHolder.value = nil
-    3       os.remove(valHolder.localFullPath)
+    3       valHolder.value = nil
+    1       os.remove(valHolder.localFullPath)
 
-****0   get: (req=buildRequest()) =>
-    3     url = util.path_sanitize("#{req.host}/#{req.path}")
-    2     valHolder = @codeCache\get()
+    3   get: (req=buildRequest()) =>
+    2     url = util.path_sanitize("#{req.host}/#{req.path}")
+****0     valHolder = @codeCache\get()
 
           -- initialize valHolder
-    2     unless valHolder
+          unless valHolder
             -- strip query string and http/https://
-    2       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
-    4       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
+    4       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
+****0       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
 
             -- expect directory
 ****0       fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
 
             -- must store locally as index.lua
             -- this way, a path can contain other paths
-****0       localFullPath = fileBasePath .. "/index.lua"
+    3       localFullPath = fileBasePath .. "/index.lua"
 
 ****0       valHolder = {
-****0         url: url,
-    6         localPath: fileBasePath,
-    3         localFullPath: localFullPath,
+    6         url: url,
+    3         localPath: fileBasePath,
+****0         localFullPath: localFullPath,
 ****0         lastCheck: os.time(),
-****0         fileMod: lfs.attributes localFullPath, "modification"
+    6         fileMod: lfs.attributes localFullPath, "modification"
     6       }
 
             -- use aws s3 if available
-    5       valHolder["aws"] = @options.aws if (@options.aws)
+    2       valHolder["aws"] = @options.aws if (@options.aws)
 
-****0     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
+    2     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
             -- load file if it exists
-    2       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-****0       if valHolder.fileMod
+****0       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+    3       if valHolder.fileMod
 
     3         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
 
               -- set it back immediately for the next guy
               -- set next ttl
     2         valHolder.lastCheck = os.time()
-    2         @codeCache\set url, valHolder
+****0         @codeCache\set url, valHolder
             else
               -- delete reference if file no longer exists/purged
     2         valHolder.value = nil
@@ -492,6 +496,118 @@
 
     5   res
 ****0 { :request }
+
+==============================================================================
+./moonship/log.moon
+==============================================================================
+      -- implement singleton log
+    3 logger = require "moonship.logger"
+    3 log = logger()
+
+    3 {
+    3   FATAL: log\FATAL, ERROR: log\ERROR, WARN: log\WARN, INFO: log\INFO, TRACE: log\DEBUG, DEBUG: log\DEBUG,
+****0   fatal: log\fatal, error: log\error, warn: log\warn, info: log\info, trace: log\trace, debug: log\debug,
+****0   write: log\write, level: log\level, attachLogger: log\attachLogger, getLoggers: log\getLoggers, doLog: log\doLog
+    3 }
+
+==============================================================================
+./moonship/logger.moon
+==============================================================================
+
+    3 cjson_safe       = require "cjson.safe"
+
+    6 local *
+
+    3 printLogger = (...) -> print ...
+
+    3 COLOR_DEBUG = "[0m[44m[37m DEBUG [0m[0m" -- blue
+    3 COLOR_TRACE = "[0m[42m[37m TRACE [0m[0m" -- green
+    3 COLOR_INFO = "[0m[30m[30m  INFO [0m[0m" -- black
+    3 COLOR_WARN = "[0m[43m[30m  WARN [0m[0m" -- yellow
+    3 COLOR_ERROR = "[0m[41m[37m ERROR [0m[0m" -- red
+    3 COLOR_FATAL = "[0m[45m[37m[5m FATAL [0m[0m" -- red blink
+
+    3 FATAL = 10
+    3 ERROR = 20
+    3 WARN = 30
+****0 INFO = 40
+    3 TRACE = 50
+    3 DEBUG = 60
+
+      class Log
+    3   new: (log_level = INFO, loggers = { printLogger }) =>
+****0     @loggers = loggers
+****0     @log_level = log_level
+
+****0   attachLogger: (lgr) =>
+   12     @loggers[#@loggers+1] = lgr
+
+****0   getLoggers: () =>
+   12     @loggers
+
+****0   doFormat: (p) =>
+   12     if type(p) == 'table'
+    3       return cjson_safe.decode p
+
+    6     if p == nil
+****0       return "nil"
+
+    6     tostring(p)
+
+    6   doLogInternal: (...) =>
+****0     params = [@doFormat(v) for v in *{...}]
+   18     for _, logger in ipairs(@loggers)
+   12       logger unpack params
+
+   12   doLog: (req_level, level, ...) =>
+****0     if req_level >= level
+    6       lvl = "INFO"
+            switch level
+   12         when FATAL
+    6           lvl = COLOR_FATAL
+              when ERROR
+    9           lvl = COLOR_ERROR
+              when WARN
+   10           lvl = COLOR_WARN
+    6         when INFO
+    6           lvl = COLOR_INFO
+    6         when TRACE
+    1           lvl = COLOR_TRACE
+    5         when DEBUG
+    1           lvl = COLOR_DEBUG
+              else
+    1           lvl = tostring(level)
+
+    1       @doLogInternal(lvl, ...)
+
+    1   level: (ll) =>
+    1     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
+    1     ll = FATAL if ll < FATAL
+
+****0     @log_level = ll
+
+    6   fatal: (...) =>
+****0     @doLog(@log_level, FATAL, ...)
+
+****0   error: (...) =>
+    1     @doLog(@log_level, ERROR, ...)
+
+****0   warn: (...) =>
+    1     @doLog(@log_level, WARN, ...)
+
+****0   info: (...) =>
+    1     @doLog(@log_level, INFO, ...)
+
+****0   trace: (...) =>
+    1     @doLog(@log_level, TRACE, ...)
+
+****0   debug: (...) =>
+    1     @doLog(@log_level, DEBUG, ...)
+
+****0   write: (...) =>
+    1     @info ...
+
+      Log
 
 ==============================================================================
 ./moonship/oauth1.moon
@@ -833,13 +949,15 @@ Summary
 File                       Hits Missed Coverage
 -----------------------------------------------
 ./moonship/awsauth.moon    41   15     73.21%
-./moonship/codecacher.moon 72   55     56.69%
+./moonship/codecacher.moon 77   51     60.16%
 ./moonship/config.moon     9    4      69.23%
 ./moonship/crypto.moon     23   7      76.67%
 ./moonship/engine.moon     11   13     45.83%
 ./moonship/http.moon       31   10     75.61%
+./moonship/log.moon        5    2      71.43%
+./moonship/logger.moon     48   17     73.85%
 ./moonship/oauth1.moon     28   10     73.68%
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/util.moon       55   25     68.75%
 -----------------------------------------------
-Total                      309  165    65.19%
+Total                      367  180    67.09%

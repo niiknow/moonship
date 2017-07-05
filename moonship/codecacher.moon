@@ -7,6 +7,7 @@ util          = require "moonship.util"
 lfs           = require "lfs"
 lru           = require "lru"
 plpath        = require "pl.path"
+log           = require "moonship.log"
 
 local *
 loadCode = (url) ->
@@ -34,6 +35,8 @@ myUrlHandler = (opts) ->
   -- cleanup path, remove double forward slash and double periods from path
   full_path = "#{full_path}/index.moon"
 
+  log.debug "code load: #{full_path}"
+
   req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
   req.headers["If-Modified-Since"] = opts.last_modified if opts.last_modified
 
@@ -44,10 +47,9 @@ myUrlHandler = (opts) ->
 
   return res unless err
 
-  {
-    code: 0,
-    body: err
-  }
+  log.debug "code load error: #{err}"
+
+  { code: 0, body: err }
 
 
 buildRequest = () ->
@@ -74,6 +76,7 @@ buildRequest = () ->
 
   {}
 
+
 getSandboxEnv = (req) ->
   env = {
     http: httpc,
@@ -84,6 +87,7 @@ getSandboxEnv = (req) ->
     __ghrawbase: __ghrawbase
   }
   sandbox.build_env(_G, env, sandbox.whitelist)
+
 
 require_new = (modname) ->
   unless _G[modname]

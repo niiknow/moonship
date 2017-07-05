@@ -5,6 +5,7 @@ local util = require("moonship.util")
 local lfs = require("lfs")
 local lru = require("lru")
 local plpath = require("pl.path")
+local log = require("moonship.log")
 local loadCode, myUrlHandler, buildRequest, getSandboxEnv, require_new, CodeCacher
 loadCode = function(url)
   local req = {
@@ -34,6 +35,7 @@ myUrlHandler = function(opts)
     full_path = tostring(opts.remote_path) .. "/" .. tostring(full_path)
   end
   full_path = tostring(full_path) .. "/index.moon"
+  log.debug("code load: " .. tostring(full_path))
   local req = {
     url = full_path,
     method = "GET",
@@ -50,6 +52,7 @@ myUrlHandler = function(opts)
   if not (err) then
     return res
   end
+  log.debug("code load error: " .. tostring(err))
   return {
     code = 0,
     body = err

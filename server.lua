@@ -1,5 +1,7 @@
 local engine = require("moonship.engine")
 local plpath = require("pl.path")
+local log = require("moonship.log")
+log.level(log.DEBUG)
 local port = 4000
 local http_server = require("http.server")
 local http_headers = require("http.headers")
@@ -16,7 +18,15 @@ reply = function(myserver, stream)
     user_agent = req_headers:get("user-agent") or "-",
     host = "localhost"
   }
-  assert(io.stdout:write(string.format('[%s] "%s %s HTTP/%g"  "%s" "%s"\n', os.date("%d/%b/%Y:%H:%M:%S %z"), req.method, req.path, req.version, req.version, req.referer, req.user_agent)))
+  log.write({
+    os.date("%d/%b/%Y:%H:%M:%S %z"),
+    req.method,
+    req.path,
+    req.version,
+    req.version,
+    req.referer,
+    req.user_agent
+  })
   local ngin = engine.Engine(myopts)
   local rst = ngin:engage(req)
   local res_headers = http_headers.new()
