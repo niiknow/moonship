@@ -1,10 +1,10 @@
 local util = require("moonship.util")
-local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
+local aws_region = os.getenv("AWS_DEFAULT_REGION")
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local app_path = os.getenv("MOONSHIP_APP_PATH")
-local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
+local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local Config
 do
@@ -14,7 +14,10 @@ do
   _class_0 = setmetatable({
     __init = function(self, newOpts)
       if newOpts == nil then
-        newOpts = { }
+        newOpts = {
+          aws_region = 'us-east-1',
+          code_cache_size = 10000
+        }
       end
       local defaultOpts = {
         aws_region = aws_region,
