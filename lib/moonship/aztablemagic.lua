@@ -168,7 +168,7 @@ opts_cache_set = function(opts)
       cache_value = cache_value
     }
   end
-  local newopts = opts_daily(opts)
+  local newopts = opts_monthly(opts)
   newopts.pk = newopts.cache_key
   local expiresAt = os.time() + tonumber(newopts.cache_ttl)
   newopts.rk = my_max_number - expiresAt
@@ -180,6 +180,8 @@ opts_cache_set = function(opts)
   }
 end
 return {
+  azauth = azauth,
+  aztable = aztable,
   opts_name = opts_name,
   opts_daily = opts_daily,
   opts_monthly = opts_monthly,

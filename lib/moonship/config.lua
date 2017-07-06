@@ -7,6 +7,7 @@ local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local app_path = os.getenv("MOONSHIP_APP_PATH")
 local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
+local app_env = os.getenv("MOONSHIP_APP_ENV")
 local table_clone = util.table_clone
 local _data = { }
 local Config
@@ -22,8 +23,9 @@ do
     __init = function(self, newOpts)
       if newOpts == nil then
         newOpts = {
-          aws_region = 'us-east-1',
-          code_cache_size = 10000
+          aws_region = "us-east-1",
+          code_cache_size = 10000,
+          app_env = "prd"
         }
       end
       local defaultOpts = {

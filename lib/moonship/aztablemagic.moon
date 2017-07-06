@@ -83,10 +83,10 @@ opts_cache_get = (opts={ :table_name, :tenant, :env, :pk, :prefix, :cache_key })
   newopts.query = "(PartitionKey eq '#{newopts.pk}') and (RowKey le '#{newopts.rk}')"
 
 opts_cache_set = (opts={ :table_name, :tenant, :env, :pk, :rk, :prefix, :cache_ttl, :cache_key, :cache_value }) ->
-  newopts = opts_daily(opts)
+  newopts = opts_monthly(opts)
   newopts.pk = newopts.cache_key
   expiresAt = os.time() + tonumber(newopts.cache_ttl)
   newopts.rk = my_max_number  - expiresAt
   newopts.item = { RowKey: newopts.rk, value: value, ttl: cache_ttl, expAt: expiresAt }
 
-{ :opts_name, :opts_daily, :opts_monthly, :opts_yearly, :opts_cache_get, :opts_cache_set }
+{ :azauth, :aztable, :opts_name, :opts_daily, :opts_monthly, :opts_yearly, :opts_cache_get, :opts_cache_set }
