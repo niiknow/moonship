@@ -135,6 +135,4 @@ do
   _base_0.__class = _class_0
   AwsAuth = _class_0
 end
-return {
-  AwsAuth = AwsAuth
-}
+return AwsAuth

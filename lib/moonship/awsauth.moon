@@ -83,4 +83,4 @@ class AwsAuth
   get_date_header: () => @options.iso_tz
   get_content_sha256: () => @get_sha256_digest("")
 
-{ :AwsAuth }
+AwsAuth

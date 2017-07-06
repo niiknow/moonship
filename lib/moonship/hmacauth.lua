@@ -1,9 +1,23 @@
 local util = require("moonship.util")
 local crypto = require("moonship.crypto")
-local string_slit
-string_slit = util.string_slit
-local sign, verify
-sign = function(key, data, ttl, ts, algo)
+local string_slit, base64_encode, base64_decode
+string_slit, base64_encode, base64_decode = util.string_slit, util.base64_encode, util.base64_decode
+local unpack
+unpack = table.unpack
+local sign, verify, sign_custom, verify_custom
+sign = function(key, data, algo)
+  if algo == nil then
+    algo = "sha256"
+  end
+  return crypto.hmac(key, str, algo).digest()
+end
+verify = function(key, data, algo)
+  if algo == nil then
+    algo = "sha256"
+  end
+  return data == sign(key, data, algo)
+end
+sign_custom = function(key, data, ttl, ts, algo)
   if data == nil then
     data = ""
   end
@@ -16,27 +30,21 @@ sign = function(key, data, ttl, ts, algo)
   if algo == nil then
     algo = "sha256"
   end
-  local str = crypto.base64_encode(tostring(ts) .. "," .. tostring(ttl) .. "," .. tostring(data))
-  local sig = crypto.hmac(key, str, algo).hex()
-  return tostring(str) .. ":" .. tostring(sig)
+  return base64_encode(tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data) .. ":" .. sign(tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data)))
 end
-verify = function(key, payload, algo)
+verify_custom = function(key, payload, algo)
   if algo == nil then
     algo = "sha256"
   end
-  local parts = string_split(payload, ":")
-  local str = crypto.base64_decode(parts[1])
-  local sig = parts[2]
-  local ts, ttl, data = table.unpack(string_split(str))
-  if (ts < (os.time() - tonumber(ttl))) then
+  local ts, ttl, data, sig = unpack(string_split(base64_decode(payload), ":"))
+  if (ts < (os.time() - tonumber(str[2]))) then
     return {
       valid = false,
       timeout = true
     }
   end
-  local newSig = sign(key, data, ttl, ts)
   return {
-    valid = (newSig == sig)
+    valid = (sig == sign(key, data, ttl, ts))
   }
 end
 return {

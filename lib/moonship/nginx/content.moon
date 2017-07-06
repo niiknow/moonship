@@ -4,7 +4,7 @@ log =  require "moonship.log"
 
 log.level(log.DEBUG)
 
-ngin = engine.Engine {
+ngin = engine {
   useS3: true,
   plugins: {
     awsauth: require "moonship.plugins.awsauth",

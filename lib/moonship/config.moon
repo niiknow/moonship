@@ -25,4 +25,4 @@ class Config
 
   get: () => table_clone(_data)
 
-{ :Config }
+Config

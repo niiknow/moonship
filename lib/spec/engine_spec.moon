@@ -9,7 +9,7 @@ describe "moonship.engine", ->
       app_path: plpath.abs('./t'),
       remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
     }
-    ngin = engine.Engine(opts)
+    ngin = engine(opts)
     res = ngin\engage({host: 'localhost', path: '/hello'})
 
     assert.same expected, res.body
@@ -20,7 +20,7 @@ describe "moonship.engine", ->
       app_path: plpath.abs('./t'),
       remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
     }
-    ngin = engine.Engine(opts)
+    ngin = engine(opts)
     res = ngin\engage({host: 'localhost', path: '/world'})
 
     assert.same expected, res.code

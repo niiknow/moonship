@@ -33,7 +33,7 @@ myUrlHandler = (opts) ->
   if opts.aws and opts.aws.aws_s3_code_path
     -- process s3 stuff
     opts.aws.request_path = "/#{opts.aws.aws_s3_code_path}/#{full_path}"
-    aws = aws_auth.AwsAuth(opts.aws)
+    aws = aws_auth(opts.aws)
     full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
     authHeaders = aws\get_auth_headers()
   else

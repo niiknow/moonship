@@ -30,7 +30,7 @@ reply = function(myserver, stream)
     req.referer,
     req.user_agent
   })
-  local ngin = engine.Engine(myopts)
+  local ngin = engine(myopts)
   local rst = ngin:engage(req)
   local res_headers = http_headers.new()
   res_headers:append(":status", tostring(rst.code))

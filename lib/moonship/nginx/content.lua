@@ -1,7 +1,7 @@
 local engine = require("moonship.engine")
 local log = require("moonship.log")
 log.level(log.DEBUG)
-local ngin = engine.Engine({
+local ngin = engine({
   useS3 = true,
   plugins = {
     awsauth = require("moonship.plugins.awsauth"),

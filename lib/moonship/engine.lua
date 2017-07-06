@@ -54,7 +54,7 @@ do
           aws_s3_code_path = options.aws_s3_code_path
         }
       end
-      self.options = config.Config(options)
+      self.options = config(options)
       self.codeCache = codecacher.CodeCacher(self.options:get())
     end,
     __base = _base_0,
@@ -70,6 +70,4 @@ do
   _base_0.__class = _class_0
   Engine = _class_0
 end
-return {
-  Engine = Engine
-}
+return Engine

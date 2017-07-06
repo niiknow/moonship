@@ -17,7 +17,7 @@ describe "moonship.awsauth", ->
         aws_s3_code_path: "aws_s3_code_path",
         timestamp: 1499097288
     }
-    actual = aws_auth.AwsAuth(opts)\get_auth_headers()
+    actual = aws_auth(opts)\get_auth_headers()
 
     assert.same expected, actual
 
@@ -31,7 +31,7 @@ describe "moonship.awsauth", ->
 
     if (awsOpts.aws_secret_access_key)
       expected = 200
-      aws = aws_auth.AwsAuth(awsOpts)
+      aws = aws_auth(awsOpts)
       headers = aws\get_auth_headers()
       opts = {
         url: "https://s3.amazonaws.com/brick-code/test/localhost/hello/index.moon",

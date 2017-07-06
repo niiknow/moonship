@@ -34,7 +34,7 @@ myUrlHandler = function(opts)
   full_path = util.path_sanitize(tostring(full_path) .. "/index.moon")
   if opts.aws and opts.aws.aws_s3_code_path then
     opts.aws.request_path = "/" .. tostring(opts.aws.aws_s3_code_path) .. "/" .. tostring(full_path)
-    local aws = aws_auth.AwsAuth(opts.aws)
+    local aws = aws_auth(opts.aws)
     full_path = "https://" .. tostring(aws.options.aws_host) .. tostring(opts.aws.request_path)
     authHeaders = aws:get_auth_headers()
   else

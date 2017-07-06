@@ -40,7 +40,7 @@ reply = (myserver, stream) ->
     req.user_agent
   }
 
-  ngin = engine.Engine(myopts)
+  ngin = engine(myopts)
   rst = ngin\engage(req)
 
   -- Build response headers

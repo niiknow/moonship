@@ -13,7 +13,7 @@ class Engine
         aws_secret_access_key: options.aws_secret_access_key,
         aws_s3_code_path: options.aws_s3_code_path
       }
-    @options = config.Config(options)
+    @options = config(options)
     @codeCache = codecacher.CodeCacher(@options\get())
 
   handleResponse: (rst) =>
@@ -32,4 +32,4 @@ class Engine
 
     @handleResponse(rst)
 
-{ :Engine }
+Engine

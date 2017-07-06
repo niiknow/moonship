@@ -86,7 +86,7 @@
 ****0   get_date_header: () => @options.iso_tz
     4   get_content_sha256: () => @get_sha256_digest("")
 
-    3 { :AwsAuth }
+    3 AwsAuth
 
 ==============================================================================
 ./moonship/codecacher.moon
@@ -126,7 +126,7 @@
     4   if opts.aws and opts.aws.aws_s3_code_path
           -- process s3 stuff
     4     opts.aws.request_path = "/#{opts.aws.aws_s3_code_path}/#{full_path}"
-****0     aws = aws_auth.AwsAuth(opts.aws)
+****0     aws = aws_auth(opts.aws)
 ****0     full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
 ****0     authHeaders = aws\get_auth_headers()
         else
@@ -367,7 +367,7 @@
 
 ****0   get: () => table_clone(_data)
 
-****0 { :Config }
+      Config
 
 ==============================================================================
 ./moonship/crypto.moon
@@ -430,7 +430,7 @@
 ****0         aws_secret_access_key: options.aws_secret_access_key,
 ****0         aws_s3_code_path: options.aws_s3_code_path
             }
-****0     @options = config.Config(options)
+****0     @options = config(options)
 ****0     @codeCache = codecacher.CodeCacher(@options\get())
 
 ****0   handleResponse: (rst) =>
@@ -449,7 +449,7 @@
 
 ****0     @handleResponse(rst)
 
-    2 { :Engine }
+    2 Engine
 
 ==============================================================================
 ./moonship/http.moon
@@ -1110,7 +1110,7 @@ File                       Hits Missed Coverage
 -----------------------------------------------
 ./moonship/awsauth.moon    37   18     67.27%
 ./moonship/codecacher.moon 82   57     58.99%
-./moonship/config.moon     11   7      61.11%
+./moonship/config.moon     11   6      64.71%
 ./moonship/crypto.moon     22   8      73.33%
 ./moonship/engine.moon     12   12     50.00%
 ./moonship/http.moon       13   12     52.00%
@@ -1122,4 +1122,4 @@ File                       Hits Missed Coverage
 ./moonship/url.moon        38   42     47.50%
 ./moonship/util.moon       55   28     66.27%
 -----------------------------------------------
-Total                      405  249    61.93%
+Total                      405  248    62.02%

@@ -51,6 +51,4 @@ do
   _base_0.__class = _class_0
   Config = _class_0
 end
-return {
-  Config = Config
-}
+return Config
