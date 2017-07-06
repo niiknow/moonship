@@ -1,5 +1,6 @@
 
 cjson_safe       = require "cjson.safe"
+to_json          = cjson_safe.decode
 
 local *
 
@@ -59,7 +60,7 @@ class Log
 
   doFormat: (p) =>
     if type(p) == 'table'
-      return cjson_safe.encode p
+      return to_json p
 
     if p == nil
       return "nil"

@@ -1,15 +1,13 @@
 local url = require("moonship.url")
 local cjson_safe = require("cjson.safe")
-local log = require("moonship.log")
 local concat, insert, sort
 do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local url_unescape, url_escape, url_parse, url_default_port, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, clone, applyDefaults
+local url_unescape, url_escape, url_parse, url_default_port, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_deepclone
 url_unescape = function(str)
-  str = str:gsub('+', ' ')
-  return str:gsub("%%(%x%x)", function(c)
+  return str:gsub('+', ' '):gsub("%%(%x%x)", function(c)
     return string.char(tonumber(c, 16))
   end)
 end
@@ -67,12 +65,10 @@ trim = function(str, regex)
   end
 end
 path_sanitize = function(str)
-  str = tostring(str)
-  return str:gsub("[^a-zA-Z0-9.-_/]", ""):gsub("%.%.+", ""):gsub("//+", "/")
+  return (tostring(str)):gsub("[^a-zA-Z0-9.-_/\\]", ""):gsub("%.%.+", ""):gsub("//+", "/"):gsub("\\\\+", "/")
 end
 slugify = function(str)
-  str = tostring(str)
-  return (str:gsub("[%s_]+", "-"):gsub("[^%w%-]+", ""):gsub("-+", "-")):lower()
+  return ((tostring(str)):gsub("[%s_]+", "-"):gsub("[^%w%-]+", ""):gsub("-+", "-")):lower()
 end
 string_split = url.string_split
 json_encodable = function(obj, seen)
@@ -152,15 +148,6 @@ resolveGithubRaw = function(modname)
   end
   return __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 end
-clone = function(src, dest)
-  if dest == nil then
-    dest = { }
-  end
-  for k, v in pairs(src) do
-    dest[k] = v
-  end
-  return dest
-end
 applyDefaults = function(opts, defOpts)
   for k, v in pairs(defOpts) do
     if not (opts[k]) then
@@ -168,6 +155,22 @@ applyDefaults = function(opts, defOpts)
     end
   end
   return opts
+end
+table_deepclone = function(t)
+  if not (("table" == type(t) or "userdata" == type(t))) then
+    return nil
+  end
+  local ret = { }
+  for k, v in pairs(t) do
+    if "__" ~= string.sub(k, 1, 2) then
+      if "table" == type(v) or "userdata" == type(v) then
+        ret[k] = table_deepclone(v)
+      else
+        ret[k] = v
+      end
+    end
+  end
+  return ret
 end
 return {
   url_escape = url_escape,
@@ -183,7 +186,7 @@ return {
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
-  clone = clone,
+  table_deepclone = table_deepclone,
   query_string_encode = query_string_encode,
   resolveGithubRaw = resolveGithubRaw,
   applyDefaults = applyDefaults

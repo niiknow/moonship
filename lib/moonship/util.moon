@@ -1,7 +1,7 @@
 
+-- this module cannot reference log
 url              = require "moonship.url"
 cjson_safe       = require "cjson.safe"
-log              = require "moonship.log"
 
 import concat, insert, sort from table
 
@@ -9,9 +9,7 @@ import concat, insert, sort from table
 -- for ngx stuff, put it inside ngin.lua file
 local *
 
-url_unescape = (str) ->
-  str = str\gsub('+', ' ')
-  str\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
+url_unescape = (str) -> str\gsub('+', ' ')\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
 
 -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]%c])", (c) -> string.format("%%%02X", string.byte(c)))
@@ -30,6 +28,7 @@ url_default_port = (scheme) -> url.default_port(scheme)
 -- }
 url_build = (parts, includeQuery=true) ->
   out = parts.path or ""
+
   if includeQuery
     out ..= "?" .. parts.query if parts.query
     out ..= "#" .. parts.fragment if parts.fragment
@@ -52,16 +51,13 @@ trim = (str, regex="%s*") ->
   else
     str\match "^#{regex}(.-)#{regex}$"
 
-path_sanitize = (str) ->
-  str = tostring str
-  -- path should not have double quote, single quote, period
-  -- purposely left casing alone because paths are case-sensitive
-  -- finally, remove double period and make single forward slash
-  str\gsub("[^a-zA-Z0-9.-_/]", "")\gsub("%.%.+", "")\gsub("//+", "/")
+-- path should not have double quote, single quote, period
+-- purposely left casing alone because paths are case-sensitive
+-- finally, remove double period and make single forward slash
+path_sanitize = (str) -> (tostring str)\gsub("[^a-zA-Z0-9.-_/\\]", "")\gsub("%.%.+", "")\gsub("//+", "/")\gsub("\\\\+", "/")
 
-slugify = (str) ->
-  str = tostring str
-  (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
+
+slugify = (str) -> ((tostring str)\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
 string_split = url.string_split
 
@@ -121,18 +117,27 @@ resolveGithubRaw = (modname) ->
 
   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
-clone = (src, dest={}) ->
-  for k, v in pairs(src) do dest[k] = v
-  dest
-
 applyDefaults = (opts, defOpts) ->
   for k, v in pairs(defOpts) do
     opts[k] = v unless opts[k]
 
   opts
 
+table_deepclone = (t) ->
+  return nil unless ("table"==type(t) or "userdata"==type(t))
+
+  ret = {}
+  for k,v in pairs(t) do
+    if "__" ~= string.sub(k,1,2) then   -- don't clone meta
+      if "table" == type(v) or "userdata" == type(v) then
+        ret[k] = table_deepclone(v)
+      else
+        ret[k] = v
+
+  ret
+
 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-  :json_encodable, :from_json, :to_json, :clone,
+  :json_encodable, :from_json, :to_json, :table_deepclone,
   :query_string_encode, :resolveGithubRaw, :applyDefaults
 }

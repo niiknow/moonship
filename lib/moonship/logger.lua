@@ -1,4 +1,5 @@
 local cjson_safe = require("cjson.safe")
+local to_json = cjson_safe.decode
 local COLOR_DEBUG, COLOR_INFO, COLOR_WARN, COLOR_ERROR, COLOR_FATAL, FATAL, ERROR, WARN, INFO, DEBUG, printLogger, Log
 COLOR_DEBUG = "[0m[44m[37m DEBUG [0m[0m"
 COLOR_INFO = "[0m[42m[37m  INFO [0m[0m"
@@ -52,7 +53,7 @@ do
     end,
     doFormat = function(self, p)
       if type(p) == 'table' then
-        return cjson_safe.encode(p)
+        return to_json(p)
       end
       if p == nil then
         return "nil"

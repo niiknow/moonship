@@ -351,20 +351,21 @@
     1 app_path              = os.getenv("MOONSHIP_APP_PATH")
 
     1 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
-****0 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
+    1 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
 
-    1 _data = {}
+****0 table_deepclone       = util.table_deepclone
 
-    4 class Config
-    1   new: (newOpts={ aws_region: 'us-east-1', code_cache_size: 10000 }) =>
-****0     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path }
+****0 _data = {}
 
-    2     util.applyDefaults(newOpts, defaultOpts)
+    1 class Config
+****0   new: (newOpts={ aws_region: 'us-east-1', code_cache_size: 10000 }) =>
+    1     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path }
 
-    2     _data = newOpts
+****0     util.applyDefaults(newOpts, defaultOpts)
 
-****0   get: () =>
-****0     util.clone(_data)
+****0     _data = newOpts
+
+****0   get: () => table_deepclone(_data)
 
 ****0 { :Config }
 
@@ -534,19 +535,21 @@
 ==============================================================================
       -- implement singleton log
     8 logger = require "moonship.logger"
-    8 log = logger()
+
+****0 log = logger()
 
     8 {
-    8   FATAL: log\FATAL, ERROR: log\ERROR, WARN: log\WARN, INFO: log\INFO, DEBUG: log\DEBUG,
+****0   FATAL: log\FATAL, ERROR: log\ERROR, WARN: log\WARN, INFO: log\INFO, DEBUG: log\DEBUG,
 ****0   fatal: log\fatal, error: log\error, warn: log\warn, info: log\info, debug: log\debug,
-****0   write: log\write, level: log\level, attachLogger: log\attachLogger, getLoggers: log\getLoggers, doLog: log\doLog
-    8 }
+    8   write: log\write, level: log\level, attachLogger: log\attachLogger, getLoggers: log\getLoggers, doLog: log\doLog
+   16 }
 
 ==============================================================================
 ./moonship/logger.moon
 ==============================================================================
 
     8 cjson_safe       = require "cjson.safe"
+    8 to_json          = cjson_safe.decode
 
     8 local *
 
@@ -572,80 +575,78 @@
             when WARN
 ****0         ngx.log(ngx.WARN, ...)
             when INFO
-****0         ngx.log(ngx.INFO, ...)
+    5         ngx.log(ngx.INFO, ...)
     5       when DEBUG
     5         ngx.log(ngx.DEBUG, ...)
 
-    1     ngx.say level, ...
-
         else
-    3     lvl = COLOR_INFO
-    1     switch level
-    2       when FATAL
-    1         lvl = COLOR_FATAL
+    1     lvl = COLOR_INFO
+    3     switch level
+    1       when FATAL
+    2         lvl = COLOR_FATAL
     1       when ERROR
     1         lvl = COLOR_ERROR
-            when WARN
-    5         lvl = COLOR_WARN
-            when INFO
-    8         lvl = COLOR_INFO
-            when DEBUG
-    8         lvl = COLOR_DEBUG
+    1       when WARN
+****0         lvl = COLOR_WARN
+    5       when INFO
+****0         lvl = COLOR_INFO
+    8       when DEBUG
+****0         lvl = COLOR_DEBUG
 
-****0     print lvl, ...
+    8     print lvl, ...
 
 
-      class Log
+    8 class Log
 ****0   new: (log_level = INFO, loggers = { printLogger }) =>
-    8     @loggers = loggers
-****0     @log_level = log_level
+****0     @loggers = loggers
+    8     @log_level = log_level
 
-****0   attachLogger: (lgr) =>
+    5   attachLogger: (lgr) =>
 ****0     @loggers[#@loggers+1] = lgr
 
-****0   getLoggers: () =>
+    5   getLoggers: () =>
 ****0     @loggers
 
-    8   doFormat: (p) =>
-****0     if type(p) == 'table'
-   11       return cjson_safe.encode p
+    5   doFormat: (p) =>
+    8     if type(p) == 'table'
+****0       return to_json p
 
-****0     if p == nil
-    5       return "nil"
+    5     if p == nil
+****0       return "nil"
 
     5     tostring(p)
 
-****0   doLog: (req_level, level, ...) =>
-   10     if req_level >= level
-    5       params = [@doFormat(v) for v in *{...}]
-   10       for _, logger in ipairs(@loggers)
-    5         logger level, unpack params
+    5   doLog: (req_level, level, ...) =>
+****0     if req_level >= level
+   10       params = [@doFormat(v) for v in *{...}]
+    5       for _, logger in ipairs(@loggers)
+   10         logger level, unpack params
 
-    5   level: (ll) =>
-****0     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
-   10     ll = FATAL if ll < FATAL
+****0   level: (ll) =>
+    5     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
+****0     ll = FATAL if ll < FATAL
 
-****0     @log_level = ll
+    5     @log_level = ll
 
-   19   fatal: (...) =>
-****0     @doLog(@log_level, FATAL, ...)
+****0   fatal: (...) =>
+   19     @doLog(@log_level, FATAL, ...)
 
     1   error: (...) =>
-****0     @doLog(@log_level, ERROR, ...)
+    1     @doLog(@log_level, ERROR, ...)
 
-****0   warn: (...) =>
+    1   warn: (...) =>
 ****0     @doLog(@log_level, WARN, ...)
 
-    9   info: (...) =>
-****0     @doLog(@log_level, INFO, ...)
+    1   info: (...) =>
+    9     @doLog(@log_level, INFO, ...)
 
-    8   debug: (...) =>
-****0     @doLog(@log_level, DEBUG, ...)
+    1   debug: (...) =>
+    8     @doLog(@log_level, DEBUG, ...)
 
-    8   write: (...) =>
-****0     @info ...
+    1   write: (...) =>
+    8     @info ...
 
-    8 Log
+    1 Log
 
 ==============================================================================
 ./moonship/oauth1.moon
@@ -958,19 +959,17 @@
 ./moonship/util.moon
 ==============================================================================
 
+      -- this module cannot reference log
     7 url              = require "moonship.url"
-    7 cjson_safe       = require "cjson.safe"
-    7 log              = require "moonship.log"
+****0 cjson_safe       = require "cjson.safe"
 
     7 import concat, insert, sort from table
 
       -- our utils lib, nothing here should depend on ngx
       -- for ngx stuff, put it inside ngin.lua file
-****0 local *
+    3 local *
 
-    3 url_unescape = (str) ->
-    2   str = str\gsub('+', ' ')
-    3   str\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
+    3 url_unescape = (str) -> str\gsub('+', ' ')\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
 
       -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
    44 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]%c])", (c) -> string.format("%%%02X", string.byte(c)))
@@ -989,48 +988,46 @@
       -- }
     2 url_build = (parts, includeQuery=true) ->
     2   out = parts.path or ""
-    1   if includeQuery
-    1     out ..= "?" .. parts.query if parts.query
-****0     out ..= "#" .. parts.fragment if parts.fragment
 
-    1   if host = parts.host
+    1   if includeQuery
+****0     out ..= "?" .. parts.query if parts.query
+    1     out ..= "#" .. parts.fragment if parts.fragment
+
+****0   if host = parts.host
 ****0     host = "//" .. host
 ****0     host ..= ":" .. parts.port if parts.port
-****0     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
+    2     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
     2     out = "/" .. out if parts.path and out\sub(1,1) != "/"
     2     out = host .. out
 
-    2   out
+    1   out
 
 
     2 trim = (str, regex="%s*") ->
-    2   str = tostring str
+****0   str = tostring str
 
-    4   if #str > 200
+****0   if #str > 200
 ****0     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
         else
-    2     str\match "^#{regex}(.-)#{regex}$"
+****0     str\match "^#{regex}(.-)#{regex}$"
 
-****0 path_sanitize = (str) ->
-    2   str = tostring str
-        -- path should not have double quote, single quote, period
-        -- purposely left casing alone because paths are case-sensitive
-        -- finally, remove double period and make single forward slash
-    3   str\gsub("[^a-zA-Z0-9.-_/]", "")\gsub("%.%.+", "")\gsub("//+", "/")
+      -- path should not have double quote, single quote, period
+      -- purposely left casing alone because paths are case-sensitive
+      -- finally, remove double period and make single forward slash
+    3 path_sanitize = (str) -> (tostring str)\gsub("[^a-zA-Z0-9.-_/\\]", "")\gsub("%.%.+", "")\gsub("//+", "/")\gsub("\\\\+", "/")
 
-    3 slugify = (str) ->
-    3   str = tostring str
-    2   (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
+
+    3 slugify = (str) -> ((tostring str)\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
     2 string_split = url.string_split
 
-    7 json_encodable = (obj, seen={}) ->
+    2 json_encodable = (obj, seen={}) ->
 ****0   switch type obj
-   15     when "table"
-   15       unless seen[obj]
-    7         seen[obj] = true
-****0         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
-    5     when "function", "userdata", "thread"
+    7     when "table"
+****0       unless seen[obj]
+   15         seen[obj] = true
+    7         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
+****0     when "function", "userdata", "thread"
     5       nil
           else
     7       obj
@@ -1080,21 +1077,30 @@
 
    26   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
-   20 clone = (src, dest={}) ->
-   20   for k, v in pairs(src) do dest[k] = v
-        dest
-
-****0 applyDefaults = (opts, defOpts) ->
-****0   for k, v in pairs(defOpts) do
+   20 applyDefaults = (opts, defOpts) ->
+   20   for k, v in pairs(defOpts) do
 ****0     opts[k] = v unless opts[k]
 
         opts
 
-   40 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
-****0   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-   40   :json_encodable, :from_json, :to_json, :clone,
-   20   :query_string_encode, :resolveGithubRaw, :applyDefaults
-   20 }
+****0 table_deepclone = (t) ->
+   20   return nil unless ("table"==type(t) or "userdata"==type(t))
+
+****0   ret = {}
+   40   for k,v in pairs(t) do
+****0     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
+   40       if "table" == type(v) or "userdata" == type(v) then
+   20         ret[k] = table_deepclone(v)
+            else
+****0         ret[k] = v
+
+        ret
+
+    6 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
+    7   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
+****0   :json_encodable, :from_json, :to_json, :table_deepclone,
+    1   :query_string_encode, :resolveGithubRaw, :applyDefaults
+    1 }
 
 ==============================================================================
 Summary
@@ -1104,16 +1110,16 @@ File                       Hits Missed Coverage
 -----------------------------------------------
 ./moonship/awsauth.moon    37   18     67.27%
 ./moonship/codecacher.moon 82   57     58.99%
-./moonship/config.moon     13   5      72.22%
+./moonship/config.moon     11   7      61.11%
 ./moonship/crypto.moon     22   8      73.33%
 ./moonship/engine.moon     12   12     50.00%
 ./moonship/http.moon       13   12     52.00%
 ./moonship/httpsocket.moon 12   6      66.67%
-./moonship/log.moon        5    2      71.43%
-./moonship/logger.moon     38   28     57.58%
+./moonship/log.moon        4    3      57.14%
+./moonship/logger.moon     48   22     68.57%
 ./moonship/oauth1.moon     32   8      80.00%
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/url.moon        38   42     47.50%
-./moonship/util.moon       61   23     72.62%
+./moonship/util.moon       55   28     66.27%
 -----------------------------------------------
-Total                      404  247    62.06%
+Total                      405  249    61.93%

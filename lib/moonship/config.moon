@@ -11,6 +11,8 @@ app_path              = os.getenv("MOONSHIP_APP_PATH")
 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
 
+table_deepclone       = util.table_deepclone
+
 _data = {}
 
 class Config
@@ -21,7 +23,6 @@ class Config
 
     _data = newOpts
 
-  get: () =>
-    util.clone(_data)
+  get: () => table_deepclone(_data)
 
 { :Config }

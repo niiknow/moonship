@@ -1,10 +1,14 @@
 engine = require "moonship.engine"
-ngin = engine.Engine({useS3: true})
-rst = ngin\engage()
 
 log =  require "moonship.log"
 
+log.level(log.DEBUG)
+
+ngin = engine.Engine({useS3: true})
+rst = ngin\engage()
+
 if rst
+  log.debug "hi"
   ngx.status = rst.code
 
   -- send headers

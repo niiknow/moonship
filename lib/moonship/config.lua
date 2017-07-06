@@ -7,13 +7,14 @@ local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local app_path = os.getenv("MOONSHIP_APP_PATH")
 local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
+local table_deepclone = util.table_deepclone
 local _data = { }
 local Config
 do
   local _class_0
   local _base_0 = {
     get = function(self)
-      return util.clone(_data)
+      return table_deepclone(_data)
     end
   }
   _base_0.__index = _base_0

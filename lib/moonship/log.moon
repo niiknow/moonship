@@ -1,5 +1,6 @@
 -- implement singleton log
 logger = require "moonship.logger"
+
 log = logger()
 
 {
