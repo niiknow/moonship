@@ -18,7 +18,7 @@ luarocks install lua-resty-http 0.08-0
 luarocks install moonscript
 luarocks install luacrypto 0.3.2-2
 luarocks install bcrypt 2.1-4
-luarocks install penlight 1.4.1
+luarocks install lpath 0.1.0-1 
 luarocks install lua-lru 1.0-1
 luarocks install basexx 0.1.0-1
 

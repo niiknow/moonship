@@ -6,7 +6,7 @@ package.path = package.path .. ";lib/?.lua"
 
 -- local web server demonstrates using github
 engine = require "moonship.engine"
-plpath = require "pl.path"
+plpath = require "path"
 log = require "moonship.log"
 
 log.level(log.DEBUG)
@@ -76,6 +76,6 @@ runserver = (opts) ->
   assert(myserver\loop())
 
 runserver  {
-  app_path: plpath.abspath('./t'),
+  app_path: plpath.abs('./t'),
   remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
 }

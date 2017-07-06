@@ -1,12 +1,12 @@
 engine = require "moonship.engine"
-plpath = require "pl.path"
+plpath = require "path"
 
 describe "moonship.engine", ->
 
   it "successfully engage engine", ->
     expected = "hello from github"
     opts = {
-      app_path: plpath.abspath('./t'),
+      app_path: plpath.abs('./t'),
       remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
     }
     ngin = engine.Engine(opts)
@@ -17,7 +17,7 @@ describe "moonship.engine", ->
   it "fail engage engine with bad path", ->
     expected = 404
     opts = {
-      app_path: plpath.abspath('./t'),
+      app_path: plpath.abs('./t'),
       remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
     }
     ngin = engine.Engine(opts)

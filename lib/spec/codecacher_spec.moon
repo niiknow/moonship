@@ -1,6 +1,6 @@
 codecacher = require "moonship.codecacher"
-plpath = require "pl.path"
-os.execute("mkdir -p \"" .. plpath.abspath("./t/localhost") .. "\"")
+plpath = require "path"
+os.execute("mkdir -p \"" .. plpath.abs("./t/localhost") .. "\"")
 
 describe "moonship.codecacher", ->
 
@@ -22,7 +22,7 @@ describe "moonship.codecacher", ->
   it "CodeCacher correctly request and cache remote file", ->
     expected = "hello from github"
     opts = {
-      app_path: plpath.abspath("./t"),
+      app_path: plpath.abs("./t"),
       remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
     }
     cc = codecacher.CodeCacher(opts)

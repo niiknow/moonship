@@ -2,7 +2,7 @@ print(package.path)
 print(package.cpath)
 package.path = package.path .. ";lib/?.lua"
 local engine = require("moonship.engine")
-local plpath = require("pl.path")
+local plpath = require("path")
 local log = require("moonship.log")
 log.level(log.DEBUG)
 local port = 4000
@@ -56,6 +56,6 @@ runserver = function(opts)
   return assert(myserver:loop())
 end
 return runserver({
-  app_path = plpath.abspath('./t'),
+  app_path = plpath.abs('./t'),
   remote_path = "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
 })

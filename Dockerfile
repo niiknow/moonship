@@ -123,9 +123,9 @@ RUN cd /usr/local/openresty/luajit/bin/ \
     && ./luarocks install lua-zlib 1.1-0 \
     && ./luarocks install luacrypto 0.3.2-2 \
     && ./luarocks install bcrypt 2.1-4 \
-    && ./luarocks install penlight 1.4.1 \
     && ./luarocks install lua-lru 1.0-1 \
     && ./luarocks install basexx 0.1.0-1 \
+    && ./luarocks install lpath 0.1.0-1  \
     && ./luarocks install --server=http://luarocks.org/dev ltn12 \
 
     && chown -R www-data:www-data /app; chmod -R 755 /app \

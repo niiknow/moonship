@@ -6,10 +6,15 @@ util          = require "moonship.util"
 
 lfs           = require "lfs"
 lru           = require "lru"
-plpath        = require "pl.path"
+plpath        = require "path"
 log           = require "moonship.log"
+fs            = require "path.fs"
 
 local *
+
+mkdirp = (p) ->
+  fs.makedirs p
+
 loadCode = (url) ->
   req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
   res, err = httpc.request(req)
@@ -129,7 +134,7 @@ class CodeCacher
     -- user should use cache clearing mechanism
     opts.ttl = 120 if (opts.ttl < 120)
 
-    opts.localBasePath = plpath.abspath(opts.app_path)
+    opts.localBasePath = plpath.abs(opts.app_path)
     @codeCache = lru.new(opts.code_cache_size)
     @options = opts
 
@@ -172,13 +177,14 @@ class CodeCacher
       if (rsp.body)
         lua_src = sandbox.compile_moon rsp.body
         if (lua_src)
-          os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
-          with io.open(valHolder.localFullPath, "w")
-            \write(lua_src)
-            \close()
+          mkdirp(valHolder.localPath)
+          file = io.open(valHolder.localFullPath, "w")
+          if file
+            file\write(lua_src)
+            file\close()
 
-          valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-          valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, getSandboxEnv(req)
+            valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+            valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, getSandboxEnv(req)
 
     elseif (rsp.code == 404)
       -- on 404 - set nil and delete local file

@@ -4,9 +4,13 @@ local sandbox = require("moonship.sandbox")
 local util = require("moonship.util")
 local lfs = require("lfs")
 local lru = require("lru")
-local plpath = require("pl.path")
+local plpath = require("path")
 local log = require("moonship.log")
-local loadCode, myUrlHandler, buildRequest, getSandboxEnv, require_new, CodeCacher
+local fs = require("path.fs")
+local mkdirp, loadCode, myUrlHandler, buildRequest, getSandboxEnv, require_new, CodeCacher
+mkdirp = function(p)
+  return fs.makedirs(p)
+end
 loadCode = function(url)
   local req = {
     url = url,
@@ -141,14 +145,14 @@ do
         if (rsp.body) then
           local lua_src = sandbox.compile_moon(rsp.body)
           if (lua_src) then
-            os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
-            do
-              local _with_0 = io.open(valHolder.localFullPath, "w")
-              _with_0:write(lua_src)
-              _with_0:close()
+            mkdirp(valHolder.localPath)
+            local file = io.open(valHolder.localFullPath, "w")
+            if file then
+              file:write(lua_src)
+              file:close()
+              valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
+              valHolder.value = sandbox.loadstring_safe(lua_src, valHolder.localFullPath, getSandboxEnv(req))
             end
-            valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
-            valHolder.value = sandbox.loadstring_safe(lua_src, valHolder.localFullPath, getSandboxEnv(req))
           end
         end
       elseif (rsp.code == 404) then
@@ -215,7 +219,7 @@ do
       if (opts.ttl < 120) then
         opts.ttl = 120
       end
-      opts.localBasePath = plpath.abspath(opts.app_path)
+      opts.localBasePath = plpath.abs(opts.app_path)
       self.codeCache = lru.new(opts.code_cache_size)
       self.options = opts
     end,
