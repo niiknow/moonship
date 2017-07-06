@@ -16,7 +16,7 @@ sharedkeylite = function(opts)
     }
   end
   opts.date = opts.date or date_utc()
-  opts.sig = base64_encode(opts.account_key, tostring(opts.date) .. "\n/" .. tostring(opts.account_name) .. "/" .. tostring(opts.table_name))
+  opts.sig = hmacauth.sign(base64_decode(opts.account_key), tostring(opts.date) .. "\n/" .. tostring(opts.account_name) .. "/" .. tostring(opts.table_name))
   return opts
 end
 return {
