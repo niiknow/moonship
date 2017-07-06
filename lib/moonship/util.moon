@@ -1,5 +1,5 @@
 
-url              = require "socket.url"
+url              = require "moonship.url"
 cjson_safe       = require "cjson.safe"
 tablex           = require "pl.tablex"
 
@@ -9,12 +9,16 @@ import concat, insert, sort from table
 -- for ngx stuff, put it inside ngin.lua file
 local *
 
-url_unescape = (str) -> url.unescape(str)
+url_unescape = (str) ->
+  str = str\gsub('+', ' ')
+  str\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
 
 -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
-url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]])", (c) -> string.format("%%%02X", string.byte(c)))
+url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]%c])", (c) -> string.format("%%%02X", string.byte(c)))
 
-url_parse = (str) -> url.parse(str)
+url_parse = (myurl) -> url.parse(myurl)
+
+url_default_port = (scheme) -> url.default_port(scheme)
 
 -- {
 --     [path] = "/test"
@@ -59,12 +63,7 @@ slugify = (str) ->
   str = tostring str
   (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
-string_split = (str, sep, dest={}) ->
-  str = tostring str
-  for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
-    insert(dest, str)
-
-  dest
+string_split = url.string_split
 
 json_encodable = (obj, seen={}) ->
   switch type obj
@@ -127,7 +126,7 @@ applyDefaults = (opts, defOpts) ->
     opts[k] = v unless opts[k]
   opts
 
-{ :url_escape, :url_unescape, :url_parse, :url_build,
+{ :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
   :json_encodable, :from_json, :to_json,
   :query_string_encode, :resolveGithubRaw, :applyDefaults

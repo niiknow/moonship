@@ -19,11 +19,13 @@ tests = {
 
   {
     ->
-      util.url_parse "https://example.com:443/hello/?cruel=world#yes"
+      util.url_parse "https://hi:ho@example.com:443/hello/?cruel=world#yes"
 
     {
       "authority": 'example.com:443',
       "fragment": 'yes',
+      "user": "hi"
+      "password": "ho",
       "host": 'example.com',
       "path": '/hello/',
       "port": '443',

@@ -1,8 +1,8 @@
-
+log               = require "moonship.log"
 util              = require "moonship.util"
 crypto            = require "moonship.crypto"
 
-import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build from util
+import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
 import sort, concat from table
 
 escape_uri        = url_escape
@@ -32,9 +32,12 @@ sign = (body, method, query, base_uri, oauth, parameters) ->
   encode_base64(digest_hmac_sha1(secret(oauth), oauth.stringToSign))
 
 create_signature = (opts, oauth) ->
+
   -- parse url for query string
   parts = url_parse(opts.url)
+  parts.port = nil if (url_default_port(parts.scheme) == parts.port)
   base_uri = url_build(parts, false)
+
 
   -- allow for unit testing by passing in timestamp
   timestamp = oauth['timestamp'] or os.time()

@@ -15,6 +15,5 @@ describe "moonship.oauth1", ->
         timestamp: 1499097288
     }
     actual = oauth1.create_signature opts, oauth
-
     assert.same expected, actual
 

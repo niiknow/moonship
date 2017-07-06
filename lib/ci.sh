@@ -3,24 +3,19 @@ set -e
 set -o pipefail
 set -o xtrace
 
-luarocks-5.1 install busted
-luarocks-5.1 install lpeg 0.10.2
-luarocks-5.1 install moonscript
-luarocks-5.1 install luaposix
-luarocks-5.1 install date
+luarocks install busted
+luarocks install lua-resty-jwt 0.1.10-1
+luarocks install moonscript
+luarocks install httpclient 0.1.0-8
+luarocks install lua-zlib 1.1-0
+luarocks install luacrypto 0.3.2-2
+luarocks install bcrypt 2.1-4
+luarocks install penlight 1.4.1
+luarocks install lua-lru 1.0-1
 
-luarocks-5.1 install luacrypto 0.3.2-2
-luarocks-5.1 install http 0.2-0
-luarocks-5.1 install bcrypt 2.1-4
-luarocks-5.1 install md5 1.2-1
-luarocks-5.1 install penlight 1.4.1
-luarocks-5.1 install lua-resty-http 0.08-0
-luarocks-5.1 install lua-lru 1.0-1
-luarocks-5.1 install lua-resty-jwt 0.1.10-1
+luarocks make
 
-luarocks-5.1 make
-
-eval $(luarocks-5.1 path)
+eval $(luarocks path)
 
 # setup busted
 cat $(which busted) | sed 's/\/usr\/bin\/lua5\.1/\/usr\/bin\/luajit/' > busted

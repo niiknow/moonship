@@ -108,7 +108,7 @@ RUN \
     && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
     && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log \
     && echo "\n\n* soft nofile 1000000\n* hard nofile 1000000\n" >> /etc/security/limits.conf \
-    && mkdir -p /app/lib/sngin
+    && mkdir -p /app/lib/moonship
 
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin/:/usr/local/openresty/nginx/sbin/:/usr/local/openresty/bin/ \
@@ -117,16 +117,9 @@ ENV PATH=$PATH:/usr/local/openresty/luajit/bin/:/usr/local/openresty/nginx/sbin/
 ADD ./dockerfiles /
 ADD ./lib/moonship /app/lib/moonship/
 RUN cd /usr/local/openresty/luajit/bin/ \
-# openresty stuff
     && ./luarocks install lua-resty-jwt 0.1.10-1 \
-
-# moonscript stuff
-		&& ./luarocks install lpeg \
-		&& ./luarocks install moonscript \
-		&& ./luarocks install luaposix \
-		&& ./luarocks install date \
-
-# moonship stuff
+    && ./luarocks install moonscript \
+    && ./luarocks install httpclient 0.1.0-8 \
     && ./luarocks install lua-zlib 1.1-0 \
     && ./luarocks install luacrypto 0.3.2-2 \
     && ./luarocks install bcrypt 2.1-4 \

@@ -1,10 +1,15 @@
-engine = require "moonscript.engine"
+engine = require "moonship.engine"
 ngin = engine.Engine()
 rst = ngin\engage(ngx.req)
 
--- send headers
-if (rst.headers)
-  for v, k in ipairs rst.headers do
-    ngx.header[k] = v
+if rst
+  ngx.status = rst.code
 
-ngx.say rst.body if (rst.body)
+  -- send headers
+  if (rst.headers)
+    for v, k in ipairs rst.headers do
+      ngx.header[k] = v
+
+  ngx.say rst.body if (rst.body)
+
+  ngx.exit(rst.code)

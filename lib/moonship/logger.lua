@@ -52,7 +52,7 @@ do
     end,
     doFormat = function(self, p)
       if type(p) == 'table' then
-        return cjson_safe.decode(p)
+        return cjson_safe.encode(p)
       end
       if p == nil then
         return "nil"

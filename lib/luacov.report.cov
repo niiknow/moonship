@@ -505,30 +505,30 @@
 ./moonship/log.moon
 ==============================================================================
       -- implement singleton log
-    3 logger = require "moonship.logger"
-    3 log = logger()
+    8 logger = require "moonship.logger"
+    8 log = logger()
 
-    3 {
-    3   FATAL: log\FATAL, ERROR: log\ERROR, WARN: log\WARN, INFO: log\INFO, DEBUG: log\DEBUG,
+    8 {
+    8   FATAL: log\FATAL, ERROR: log\ERROR, WARN: log\WARN, INFO: log\INFO, DEBUG: log\DEBUG,
 ****0   fatal: log\fatal, error: log\error, warn: log\warn, info: log\info, debug: log\debug,
 ****0   write: log\write, level: log\level, attachLogger: log\attachLogger, getLoggers: log\getLoggers, doLog: log\doLog
-    3 }
+    8 }
 
 ==============================================================================
 ./moonship/logger.moon
 ==============================================================================
 
-    3 cjson_safe       = require "cjson.safe"
+    8 cjson_safe       = require "cjson.safe"
 
-    3 local *
+    8 local *
 
-    3 COLOR_DEBUG = "[0m[44m[37m DEBUG [0m[0m" -- blue
-    3 COLOR_INFO  = "[0m[42m[37m  INFO [0m[0m" -- green
-    3 COLOR_WARN  = "[0m[43m[30m  WARN [0m[0m" -- yellow
-    3 COLOR_ERROR = "[0m[41m[37m ERROR [0m[0m" -- red
-    3 COLOR_FATAL = "[0m[45m[37m FATAL [0m[0m" -- red blink
+    8 COLOR_DEBUG = "[0m[44m[37m DEBUG [0m[0m" -- blue
+    8 COLOR_INFO  = "[0m[42m[37m  INFO [0m[0m" -- green
+    8 COLOR_WARN  = "[0m[43m[30m  WARN [0m[0m" -- yellow
+    8 COLOR_ERROR = "[0m[41m[37m ERROR [0m[0m" -- red
+    8 COLOR_FATAL = "[0m[45m[37m FATAL [0m[0m" -- red blink
 
-    3 FATAL = 10
+    8 FATAL = 10
 ****0 ERROR = 20
     5 WARN = 30
 ****0 INFO = 40
@@ -559,16 +559,16 @@
 ****0         lvl = COLOR_WARN
     5       when INFO
 ****0         lvl = COLOR_INFO
-    3       when DEBUG
+    8       when DEBUG
 ****0         lvl = COLOR_DEBUG
 
-    3     print lvl, ...
+    8     print lvl, ...
 
 
-    3 class Log
+    8 class Log
 ****0   new: (log_level = INFO, loggers = { printLogger }) =>
 ****0     @loggers = loggers
-    3     @log_level = log_level
+    8     @log_level = log_level
 
     5   attachLogger: (lgr) =>
 ****0     @loggers[#@loggers+1] = lgr
@@ -577,8 +577,8 @@
 ****0     @loggers
 
     5   doFormat: (p) =>
-    3     if type(p) == 'table'
-****0       return cjson_safe.decode p
+    8     if type(p) == 'table'
+****0       return cjson_safe.encode p
 
     5     if p == nil
 ****0       return "nil"
@@ -598,7 +598,7 @@
     5     @log_level = ll
 
 ****0   fatal: (...) =>
-   14     @doLog(@log_level, FATAL, ...)
+   19     @doLog(@log_level, FATAL, ...)
 
     1   error: (...) =>
     1     @doLog(@log_level, ERROR, ...)
@@ -607,73 +607,76 @@
 ****0     @doLog(@log_level, WARN, ...)
 
     1   info: (...) =>
-    4     @doLog(@log_level, INFO, ...)
+    9     @doLog(@log_level, INFO, ...)
 
 
-    3   debug: (...) =>
+    8   debug: (...) =>
 ****0     @doLog(@log_level, DEBUG, ...)
 
-    3   write: (...) =>
+    8   write: (...) =>
 ****0     @info ...
 
-    3 Log
+    8 Log
 
 ==============================================================================
 ./moonship/oauth1.moon
 ==============================================================================
-
+    4 log               = require "moonship.log"
     4 util              = require "moonship.util"
     4 crypto            = require "moonship.crypto"
 
-    4 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build from util
-****0 import sort, concat from table
+    4 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
+    4 import sort, concat from table
 
     4 escape_uri        = url_escape
-****0 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
-    4 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
+    4 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
+****0 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
     4 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
     4 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
 
-    2 local *
+    4 local *
 
     4 normalizeParameters = (parameters, body, query) ->
-    2   items = { query_string_encode(parameters, "&") }
+    4   items = { query_string_encode(parameters, "&") }
 
     4   string_split(body, "&", items) if body
-****0   string_split(query, "&", items) if query
+    4   string_split(query, "&", items) if query
 
-    2   sort(items)
-****0   concat(items, "&")
+    1   sort(items)
+    2   concat(items, "&")
 
-****0 calculateBaseString = (body, method, query, base_uri, parameters) ->
+    1 calculateBaseString = (body, method, query, base_uri, parameters) ->
 ****0   escape_uri(method) .. "&" .. escape_uri(base_uri) .. "&" .. escape_uri(normalizeParameters(parameters, body, query))
 
     1 secret = (oauth) -> unescape_uri(oauth["consumersecret"]) .. "&" .. unescape_uri(oauth["tokensecret"] or "")
 
-    1 sign = (body, method, query, base_uri, oauth, parameters) ->
+****0 sign = (body, method, query, base_uri, oauth, parameters) ->
     1   oauth.stringToSign = calculateBaseString(body, method, query, base_uri, parameters)
-    4   encode_base64(digest_hmac_sha1(secret(oauth), oauth.stringToSign))
+    1   encode_base64(digest_hmac_sha1(secret(oauth), oauth.stringToSign))
 
-    5 create_signature = (opts, oauth) ->
+****0 create_signature = (opts, oauth) ->
+
         -- parse url for query string
 ****0   parts = url_parse(opts.url)
-    3   base_uri = url_build(parts, false)
+    3   parts.port = nil if (url_default_port(parts.scheme) == parts.port)
+    4   base_uri = url_build(parts, false)
+
 
         -- allow for unit testing by passing in timestamp
-    2   timestamp = oauth['timestamp'] or os.time()
-    3   parameters = {
-    4     oauth_consumer_key: oauth["consumerkey"],
-****0     oauth_signature_method: "HMAC-SHA1",
+    4   timestamp = oauth['timestamp'] or os.time()
+****0   parameters = {
+    1     oauth_consumer_key: oauth["consumerkey"],
+    1     oauth_signature_method: "HMAC-SHA1",
     1     oauth_timestamp: timestamp,
-    1     oauth_nonce: digest_md5(timestamp .. ""),
+****0     oauth_nonce: digest_md5(timestamp .. ""),
     1     oauth_version: oauth["version"] or "1.0"
     1   }
 
-****0   parameters["oauth_token"] = oauth["accesstoken"] if oauth["accesstoken"]
-    1   parameters["oauth_callback"] = unescape_uri(oauth["callback"]) if oauth["callback"]
-    2   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', parts.query, base_uri, oauth, parameters)
+    1   parameters["oauth_token"] = oauth["accesstoken"] if oauth["accesstoken"]
+****0   parameters["oauth_callback"] = unescape_uri(oauth["callback"]) if oauth["callback"]
+    1   parameters["oauth_signature"] = sign(opts["body"], opts["method"] or 'GET', parts.query, base_uri, oauth, parameters)
 
-****0   "OAuth " .. query_string_encode(parameters, ",", "\"")
+    1   "OAuth " .. query_string_encode(parameters, ",", "\"")
 
     1 { :create_signature }
 
@@ -814,10 +817,119 @@
 ****0 { :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :compile_moon, :exec, :exec_code }
 
 ==============================================================================
+./moonship/url.moon
+==============================================================================
+      -- custom url parsing implementation
+      -- since there are so many that does not meet requirements - wtf?
+
+    7 log = require "moonship.log"
+
+****0 import insert from table
+
+****0 local *
+
+    7 re_match = string.match
+****0 tonumber = tonumber
+    8 setmetatable = setmetatable
+
+   12 string_split = (str, sep, dest={}) ->
+****0   str = tostring str
+    8   for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
+    7     insert(dest, str)
+
+        dest
+
+****0 ports = {
+****0   acap: 674,
+****0   cap: 1026,
+****0   dict: 2628,
+****0   ftp: 21,
+****0   gopher: 70,
+****0   http: 80,
+****0   https: 443,
+****0   iax: 4569,
+****0   icap: 1344,
+****0   imap: 143,
+****0   ipp: 631,
+****0   ldap: 389,
+****0   mtqp: 1038,
+****0   mupdate: 3905,
+****0   news: 2009,
+****0   nfs: 2049,
+****0   nntp: 119,
+****0   rtsp: 554,
+****0   sip: 5060,
+****0   snmp: 161,
+****0   telnet: 23,
+****0   tftp: 69,
+****0   vemmi: 575,
+****0   afs: 1483,
+****0   jms: 5673,
+****0   rsync: 873,
+****0   prospero: 191,
+    2   videotex: 516
+    2 }
+
+    7 default_port = (scheme) -> tostring(ports[scheme]) if ports[scheme]
+
+    2 split = (url, protocol="https?") ->
+****0   return nil, 'missing url parameter' unless url
+
+    2   scheme, hostp, path, queryp = string.match(url, "(%a*)://([^/]*)([^?#]*)?*(.*)")
+****0   user, pass, port, query, authority, host, fragment = nil, nil, nil, nil, nil, nil, nil
+
+    2   return nil, 'missing scheme info' unless scheme
+    2   return nil, 'missing host info' unless hostp
+
+        -- parse user pass
+****0   if hostp
+    2     m = string_split(hostp, "@")
+****0     if m[2]
+****0       n = string_split(m[1], ":")
+    2       user = n[1]
+    2       pass = n[2]
+    2       hostp = m[2]
+
+          -- parse port
+    1     authority = hostp
+    1     m = string_split(hostp, ":")
+****0     host = m[1]
+    2     port = m[2]
+
+    2   if queryp
+    2     m = string_split(queryp, "#")
+****0     query = m[1]
+    2     fragment = m[2]
+
+    2   if port == nil or port == ""
+    2     port = default_port(scheme)
+
+    2   return { scheme, user or false, pass or false, host, port, path or nil, query or nil, fragment or nil, authority }
+
+****0 parse = (url, protocol="https?") ->
+    2   parts, err = split(url, protocol)
+
+    2   return parts, err if err
+
+    2   {
+    2     scheme: parts[1] or nil,
+    2     user: parts[2] or nil,
+    2     password: parts[3] or nil,
+    2     host: parts[4] or nil,
+****0     port: parts[5] or nil,
+    2     path: parts[6] or nil,
+    7     query: parts[7] or nil,
+****0     fragment: parts[8] or nil,
+    2     authority: parts[9] or nil
+    2   }
+
+    2 { :split, :parse, :default_port, :string_split }
+
+==============================================================================
 ./moonship/util.moon
 ==============================================================================
 
-    7 url              = require "socket.url"
+    7 url              = require "moonship.url"
     7 cjson_safe       = require "cjson.safe"
     7 tablex           = require "pl.tablex"
 
@@ -827,12 +939,16 @@
       -- for ngx stuff, put it inside ngin.lua file
 ****0 local *
 
-    7 url_unescape = (str) -> url.unescape(str)
+    3 url_unescape = (str) ->
+    2   str = str\gsub('+', ' ')
+    3   str\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
 
       -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
-   23 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]])", (c) -> string.format("%%%02X", string.byte(c)))
+   44 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]%c])", (c) -> string.format("%%%02X", string.byte(c)))
 
-    7 url_parse = (str) -> url.parse(str)
+   44 url_parse = (myurl) -> url.parse(myurl)
+
+****0 url_default_port = (scheme) -> url.default_port(scheme)
 
       -- {
       --     [path] = "/test"
@@ -842,114 +958,109 @@
       --     [fragment] = "!hash_bang"
       --     [query] = "hello=world"
       -- }
-    1 url_build = (parts, includeQuery=true) ->
-    1   out = parts.path or ""
-****0   if includeQuery
+    2 url_build = (parts, includeQuery=true) ->
+    2   out = parts.path or ""
+    1   if includeQuery
     1     out ..= "?" .. parts.query if parts.query
-    1     out ..= "#" .. parts.fragment if parts.fragment
+****0     out ..= "#" .. parts.fragment if parts.fragment
 
-****0   if host = parts.host
+    1   if host = parts.host
 ****0     host = "//" .. host
-    2     host ..= ":" .. parts.port if parts.port
-    2     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
+****0     host ..= ":" .. parts.port if parts.port
+****0     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
     2     out = "/" .. out if parts.path and out\sub(1,1) != "/"
     2     out = host .. out
 
-        out
+    2   out
 
 
-****0 trim = (str, regex="%s*") ->
-    4   str = tostring str
+    2 trim = (str, regex="%s*") ->
+    2   str = tostring str
 
-****0   if #str > 200
-    2     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
+    4   if #str > 200
+****0     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
         else
-****0     str\match "^#{regex}(.-)#{regex}$"
+    2     str\match "^#{regex}(.-)#{regex}$"
 
-    7 path_sanitize = (str) ->
-****0   str = tostring str
+****0 path_sanitize = (str) ->
+    2   str = tostring str
         -- path should not have double quote, single quote, period
         -- purposely left casing alone because paths are case-sensitive
         -- finally, remove double period and make single forward slash
     3   str\gsub("[^a-zA-Z0-9.-_/]", "")\gsub("%.%.+", "")\gsub("//+", "/")
 
-    2 slugify = (str) ->
-****0   str = tostring str
+    3 slugify = (str) ->
+    3   str = tostring str
     2   (str\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
-    7 string_split = (str, sep, dest={}) ->
-****0   str = tostring str
-   11   for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
-   11     insert(dest, str)
+    2 string_split = url.string_split
 
-        dest
-
-    5 json_encodable = (obj, seen={}) ->
-    7   switch type obj
-          when "table"
-    1       unless seen[obj]
-****0         seen[obj] = true
+    7 json_encodable = (obj, seen={}) ->
+****0   switch type obj
+   11     when "table"
+   11       unless seen[obj]
+    7         seen[obj] = true
 ****0         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
-    1     when "function", "userdata", "thread"
-    2       nil
+    5     when "function", "userdata", "thread"
+    5       nil
           else
-            obj
+    7       obj
 
-    7 from_json = (obj) -> cjson_safe.decode obj
+    5 from_json = (obj) -> cjson_safe.decode obj
 
-    5 to_json = (obj) -> cjson_safe.encode (json_encodable obj)
+****0 to_json = (obj) -> cjson_safe.encode (json_encodable obj)
 
-****0 query_string_encode = (t, sep="&", quote="", seen={}) ->
-    5   query = {}
-    5   keys = {}
+    5 query_string_encode = (t, sep="&", quote="", seen={}) ->
+    2   query = {}
+    2   keys = {}
     2   for k in pairs(t) do keys[#keys+1] = tostring(k)
-    2   sort(keys)
+    6   sort(keys)
 
-    6   for _,k in ipairs(keys) do
-    4     v = t[k]
+    8   for _,k in ipairs(keys) do
+****0     v = t[k]
 
-****0     switch type v
+    2     switch type v
             when "table"
-    2         unless seen[v]
-****0           seen[v] = true
-    3           tv = query_string_encode(v, sep, quote, seen)
-    1           v = tv
+    3         unless seen[v]
+    1           seen[v] = true
+****0           tv = query_string_encode(v, sep, quote, seen)
+    2           v = tv
 ****0       when "function", "userdata", "thread"
-    2         nil
+    7         nil
             else
-    7         v = url_escape(tostring(v))
+    1         v = url_escape(tostring(v))
 
-    1     k = url_escape(tostring(k))
+****0     k = url_escape(tostring(k))
 
-****0     if v ~= "" then
-    2       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
+    7     if v ~= "" then
+****0       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
           else
-****0       query[#query+1] = name
+    4       query[#query+1] = name
 
-    4   concat(query, sep)
+    6   concat(query, sep)
 
-    6 resolveGithubRaw = (modname) ->
-    5   capturePath = "https://raw.githubusercontent.com/"
-****0   if string.find(modname, "github.com/")
-    6     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
+****0 resolveGithubRaw = (modname) ->
+    6   capturePath = "https://raw.githubusercontent.com/"
+    6   if string.find(modname, "github.com/")
+****0     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
     6     path, file = string.match(pathx, "^(.*/)([^/]*)$")
-****0     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
+    6     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
 
           -- convert period to folder before return
-   26     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
+****0     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
 
-****0   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
+   26   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
-   26 applyDefaults = (opts, defOpts) ->
+   20 applyDefaults = (opts, defOpts) ->
    20   for k, v in pairs(defOpts) do
-   20     opts[k] = v unless opts[k]
-   20   opts
+****0     opts[k] = v unless opts[k]
+        opts
 
-****0 { :url_escape, :url_unescape, :url_parse, :url_build,
+****0 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
 ****0   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-****0   :json_encodable, :from_json, :to_json,
+   20   :json_encodable, :from_json, :to_json,
 ****0   :query_string_encode, :resolveGithubRaw, :applyDefaults
-   20 }
+      }
 
 ==============================================================================
 Summary
@@ -965,8 +1076,9 @@ File                       Hits Missed Coverage
 ./moonship/http.moon       30   10     75.00%
 ./moonship/log.moon        5    2      71.43%
 ./moonship/logger.moon     45   24     65.22%
-./moonship/oauth1.moon     28   10     73.68%
+./moonship/oauth1.moon     32   8      80.00%
 ./moonship/sandbox.moon    39   26     60.00%
-./moonship/util.moon       55   25     68.75%
+./moonship/url.moon        38   42     47.50%
+./moonship/util.moon       58   23     71.60%
 -----------------------------------------------
-Total                      356  197    64.38%
+Total                      401  235    63.05%

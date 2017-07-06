@@ -59,7 +59,7 @@ class Log
 
   doFormat: (p) =>
     if type(p) == 'table'
-      return cjson_safe.decode p
+      return cjson_safe.encode p
 
     if p == nil
       return "nil"

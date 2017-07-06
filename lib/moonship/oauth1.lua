@@ -1,7 +1,8 @@
+local log = require("moonship.log")
 local util = require("moonship.util")
 local crypto = require("moonship.crypto")
-local string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build
-string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build = util.string_split, util.url_escape, util.query_string_encode, util.table_sort_keys, util.url_parse, util.url_build
+local string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port
+string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port = util.string_split, util.url_escape, util.query_string_encode, util.table_sort_keys, util.url_parse, util.url_build, util.url_default_port
 local sort, concat
 do
   local _obj_0 = table
@@ -42,6 +43,9 @@ sign = function(body, method, query, base_uri, oauth, parameters)
 end
 create_signature = function(opts, oauth)
   local parts = url_parse(opts.url)
+  if (url_default_port(parts.scheme) == parts.port) then
+    parts.port = nil
+  end
   local base_uri = url_build(parts, false)
   local timestamp = oauth['timestamp'] or os.time()
   local parameters = {
