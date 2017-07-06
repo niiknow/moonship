@@ -25,7 +25,7 @@ class Engine
     rst
 
   engage: (req) =>
-    rst, err = @codeCache\get(req)
+    rst, err = @codeCache\get(req, @options.data)
 
     return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
     return { code: 404, headers: {}  } unless rst

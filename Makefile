@@ -14,6 +14,8 @@ install: all
 	$(INSTALL) lib/moonship/*.* $(DESTDIR)/$(LUA_LIB_DIR)/moonship
 	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/moonship/plugins
 	$(INSTALL) lib/moonship/plugins/*.* $(DESTDIR)/$(LUA_LIB_DIR)/moonship/plugins
+	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/moonship/nginx
+	$(INSTALL) lib/moonship/nginx/*.* $(DESTDIR)/$(LUA_LIB_DIR)/moonship/nginx
 
 test: all
 	PATH=$(OPENRESTY_PREFIX)/nginx/sbin:$$PATH prove -I../test-nginx/lib -r t

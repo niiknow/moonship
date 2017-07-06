@@ -1,6 +1,10 @@
 local engine = require("moonship.engine")
-local ngin = engine.Engine()
-local rst = ngin:engage(ngx.req)
+local ngin = engine.Engine({
+  userS3 = true
+})
+local rst = ngin:engage()
+local log = require("moonship.log")
+log.level(log.DEBUG)
 if rst then
   ngx.status = rst.code
   if (rst.headers) then

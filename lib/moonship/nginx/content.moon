@@ -1,6 +1,10 @@
 engine = require "moonship.engine"
-ngin = engine.Engine()
-rst = ngin\engage(ngx.req)
+ngin = engine.Engine({userS3: true})
+rst = ngin\engage()
+
+log =  require "moonship.log"
+
+log.level(log.DEBUG)
 
 if rst
   ngx.status = rst.code

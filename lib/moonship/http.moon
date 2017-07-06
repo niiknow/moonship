@@ -7,7 +7,8 @@ string_upper = string.upper
 
 -- http.compat.socket is for local testing only, it doesn't work with openresty
 -- Failed installing dependency: https://luarocks.org/compat53-0.3-1.src.rock - Build error: Failed compiling object ltablib.o
-http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
+http_handler = require "moonship.nginx.http"
+http_handler = require "http.compat.socket" unless ngx
 
 has_zlib, zlib = pcall(require, "zlib")
 

@@ -22,7 +22,7 @@ do
       return rst
     end,
     engage = function(self, req)
-      local rst, err = self.codeCache:get(req)
+      local rst, err = self.codeCache:get(req, self.options.data)
       if err then
         return {
           error = err,

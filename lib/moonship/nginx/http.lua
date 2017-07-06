@@ -1,5 +1,5 @@
 local http_handle = require("resty.http")
-local request_ngx
+local request_ngx, request
 request_ngx = function(request_uri, opts)
   if opts == nil then
     opts = { }
@@ -42,41 +42,39 @@ request_ngx = function(request_uri, opts)
     err = err
   }
 end
-local _ = {
-  request = function(opts)
-    if type(opts) == 'string' then
-      opts = {
-        url = opts,
-        method = 'GET'
-      }
-    end
-    local options = {
-      method = opts.method,
-      body = opts.body,
-      headers = opts.headers,
-      ssl_verify = false,
-      capture_url = opts.capture_url,
-      capture_variable = opts.capture_variable
+request = function(opts)
+  if type(opts) == 'string' then
+    opts = {
+      url = opts,
+      method = 'GET'
     }
-    if (opts.capture_url) then
-      return request_ngx(opts.url, options)
-    end
-    local rsp, err = http_handle:request_uri(opts.url, options)
-    if err then
-      return {
-        code = 0,
-        err = err
-      }
-    end
+  end
+  local options = {
+    method = opts.method,
+    body = opts.body,
+    headers = opts.headers,
+    ssl_verify = false,
+    capture_url = opts.capture_url,
+    capture_variable = opts.capture_variable
+  }
+  if (opts.capture_url) then
+    return request_ngx(opts.url, options)
+  end
+  local rsp, err = http_handle:request_uri(opts.url, options)
+  if err then
     return {
-      body = rsp.body,
-      status = rsp.reason,
-      code = rsp.status,
-      headers = rsp.headers,
+      code = 0,
       err = err
     }
   end
-}
+  return {
+    body = rsp.body,
+    status = rsp.reason,
+    code = rsp.status,
+    headers = rsp.headers,
+    err = err
+  }
+end
 return {
   request = request,
   request_ngx = request_ngx

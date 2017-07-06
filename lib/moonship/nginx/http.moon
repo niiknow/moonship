@@ -49,7 +49,7 @@ request_ngx = (request_uri, opts={}) ->
 --  code = number,
 --  error = string
 --}
-request: (opts) ->
+request = (opts) ->
   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
   -- clean args

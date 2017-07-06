@@ -2,7 +2,10 @@ local util = require("moonship.util")
 local oauth1 = require("moonship.oauth1")
 local ltn12 = require("ltn12")
 local string_upper = string.upper
-local http_handler = (ngx and require("moonship.nginx.http")) or require("http.compat.socket")
+local http_handler = require("moonship.nginx.http")
+if not (ngx) then
+  http_handler = require("http.compat.socket")
+end
 local has_zlib, zlib = pcall(require, "zlib")
 local concat
 concat = table.concat

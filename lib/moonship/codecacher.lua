@@ -29,7 +29,8 @@ myUrlHandler = function(opts)
   local authHeaders = { }
   if opts.aws and opts.aws.aws_s3_code_path then
     local aws = aws_auth.AwsAuth(opts.aws)
-    full_path = "https://" .. tostring(aws.aws_host) .. "/" .. tostring(opts.aws.aws_s3_code_path) .. "/" .. tostring(full_path)
+    local host = aws.options.aws_host
+    full_path = "https://" .. tostring(host) .. "/" .. tostring(opts.aws.aws_s3_code_path) .. "/" .. tostring(full_path)
     authHeaders = aws:get_auth_headers()
   else
     full_path = tostring(opts.remote_path) .. "/" .. tostring(full_path)
@@ -49,6 +50,7 @@ myUrlHandler = function(opts)
     req.headers[k] = v
   end
   local res, err = httpc.request(req)
+  ngx.say(util.to_json(authHeaders))
   if not (err) then
     return res
   end
@@ -124,13 +126,16 @@ end
 do
   local _class_0
   local _base_0 = {
-    doCheckRemoteFile = function(self, valHolder, req)
+    doCheckRemoteFile = function(self, valHolder, req, aws)
       local opts = {
         url = valHolder.url,
         remote_path = self.options.remote_path
       }
       if (valHolder.fileMod ~= nil) then
         opts["last_modified"] = os.date("%c", valHolder.fileMod)
+      end
+      if not (opts.remote_path) then
+        opts.aws = aws
       end
       local rsp, err = self.options.codeHandler(opts)
       if (rsp.code == 200) then
@@ -152,7 +157,7 @@ do
         return os.remove(valHolder.localFullPath)
       end
     end,
-    get = function(self, req)
+    get = function(self, req, aws)
       if req == nil then
         req = buildRequest()
       end
@@ -184,7 +189,7 @@ do
         else
           valHolder.value = nil
         end
-        self:doCheckRemoteFile(valHolder, req)
+        self:doCheckRemoteFile(valHolder, req, aws)
       end
       if valHolder.value == nil then
         self.codeCache:delete(url)

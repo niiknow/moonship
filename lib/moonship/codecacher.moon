@@ -27,7 +27,8 @@ myUrlHandler = (opts) ->
   if opts.aws and opts.aws.aws_s3_code_path
     -- process s3 stuff
     aws = aws_auth.AwsAuth(opts.aws)
-    full_path = "https://#{aws.aws_host}/#{opts.aws.aws_s3_code_path}/#{full_path}"
+    host = aws.options.aws_host
+    full_path = "https://#{host}/#{opts.aws.aws_s3_code_path}/#{full_path}"
     authHeaders = aws\get_auth_headers()
   else
     full_path = "#{opts.remote_path}/#{full_path}"
@@ -45,6 +46,7 @@ myUrlHandler = (opts) ->
 
   res, err = httpc.request(req)
 
+  ngx.say util.to_json authHeaders
   return res unless err
 
   log.debug "code load error: #{err}"
@@ -151,7 +153,7 @@ class CodeCacher
 
 --NOTE: urlHandler should use capture to simulate debounce
 
-  doCheckRemoteFile: (valHolder, req) =>
+  doCheckRemoteFile: (valHolder, req, aws) =>
     opts = {
       url: valHolder.url,
       remote_path: @options.remote_path
@@ -160,6 +162,9 @@ class CodeCacher
 
     opts["last_modified"] = os.date("%c", valHolder.fileMod) if (valHolder.fileMod ~= nil)
 
+    -- copy over aws options
+    unless opts.remote_path
+      opts.aws = aws
 
     -- if remote return 200
     rsp, err = @options.codeHandler(opts)
@@ -184,7 +189,7 @@ class CodeCacher
       valHolder.value = nil
       os.remove(valHolder.localFullPath)
 
-  get: (req=buildRequest()) =>
+  get: (req=buildRequest(), aws) =>
     url = util.path_sanitize("#{req.host}/#{req.path}")
     valHolder = @codeCache\get()
 
@@ -227,7 +232,7 @@ class CodeCacher
         -- delete reference if file no longer exists/purged
         valHolder.value = nil
 
-      @doCheckRemoteFile(valHolder, req)
+      @doCheckRemoteFile(valHolder, req, aws)
 
     -- remove from cache if not found
     @codeCache\delete(url) if valHolder.value == nil
