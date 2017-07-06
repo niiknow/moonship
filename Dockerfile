@@ -127,6 +127,7 @@ RUN cd /usr/local/openresty/luajit/bin/ \
     && ./luarocks install basexx 0.1.0-1 \
     && ./luarocks install lpath 0.1.0-1  \
     && ./luarocks install --server=http://luarocks.org/dev ltn12 \
+    && ./luarocks install luasec 0.6-1 \
 
     && chown -R www-data:www-data /app; chmod -R 755 /app \
     && mkdir -p /tmp/nginx/temp \

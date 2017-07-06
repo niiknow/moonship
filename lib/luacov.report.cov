@@ -457,21 +457,16 @@
     4 util         = require "moonship.util"
     4 oauth1       = require "moonship.oauth1"
 
-    4 ltn12        = require "ltn12"
     4 string_upper = string.upper
-****0 http_handler = nil
-
-      -- http.compat.socket is for local testing only, it doesn't work with openresty
-      -- Failed installing dependency: https://luarocks.org/compat53-0.3-1.src.rock - Build error: Failed compiling object ltablib.o
+****0 http_handler = require "moonship.httpsocket"
 ****0 http_handler = require "moonship.nginx.http" if ngx
-    4 http_handler = require "http.compat.socket" unless ngx
 
     4 has_zlib, zlib = pcall(require, "zlib")
 
     4 import concat from table
     4 import query_string_encode from util
 
-****0 string_upper = string.upper
+    4 string_upper = string.upper
 
       --{
       --  body = <response body>,
@@ -485,48 +480,54 @@
 
 ****0   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
-    7   return { code: 0, err: "url is required" } unless opts.url
+   14   return { code: 0, err: "url is required" } unless opts.url
 
-    7   opts["method"] = string_upper(opts["method"] or 'GET')
+****0   opts["method"] = string_upper(opts["method"] or 'GET')
     7   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
     7   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
         -- auto add content length
-    7   if opts["body"]
-****0     opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
+****0   body = opts["body"]
+****0   if body
+****0     body = (type(body) == "table") and query_string_encode(body) or body
+****0     opts.body = body
+    7     opts.headers["content-length"] = #body
 
-    7   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
-****0   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
+****0   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
+    7   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
-    7   opts.ssl_opts = {verify: "none"} unless opts["ssl_opts"]
+****0   http_handler.request(opts)
 
-        unless ngx
-    7     if has_zlib then
-****0       opts.headers["accept-encoding"] = "gzip, deflate"
+    4 { :request }
 
-    7     resultChunks = {}
-    7     body = ""
-****0     opts.sink = ltn12.sink.table(resultChunks)
-    7     one, code, headers, status = http_handler.request(opts)
-    7     body = concat(resultChunks) if one
+==============================================================================
+./moonship/httpsocket.moon
+==============================================================================
 
-    7     res =  {:body, :code, :headers, :status }
+    4 ltn12        = require "ltn12"
+    4 http         = require "socket.http"
+    4 https        = require "ssl.https"
 
-    7     if has_zlib and res.body
-****0       encoding = res.headers["content-encoding"] or ""
-    7       deflated = encoding\find("deflate")
-    7       gziped = encoding\find("gzip")
-    7       bodys = res.body
-    7       if (gziped or deflated)
-    7         stream = zlib.inflate()
-****0         status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
-    7         res.body = output
+    4 stringsource = ltn12.source.string
+****0 tablesink    = ltn12.sink.table
 
-    7     return res
+    7 make_request = (opts) ->
+****0   return https.request(opts) if opts.url\find "https:"
+****0   http.request(opts)
 
-    7   http_handler.request(opts)
+    4 request = (opts) ->
+****0   opts.source = stringsource(opts.body)
 
-    5 { :request }
+    7   result = {}
+   14   opts.sink = tablesink(result)
+    7   one, code, headers, status = make_request opts
+    7   body = table.concat(result)
+    7   message = #body > 0 and body or "unknown error"
+    7   return {:code, :headers, :status, err: message} unless one
+
+****0   { :code, :headers, :status, :body }
+
+****0 { :request }
 
 ==============================================================================
 ./moonship/log.moon
@@ -1106,7 +1107,8 @@ File                       Hits Missed Coverage
 ./moonship/config.moon     13   5      72.22%
 ./moonship/crypto.moon     22   8      73.33%
 ./moonship/engine.moon     12   12     50.00%
-./moonship/http.moon       31   12     72.09%
+./moonship/http.moon       13   12     52.00%
+./moonship/httpsocket.moon 12   6      66.67%
 ./moonship/log.moon        5    2      71.43%
 ./moonship/logger.moon     38   28     57.58%
 ./moonship/oauth1.moon     32   8      80.00%
@@ -1114,4 +1116,4 @@ File                       Hits Missed Coverage
 ./moonship/url.moon        38   42     47.50%
 ./moonship/util.moon       61   23     72.62%
 -----------------------------------------------
-Total                      410  241    62.98%
+Total                      404  247    62.06%

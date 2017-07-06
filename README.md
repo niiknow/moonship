@@ -11,6 +11,7 @@ brew install lua
 brew install openssl
 brew install zlib
 luarocks install lua-zlib ZLIB_DIR=/usr/local/opt/zlib
+luarocks install luasec CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
 
 luarocks install busted
 luarocks install lua-resty-jwt 0.1.10-1
@@ -21,7 +22,6 @@ luarocks install bcrypt 2.1-4
 luarocks install lpath 0.1.0-1 
 luarocks install lua-lru 1.0-1
 luarocks install basexx 0.1.0-1
-
 luarocks install --server=http://luarocks.org/dev ltn12
 
 # this is for local only, openresty uses lua-resty-http
