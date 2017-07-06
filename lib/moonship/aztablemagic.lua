@@ -2,6 +2,7 @@ local azauth = require("moonship.azauth")
 local aztable = require("moonship.aztable")
 local mydate = require("moonship.date")
 local string_gsub = string.gsub
+local my_max_number = 9007199254740991
 local env_id
 env_id = function(env)
   if env == nil then
@@ -25,13 +26,10 @@ local opts_name
 opts_name = function(opts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       tenant = tenant,
       env = env,
       pk = pk,
-      rk = rk,
       prefix = prefix
     }
   end
@@ -46,14 +44,7 @@ local generate_opts
 generate_opts = function(opts, format, ts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
-      table_name = table_name,
-      tenant = tenant,
-      env = env,
-      pk = pk,
-      rk = rk,
-      prefix = prefix
+      table_name = table_name
     }
   end
   if format == nil then
@@ -71,13 +62,10 @@ local opts_daily
 opts_daily = function(opts, days, ts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       tenant = tenant,
       env = env,
       pk = pk,
-      rk = rk,
       prefix = prefix
     }
   end
@@ -100,13 +88,10 @@ local opts_monthly
 opts_monthly = function(opts, months, ts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       tenant = tenant,
       env = env,
       pk = pk,
-      rk = rk,
       prefix = prefix
     }
   end
@@ -129,13 +114,10 @@ local opts_yearly
 opts_yearly = function(opts, years, ts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       tenant = tenant,
       env = env,
       pk = pk,
-      rk = rk,
       prefix = prefix
     }
   end
@@ -154,9 +136,54 @@ opts_yearly = function(opts, years, ts)
   end
   return rst
 end
+local opts_cache_get
+opts_cache_get = function(opts)
+  if opts == nil then
+    opts = {
+      table_name = table_name,
+      tenant = tenant,
+      env = env,
+      pk = pk,
+      prefix = prefix,
+      cache_key = cache_key
+    }
+  end
+  local newopts = opts_daily(opts)
+  newopts.pk = newopts.cache_key
+  newopts.rk = my_max_number - os.time()
+  local qry = "(PartitionKey eq '" .. tostring(newopts.pk) .. "') and (RowKey le '" .. tostring(newopts.rk) .. "')"
+end
+local opts_cache_set
+opts_cache_set = function(opts)
+  if opts == nil then
+    opts = {
+      table_name = table_name,
+      tenant = tenant,
+      env = env,
+      pk = pk,
+      rk = rk,
+      prefix = prefix,
+      cache_ttl = cache_ttl,
+      cache_key = cache_key,
+      cache_value = cache_value
+    }
+  end
+  local newopts = opts_daily(opts)
+  newopts.pk = newopts.cache_key
+  local expiresAt = os.time() + tonumber(newopts.cache_ttl)
+  newopts.rk = my_max_number - expiresAt
+  newopts.item = {
+    RowKey = newopts.rk,
+    value = value,
+    ttl = cache_ttl,
+    expAt = expiresAt
+  }
+end
 return {
   opts_name = opts_name,
   opts_daily = opts_daily,
   opts_monthly = opts_monthly,
-  opts_yearly = opts_yearly
+  opts_yearly = opts_yearly,
+  opts_cache_get = opts_cache_get,
+  opts_cache_set = opts_cache_set
 }

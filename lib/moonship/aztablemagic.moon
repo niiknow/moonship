@@ -6,6 +6,7 @@ azauth = require "moonship.azauth"
 aztable = require "moonship.aztable"
 mydate = require "moonship.date"
 string_gsub = string.gsub
+my_max_number = 9007199254740991  -- from javascript max safe int
 
 env_id = (env="dev") ->
   switch type env
@@ -24,7 +25,7 @@ env_id = (env="dev") ->
   return 79
 
 -- generate multitenant opts
-opts_name = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :pk, :rk, :prefix }) ->
+opts_name = (opts={ :table_name, :tenant, :env, :pk, :prefix }) ->
   opts.pk = opts.pk or "1default"
   opts.tenant = opts.tenant or "a"
   opts.table = opts.table_name
@@ -32,7 +33,7 @@ opts_name = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :pk
   opts.prefix = "#{opts.tenant}#{opts.env_id}"
   opts.table_name = "#{opts.prefix}#{opts.table}"
 
-generate_opts = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :pk, :rk, :prefix }, format="%Y%m%d", ts=os.time()) ->
+generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
   newopts = util.table_clone(opts)
   newopts.mt_table = newopts.table_name
   -- trim ending number and replace with dt
@@ -40,7 +41,7 @@ generate_opts = (opts={ :account_name, :account_key, :table_name, :tenant, :env,
   newopts
 
 -- generate array of daily opts
-opts_daily = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :pk, :rk, :prefix }, days=1, ts=os.time()) ->
+opts_daily = (opts={ :table_name, :tenant, :env, :pk, :prefix }, days=1, ts=os.time()) ->
   rst = {}
   multiplier = days and 1 or -1
   new_ts = ts
@@ -51,7 +52,7 @@ opts_daily = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :p
   rst
 
 -- generate array of monthly opts
-opts_monthly = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :pk, :rk, :prefix }, months=1, ts=os.time()) ->
+opts_monthly = (opts={ :table_name, :tenant, :env, :pk, :prefix }, months=1, ts=os.time()) ->
   rst = {}
   multiplier = days and 1 or -1
   new_ts = ts
@@ -62,7 +63,7 @@ opts_monthly = (opts={ :account_name, :account_key, :table_name, :tenant, :env, 
   rst
 
 -- generate array of yearly opts
-opts_yearly = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :pk, :rk, :prefix }, years=1, ts=os.time()) ->
+opts_yearly = (opts={ :table_name, :tenant, :env, :pk, :prefix }, years=1, ts=os.time()) ->
   rst = {}
   multiplier = days and 1 or -1
   new_ts = ts
@@ -72,4 +73,17 @@ opts_yearly = (opts={ :account_name, :account_key, :table_name, :tenant, :env, :
 
   rst
 
-{ :opts_name, :opts_daily, :opts_monthly, :opts_yearly }
+opts_cache_get = (opts={ :table_name, :tenant, :env, :pk, :prefix, :cache_key }) ->
+  newopts = opts_daily(opts)
+  newopts.pk = newopts.cache_key
+  newopts.rk = my_max_number - os.time()
+  qry = "(PartitionKey eq '#{newopts.pk}') and (RowKey le '#{newopts.rk}')"
+
+opts_cache_set = (opts={ :table_name, :tenant, :env, :pk, :rk, :prefix, :cache_ttl, :cache_key, :cache_value }) ->
+  newopts = opts_daily(opts)
+  newopts.pk = newopts.cache_key
+  expiresAt = os.time() + tonumber(newopts.cache_ttl)
+  newopts.rk = my_max_number  - expiresAt
+  newopts.item = { RowKey: newopts.rk, value: value, ttl: cache_ttl, expAt: expiresAt }
+
+{ :opts_name, :opts_daily, :opts_monthly, :opts_yearly, :opts_cache_get, :opts_cache_set }
