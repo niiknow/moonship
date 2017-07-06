@@ -5,6 +5,7 @@ do
 end
 local crypto = require("moonship.crypto")
 local util = require("moonship.util")
+local log = require("moonship.log")
 local AwsAuth
 do
   local _class_0

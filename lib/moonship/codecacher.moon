@@ -23,18 +23,16 @@ myUrlHandler = (opts) ->
   cleanPath, querystring  = string.match(opts.url, "([^?#]*)(.*)")
   full_path               = util.path_sanitize(cleanPath)
   authHeaders             = {}
+  full_path               = util.path_sanitize("#{full_path}/index.moon")
 
   if opts.aws and opts.aws.aws_s3_code_path
     -- process s3 stuff
+    opts.aws.request_path = "/#{opts.aws.aws_s3_code_path}/#{full_path}"
     aws = aws_auth.AwsAuth(opts.aws)
-    host = aws.options.aws_host
-    full_path = "https://#{host}/#{opts.aws.aws_s3_code_path}/#{full_path}"
+    full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
     authHeaders = aws\get_auth_headers()
   else
     full_path = "#{opts.remote_path}/#{full_path}"
-
-  -- cleanup path, remove double forward slash and double periods from path
-  full_path = "#{full_path}/index.moon"
 
   log.debug "code load: #{full_path}"
 
@@ -45,7 +43,6 @@ myUrlHandler = (opts) ->
     req.headers[k] = v
 
   res, err = httpc.request(req)
-
   return res unless err
 
   log.debug "code load error: #{err}"
@@ -126,7 +123,7 @@ class CodeCacher
 
   new: (opts={}) =>
     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
-    opts = util.applyDefaults(opts, defOpts)
+    util.applyDefaults(opts, defOpts)
 
     -- should not be lower than 2 minutes
     -- user should use cache clearing mechanism

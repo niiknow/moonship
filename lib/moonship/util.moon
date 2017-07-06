@@ -1,6 +1,7 @@
 
 url              = require "moonship.url"
 cjson_safe       = require "cjson.safe"
+log              = require "moonship.log"
 
 import concat, insert, sort from table
 
@@ -120,13 +121,18 @@ resolveGithubRaw = (modname) ->
 
   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
+clone = (src, dest={}) ->
+  for k, v in pairs(src) do dest[k] = v
+  dest
+
 applyDefaults = (opts, defOpts) ->
   for k, v in pairs(defOpts) do
     opts[k] = v unless opts[k]
+
   opts
 
 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-  :json_encodable, :from_json, :to_json,
+  :json_encodable, :from_json, :to_json, :clone,
   :query_string_encode, :resolveGithubRaw, :applyDefaults
 }

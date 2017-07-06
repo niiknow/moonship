@@ -4,6 +4,7 @@
 import sort, concat from table
 crypto = require "moonship.crypto"
 util   = require "moonship.util"
+log    = require "moonship.log"
 
 class AwsAuth
   new: (options={}) =>

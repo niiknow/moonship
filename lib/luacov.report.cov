@@ -7,85 +7,87 @@
     3 import sort, concat from table
 ****0 crypto = require "moonship.crypto"
     3 util   = require "moonship.util"
+    3 log    = require "moonship.log"
 
     3 class AwsAuth
 ****0   new: (options={}) =>
 ****0     defOpts = {
     3       timestamp: os.time(), aws_host: "s3.amazonaws.com", aws_region: "us-east-1",
 ****0       aws_service: "s3", content_type: "application/x-www-form-urlencoded", request_method: "GET",
-    1       request_path: "/", request_body: "", aws_secret_access_key: "", aws_access_key_id: ""
-    1     }
+    2       request_path: "/", request_body: "", aws_secret_access_key: "", aws_access_key_id: ""
+    2     }
 
-    1     util.applyDefaults(options, defOpts)
-    1     options.iso_date        = os.date("!%Y%m%d", options.timestamp)
+    2     util.applyDefaults(options, defOpts)
+    2     options.iso_date        = os.date("!%Y%m%d", options.timestamp)
     3     options.iso_tz          = os.date("!%Y%m%dT%H%M%SZ", options.timestamp)
-****0     @options = options
+****0     log.info options
+    2     @options = options
 
         -- create canonical headers
         -- header must be sorted asc
 ****0   get_canonical_header: () =>
-****0     concat { "content-type:" .. @options.content_type, "host:" .. @options.aws_host, "x-amz-date:" .. @options.iso_tz }, "\n"
+    2     concat { "content-type:" .. @options.content_type, "host:" .. @options.aws_host, "x-amz-date:" .. @options.iso_tz }, "\n"
 
-    1   get_signed_request_body: () =>
-    3     params = @options.request_body
-****0     if type(@options.request_body) == "table"
-    1       sort(params)
-    1       params = util.query_string_encode(params)
+    3   get_signed_request_body: () =>
+****0     params = @options.request_body
+    2     if type(@options.request_body) == "table"
+    2       sort(params)
+    2       params = util.query_string_encode(params)
 
-****0     digest = @get_sha256_digest(params or "")
-    2     string.lower(digest) -- hash must be in lowercase hex string
+    4     digest = @get_sha256_digest(params or "")
+****0     string.lower(digest) -- hash must be in lowercase hex string
 
         -- get canonical request
         -- https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-****0   get_canonical_request: () =>
-    1     param  = {
-    1       @options.request_method,
-    3       @options.request_path,
-            "", -- canonical query string
-    6       @get_canonical_header(),
-    3       "", -- content body?
-            "content-type;host;x-amz-date",
-    5       @get_signed_request_body()
-    3     }
-****0     canonical_request = concat(param, "\n")
-    2     @get_sha256_digest(canonical_request)
+    2   get_canonical_request: () =>
+    2     param  = {
+    3       @options.request_method,
+****0       @options.request_path,
+   12       "", -- canonical query string
+    3       @get_canonical_header(),
+            "", -- content body?
+   10       "content-type;host;x-amz-date",
+    3       @get_signed_request_body()
+          }
+    4     canonical_request = concat(param, "\n")
+    4     @get_sha256_digest(canonical_request)
 
         -- generate sha256 from the given string
-    2   get_sha256_digest: (s) => crypto.sha256(s).hex()
-    3   hmac: (secret, message) => crypto.hmac(secret, message, crypto.sha256)
+    3   get_sha256_digest: (s) => crypto.sha256(s).hex()
+****0   hmac: (secret, message) => crypto.hmac(secret, message, crypto.sha256)
 
         -- get signing key
         -- https://docs.aws.amazon.com/general/latest/gr/sigv4-calculate-signature.html
-    1   get_signing_key: () =>
-    1     k_date    = @hmac("AWS4" .. @options.aws_secret_access_key, @options.iso_date).digest()
+    2   get_signing_key: () =>
+****0     k_date    = @hmac("AWS4" .. @options.aws_secret_access_key, @options.iso_date).digest()
 ****0     k_region  = @hmac(k_date, @options.aws_region).digest()
-****0     k_service = @hmac(k_region, @options.aws_service).digest()
-    1     @hmac(k_service, "aws4_request").digest()
+    2     k_service = @hmac(k_region, @options.aws_service).digest()
+    2     @hmac(k_service, "aws4_request").digest()
 
         -- get string
-****0   get_string_to_sign: () =>
-    1     param = { @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
-    1     cred  = concat(param, "/")
-****0     req   = @get_canonical_request()
-    1     concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
+    2   get_string_to_sign: () =>
+    2     param = { @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
+****0     cred  = concat(param, "/")
+    2     req   = @get_canonical_request()
+    3     concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
 
         -- generate signature
-    4   get_signature: () => @hmac(@get_signing_key(), @get_string_to_sign()).hex()
+    3   get_signature: () => @hmac(@get_signing_key(), @get_string_to_sign()).hex()
 
         -- get authorization string
         -- x-amz-content-sha256 required by s3
-    1   get_auth_header: () =>
-    1     param = { @options.aws_access_key_id, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
-    1     concat { "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"), "SignedHeaders=content-type;host;x-amz-date", "Signature=" .. @get_signature() }, ", "
+    2   get_auth_header: () =>
+    2     param = { @options.aws_access_key_id, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
+    2     concat { "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"), "SignedHeaders=content-type;host;x-amz-date", "Signature=" .. @get_signature() }, ", "
 
 ****0   get_auth_headers: () =>
-****0     { "Authorization": @get_auth_header(), "x-amz-date": @get_date_header(), "x-amz-content-sha256": @get_content_sha256(), "Content-Type": @options.content_type }
+    2     { "Authorization": @get_auth_header(), "x-amz-date": @get_date_header(), "x-amz-content-sha256": @get_content_sha256(), "Content-Type": @options.content_type }
 
         -- get the current timestamp in iso8601 basic format
-****0   get_date_header: () => @options.iso_tz
+    4   get_date_header: () => @options.iso_tz
     2   get_content_sha256: () => @get_sha256_digest("")
 
-    3 { :AwsAuth }
+****0 { :AwsAuth }
 
 ==============================================================================
 ./moonship/codecacher.moon
@@ -118,9 +120,9 @@
 
     4   if opts.aws and opts.aws.aws_s3_code_path
           -- process s3 stuff
+    4     opts.aws.request_path = "/#{opts.aws.aws_s3_code_path}/#{full_path}"
     4     aws = aws_auth.AwsAuth(opts.aws)
-    4     host = aws.options.aws_host
-****0     full_path = "https://#{host}/#{opts.aws.aws_s3_code_path}/#{full_path}"
+****0     full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
 ****0     authHeaders = aws\get_auth_headers()
         else
 ****0     full_path = "#{opts.remote_path}/#{full_path}"
@@ -137,8 +139,7 @@
 ****0     req.headers[k] = v
 
     2   res, err = httpc.request(req)
-
-    4   return res unless err
+****0   return res unless err
 
 ****0   log.debug "code load error: #{err}"
 
@@ -150,10 +151,10 @@
 ****0     ngx.req.read_body()
 ****0     req_wrapper = {
 ****0       body: ngx.req.get_body_data(),
-    2       form: ngx.req.get_post_args(),
-****0       headers: ngx.req.get_headers(),
-    1       host: ngx.var.host,
-****0       method: ngx.req.get_method(),
+****0       form: ngx.req.get_post_args(),
+    2       headers: ngx.req.get_headers(),
+****0       host: ngx.var.host,
+    1       method: ngx.req.get_method(),
 ****0       path: ngx.var.uri,
 ****0       port: ngx.var.server_port,
 ****0       query: ngx.req.get_uri_args(),
@@ -173,21 +174,21 @@
 ****0 getSandboxEnv = (req) ->
 ****0   env = {
 ****0     http: httpc,
-    1     require: require_new,
-    2     util: util,
-****0     crypto: crypto,
-    5     request: req or buildRequest(),
+****0     require: require_new,
+    1     util: util,
+    2     crypto: crypto,
+****0     request: req or buildRequest(),
     5     __ghrawbase: __ghrawbase
     5   }
     5   sandbox.build_env(_G, env, sandbox.whitelist)
 
 
-    5 require_new = (modname) ->
-****0   unless _G[modname]
-    5     base, file, query = util.resolveGithubRaw(modname)
-    2     if base
-****0       loadPath = "#{base}#{file}#{query}"
-    1       rsp = loadCode(loadPath)
+    6 require_new = (modname) ->
+    5   unless _G[modname]
+****0     base, file, query = util.resolveGithubRaw(modname)
+    5     if base
+    2       loadPath = "#{base}#{file}#{query}"
+****0       rsp = loadCode(loadPath)
     1       if (rsp.code == 200)
     1         lua_src, err = sandbox.compile_moon rsp.body
 
@@ -195,15 +196,15 @@
 
     1         fn, err = sandbox.loadstring_safe lua_src, loadPath, getSandboxEnv()
 
-****0         _G["__ghrawbase"] = base
+    1         _G["__ghrawbase"] = base
 ****0         return nil, "error loading '#{modname}' with message: #{err}" unless fn
 
-    3         rst, err = sandbox.exec(fn)
-    1         return nil, "error executing '#{modname}' with message: #{err}" unless rst
+    1         rst, err = sandbox.exec(fn)
+    3         return nil, "error executing '#{modname}' with message: #{err}" unless rst
 
-****0         _G[modname] = rst
+    1         _G[modname] = rst
 
-    1   _G[modname]
+        _G[modname]
 
 
       --
@@ -214,19 +215,19 @@
       --4. use ttl (in seconds) to determine how often to check remote file
       -- when we have the file, it is recommended to check every hour
       -- when we don't have the file, check every x seconds - limit by proxy
-      class CodeCacher
+    2 class CodeCacher
 
     2   new: (opts={}) =>
-****0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
-    3     opts = util.applyDefaults(opts, defOpts)
+    2     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
+****0     util.applyDefaults(opts, defOpts)
 
           -- should not be lower than 2 minutes
           -- user should use cache clearing mechanism
-    3     opts.ttl = 120 if (opts.ttl < 120)
+****0     opts.ttl = 120 if (opts.ttl < 120)
 
-****0     opts.localBasePath = plpath.abspath(opts.app_path)
-    3     @codeCache = lru.new(opts.code_cache_size)
-****0     @options = opts
+    2     opts.localBasePath = plpath.abspath(opts.app_path)
+****0     @codeCache = lru.new(opts.code_cache_size)
+    3     @options = opts
 
       --
       --if value holder is nil, initialize value holder
@@ -246,9 +247,9 @@
 
     1   doCheckRemoteFile: (valHolder, req, aws) =>
     1     opts = {
-****0       url: valHolder.url,
-    4       remote_path: @options.remote_path
-          }
+    1       url: valHolder.url,
+****0       remote_path: @options.remote_path
+    4     }
 
 
 ****0     opts["last_modified"] = os.date("%c", valHolder.fileMod) if (valHolder.fileMod ~= nil)
@@ -267,53 +268,53 @@
     3       if (rsp.body)
     3         lua_src = sandbox.compile_moon rsp.body
     3         if (lua_src)
-****0           os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
+    3           os.execute("mkdir -p \"" .. valHolder.localPath .. "\"")
 ****0           with io.open(valHolder.localFullPath, "w")
 ****0             \write(lua_src)
-    3             \close()
+****0             \close()
 
     3           valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-    2           valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, getSandboxEnv(req)
+    3           valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, getSandboxEnv(req)
 
-    2     elseif (rsp.code == 404)
+    6     elseif (rsp.code == 404)
             -- on 404 - set nil and delete local file
-****0       valHolder.value = nil
-    1       os.remove(valHolder.localFullPath)
+    4       valHolder.value = nil
+****0       os.remove(valHolder.localFullPath)
 
-    3   get: (req=buildRequest(), aws) =>
-****0     url = util.path_sanitize("#{req.host}/#{req.path}")
-    3     valHolder = @codeCache\get()
+****0   get: (req=buildRequest(), aws) =>
+    3     url = util.path_sanitize("#{req.host}/#{req.path}")
+****0     valHolder = @codeCache\get()
 
           -- initialize valHolder
-    3     unless valHolder
+          unless valHolder
             -- strip query string and http/https://
-****0       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
-    1       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
+    2       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
+****0       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
 
             -- expect directory
-    2       fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
+****0       fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
 
             -- must store locally as index.lua
             -- this way, a path can contain other paths
-****0       localFullPath = fileBasePath .. "/index.lua"
+    3       localFullPath = fileBasePath .. "/index.lua"
 
-    3       valHolder = {
-****0         url: url,
+****0       valHolder = {
+    3         url: url,
 ****0         localPath: fileBasePath,
-    3         localFullPath: localFullPath,
-****0         lastCheck: os.time(),
+****0         localFullPath: localFullPath,
+    3         lastCheck: os.time(),
 ****0         fileMod: lfs.attributes localFullPath, "modification"
-    6       }
+            }
 
             -- use aws s3 if available
 ****0       valHolder["aws"] = @options.aws if (@options.aws)
 
     6     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
             -- load file if it exists
-    5       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-    2       if valHolder.fileMod
-****0         log.debug tostring(valHolder.fileMod)
-    2         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
+    3       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+    5       if valHolder.fileMod
+    2         log.debug tostring(valHolder.fileMod)
+****0         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
 
               -- set it back immediately for the next guy
               -- set next ttl
@@ -323,13 +324,13 @@
               -- delete reference if file no longer exists/purged
     2         valHolder.value = nil
 
-****0       @doCheckRemoteFile(valHolder, req, aws)
+    2       @doCheckRemoteFile(valHolder, req, aws)
 
           -- remove from cache if not found
     2     @codeCache\delete(url) if valHolder.value == nil
     2     return sandbox.exec(valHolder.value) if (type(valHolder.value) == "function")
 
-          valHolder.value
+    2     valHolder.value
 
 ****0 { :CodeCacher, :myUrlHandler, :require_new }
 
@@ -338,6 +339,7 @@
 ==============================================================================
 
     1 util = require "moonship.util"
+    1 log = require "moonship.log"
 
     1 aws_region            = os.getenv("AWS_DEFAULT_REGION")
     1 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
@@ -345,13 +347,21 @@
     1 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
     1 app_path              = os.getenv("MOONSHIP_APP_PATH")
 
-****0 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
+    1 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
 ****0 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
 
-    1 class Config
-    2   new: (newOpts={ aws_region: 'us-east-1', code_cache_size: 10000 }) =>
+    1 _data = {}
+
+    4 class Config
+    1   new: (newOpts={ aws_region: 'us-east-1', code_cache_size: 10000 }) =>
 ****0     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path }
-    2     @data = util.applyDefaults(newOpts, defaultOpts)
+
+    2     util.applyDefaults(newOpts, defaultOpts)
+
+    2     _data = newOpts
+
+****0   get: () =>
+****0     util.clone(_data)
 
 ****0 { :Config }
 
@@ -371,21 +381,21 @@
 
 ****0 base64_decode = from_base64
 
-   10 crypto_wrapper = (dtype, str) ->
+   13 crypto_wrapper = (dtype, str) ->
         {
-    7     digest: () -> crypto.digest(dtype, str, true)
-   10     hex: () -> crypto.digest(dtype, str, false)
-   10   }
+   10     digest: () -> crypto.digest(dtype, str, true)
+   13     hex: () -> crypto.digest(dtype, str, false)
+   13   }
 
 ****0 hmac_wrapper = (key, str, algo) ->
-   12   {
+   17   {
 ****0     digest: () -> crypto_hmac.digest(algo, str, key, true)
-    8     hex: () -> crypto_hmac.digest(algo, str, key, false)
-   12   }
+   12     hex: () -> crypto_hmac.digest(algo, str, key, false)
+   17   }
 
-    4 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
-   12 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
-   12 md5 = (str) -> crypto_wrapper("md5", str)
+    5 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
+   17 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
+   17 md5 = (str) -> crypto_wrapper("md5", str)
     6 sha1 = (str) -> crypto_wrapper("sha1", str)
 ****0 sha256 = (str) -> crypto_wrapper("sha256", str)
     1 hmac = (key, str, algo) ->
@@ -404,6 +414,7 @@
     1 config     = require "moonship.config"
     1 codecacher = require "moonship.codecacher"
     1 util       = require "moonship.util"
+    1 log        = require "moonship.log"
 
       -- response with
       -- :body, :code, :headers, :status, :error
@@ -415,48 +426,47 @@
 ****0         aws_secret_access_key: options.aws_secret_access_key,
 ****0         aws_s3_code_path: options.aws_s3_code_path
             }
-
 ****0     @options = config.Config(options)
-****0     @codeCache = codecacher.CodeCacher(@options.data)
+****0     @codeCache = codecacher.CodeCacher(@options\get())
 
-    1   handleResponse: (rst) =>
+****0   handleResponse: (rst) =>
     1     return {body: rst, code: 500, status: "500 unexpected response", headers: {'Content-Type': "text/plain"}} if type(rst) ~= 'table'
 
     1     rst.code = rst.code or 200
     1     rst.headers = rst.headers or {}
-****0     rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"
-    2     rst
+    1     rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"
+          rst
 
-****0   engage: (req) =>
-****0     rst, err = @codeCache\get(req, @options.data)
+    2   engage: (req) =>
+****0     rst, err = @codeCache\get(req, @options\get())
 
 ****0     return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
 ****0     return { code: 404, headers: {}  } unless rst
 
 ****0     @handleResponse(rst)
 
-    1 { :Engine }
+    2 { :Engine }
 
 ==============================================================================
 ./moonship/http.moon
 ==============================================================================
 
-    3 util         = require "moonship.util"
-    3 oauth1       = require "moonship.oauth1"
+    4 util         = require "moonship.util"
+    4 oauth1       = require "moonship.oauth1"
 
-    3 ltn12        = require "ltn12"
-    3 string_upper = string.upper
+    4 ltn12        = require "ltn12"
+    4 string_upper = string.upper
 ****0 http_handler = nil
 
       -- http.compat.socket is for local testing only, it doesn't work with openresty
       -- Failed installing dependency: https://luarocks.org/compat53-0.3-1.src.rock - Build error: Failed compiling object ltablib.o
 ****0 http_handler = require "moonship.nginx.http" if ngx
-    3 http_handler = require "http.compat.socket" unless ngx
+    4 http_handler = require "http.compat.socket" unless ngx
 
-    3 has_zlib, zlib = pcall(require, "zlib")
+    4 has_zlib, zlib = pcall(require, "zlib")
 
-    3 import concat from table
-    3 import query_string_encode from util
+    4 import concat from table
+    4 import query_string_encode from util
 
 ****0 string_upper = string.upper
 
@@ -472,46 +482,46 @@
 
 ****0   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
-    6   return { code: 0, err: "url is required" } unless opts.url
+    7   return { code: 0, err: "url is required" } unless opts.url
 
-    6   opts["method"] = string_upper(opts["method"] or 'GET')
-    6   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
-    6   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
+    7   opts["method"] = string_upper(opts["method"] or 'GET')
+    7   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
+    7   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
         -- auto add content length
-    6   if opts["body"]
+    7   if opts["body"]
 ****0     opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
 
-    6   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
+    7   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
 ****0   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
-    6   opts.ssl_opts = {verify: "none"} unless opts["ssl_opts"]
+    7   opts.ssl_opts = {verify: "none"} unless opts["ssl_opts"]
 
         unless ngx
-    6     if has_zlib then
+    7     if has_zlib then
 ****0       opts.headers["accept-encoding"] = "gzip, deflate"
 
-    6     resultChunks = {}
-    6     body = ""
+    7     resultChunks = {}
+    7     body = ""
 ****0     opts.sink = ltn12.sink.table(resultChunks)
-    6     one, code, headers, status = http_handler.request(opts)
-    6     body = concat(resultChunks) if one
+    7     one, code, headers, status = http_handler.request(opts)
+    7     body = concat(resultChunks) if one
 
-    6     res =  {:body, :code, :headers, :status }
+    7     res =  {:body, :code, :headers, :status }
 
-    6     if has_zlib and res.body
+    7     if has_zlib and res.body
 ****0       encoding = res.headers["content-encoding"] or ""
-    6       deflated = encoding\find("deflate")
-    6       gziped = encoding\find("gzip")
-    6       bodys = res.body
-    6       if (gziped or deflated)
-    6         stream = zlib.inflate()
+    7       deflated = encoding\find("deflate")
+    7       gziped = encoding\find("gzip")
+    7       bodys = res.body
+    7       if (gziped or deflated)
+    7         stream = zlib.inflate()
 ****0         status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
-    6         res.body = output
+    7         res.body = output
 
-    6     return res
+    7     return res
 
-    6   http_handler.request(opts)
+    7   http_handler.request(opts)
 
     5 { :request }
 
@@ -544,7 +554,7 @@
 
     8 FATAL = 10
 ****0 ERROR = 20
-    5 WARN = 30
+    7 WARN = 30
 ****0 INFO = 40
 ****0 DEBUG = 50
 
@@ -558,71 +568,72 @@
             when WARN
 ****0         ngx.log(ngx.WARN, ...)
             when INFO
-    5         ngx.log(ngx.INFO, ...)
-    5       when DEBUG
-    5         ngx.log(ngx.DEBUG, ...)
+****0         ngx.log(ngx.INFO, ...)
+    7       when DEBUG
+    7         ngx.log(ngx.DEBUG, ...)
+
+    1     ngx.say level, ...
 
         else
-    1     lvl = COLOR_INFO
-    3     switch level
-    1       when FATAL
-    2         lvl = COLOR_FATAL
+    5     lvl = COLOR_INFO
+    1     switch level
+    4       when FATAL
+    3         lvl = COLOR_FATAL
     1       when ERROR
     1         lvl = COLOR_ERROR
-    1       when WARN
-****0         lvl = COLOR_WARN
-    5       when INFO
-****0         lvl = COLOR_INFO
-    8       when DEBUG
-****0         lvl = COLOR_DEBUG
+            when WARN
+    7         lvl = COLOR_WARN
+            when INFO
+    8         lvl = COLOR_INFO
+            when DEBUG
+    8         lvl = COLOR_DEBUG
 
-    8     print lvl, ...
+****0     print lvl, ...
 
 
-    8 class Log
+      class Log
 ****0   new: (log_level = INFO, loggers = { printLogger }) =>
-****0     @loggers = loggers
-    8     @log_level = log_level
+    8     @loggers = loggers
+****0     @log_level = log_level
 
-    5   attachLogger: (lgr) =>
+    2   attachLogger: (lgr) =>
 ****0     @loggers[#@loggers+1] = lgr
 
-    5   getLoggers: () =>
+****0   getLoggers: () =>
 ****0     @loggers
 
-    5   doFormat: (p) =>
-    8     if type(p) == 'table'
-****0       return cjson_safe.encode p
+    8   doFormat: (p) =>
+****0     if type(p) == 'table'
+   13       return cjson_safe.encode p
 
-    5     if p == nil
-****0       return "nil"
+****0     if p == nil
+    7       return "nil"
 
-    5     tostring(p)
+    7     tostring(p)
 
-    5   doLog: (req_level, level, ...) =>
-****0     if req_level >= level
-   10       params = [@doFormat(v) for v in *{...}]
-    5       for _, logger in ipairs(@loggers)
-   10         logger level, unpack params
+****0   doLog: (req_level, level, ...) =>
+   14     if req_level >= level
+    7       params = [@doFormat(v) for v in *{...}]
+   14       for _, logger in ipairs(@loggers)
+    7         logger level, unpack params
 
-****0   level: (ll) =>
-    5     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
-****0     ll = FATAL if ll < FATAL
+    7   level: (ll) =>
+****0     ll = DEBUG if type (ll) ~= "number" or ll > DEBUG
+   14     ll = FATAL if ll < FATAL
 
-    5     @log_level = ll
+****0     @log_level = ll
 
-****0   fatal: (...) =>
-   19     @doLog(@log_level, FATAL, ...)
+   21   fatal: (...) =>
+****0     @doLog(@log_level, FATAL, ...)
 
     1   error: (...) =>
-    1     @doLog(@log_level, ERROR, ...)
+****0     @doLog(@log_level, ERROR, ...)
 
-    1   warn: (...) =>
+****0   warn: (...) =>
 ****0     @doLog(@log_level, WARN, ...)
 
-    1   info: (...) =>
-    9     @doLog(@log_level, INFO, ...)
-
+    9   info: (...) =>
+****0     @doLog(@log_level, INFO, ...)
 
     8   debug: (...) =>
 ****0     @doLog(@log_level, DEBUG, ...)
@@ -635,26 +646,26 @@
 ==============================================================================
 ./moonship/oauth1.moon
 ==============================================================================
-    4 log               = require "moonship.log"
-    4 util              = require "moonship.util"
-    4 crypto            = require "moonship.crypto"
+    5 log               = require "moonship.log"
+    5 util              = require "moonship.util"
+    5 crypto            = require "moonship.crypto"
 
-    4 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
-    4 import sort, concat from table
+    5 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
+    5 import sort, concat from table
 
-    4 escape_uri        = url_escape
-    4 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
+    5 escape_uri        = url_escape
+    5 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
 ****0 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
-    4 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
-    4 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
+    5 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
+    5 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
 
-    4 local *
+    5 local *
 
-    4 normalizeParameters = (parameters, body, query) ->
-    4   items = { query_string_encode(parameters, "&") }
+    5 normalizeParameters = (parameters, body, query) ->
+    5   items = { query_string_encode(parameters, "&") }
 
-    4   string_split(body, "&", items) if body
-    4   string_split(query, "&", items) if query
+    5   string_split(body, "&", items) if body
+    5   string_split(query, "&", items) if query
 
     1   sort(items)
     2   concat(items, "&")
@@ -673,11 +684,11 @@
         -- parse url for query string
 ****0   parts = url_parse(opts.url)
     3   parts.port = nil if (url_default_port(parts.scheme) == parts.port)
-    4   base_uri = url_build(parts, false)
+    5   base_uri = url_build(parts, false)
 
 
         -- allow for unit testing by passing in timestamp
-    4   timestamp = oauth['timestamp'] or os.time()
+    5   timestamp = oauth['timestamp'] or os.time()
 ****0   parameters = {
     1     oauth_consumer_key: oauth["consumerkey"],
     1     oauth_signature_method: "HMAC-SHA1",
@@ -945,6 +956,7 @@
 
     7 url              = require "moonship.url"
     7 cjson_safe       = require "cjson.safe"
+    7 log              = require "moonship.log"
 
     7 import concat, insert, sort from table
 
@@ -1064,16 +1076,21 @@
 
    26   __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
-   20 applyDefaults = (opts, defOpts) ->
-   20   for k, v in pairs(defOpts) do
+   20 clone = (src, dest={}) ->
+   20   for k, v in pairs(src) do dest[k] = v
+        dest
+
+****0 applyDefaults = (opts, defOpts) ->
+****0   for k, v in pairs(defOpts) do
 ****0     opts[k] = v unless opts[k]
+
         opts
 
-****0 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
+   40 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
 ****0   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-   20   :json_encodable, :from_json, :to_json,
-****0   :query_string_encode, :resolveGithubRaw, :applyDefaults
-      }
+   40   :json_encodable, :from_json, :to_json, :clone,
+   20   :query_string_encode, :resolveGithubRaw, :applyDefaults
+   20 }
 
 ==============================================================================
 Summary
@@ -1081,17 +1098,17 @@ Summary
 
 File                       Hits Missed Coverage
 -----------------------------------------------
-./moonship/awsauth.moon    36   18     66.67%
+./moonship/awsauth.moon    41   15     73.21%
 ./moonship/codecacher.moon 76   60     55.88%
-./moonship/config.moon     9    4      69.23%
+./moonship/config.moon     13   5      72.22%
 ./moonship/crypto.moon     22   8      73.33%
-./moonship/engine.moon     11   13     45.83%
+./moonship/engine.moon     12   12     50.00%
 ./moonship/http.moon       31   12     72.09%
 ./moonship/log.moon        5    2      71.43%
-./moonship/logger.moon     45   24     65.22%
+./moonship/logger.moon     39   27     59.09%
 ./moonship/oauth1.moon     32   8      80.00%
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/url.moon        38   42     47.50%
-./moonship/util.moon       57   23     71.25%
+./moonship/util.moon       61   23     72.62%
 -----------------------------------------------
-Total                      401  240    62.56%
+Total                      409  240    63.02%

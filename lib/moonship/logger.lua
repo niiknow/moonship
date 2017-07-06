@@ -14,16 +14,17 @@ printLogger = function(level, ...)
   if ngx then
     local _exp_0 = level
     if FATAL == _exp_0 then
-      return ngx.log(ngx.CRIT, ...)
+      ngx.log(ngx.CRIT, ...)
     elseif ERROR == _exp_0 then
-      return ngx.log(ngx.ERR, ...)
+      ngx.log(ngx.ERR, ...)
     elseif WARN == _exp_0 then
-      return ngx.log(ngx.WARN, ...)
+      ngx.log(ngx.WARN, ...)
     elseif INFO == _exp_0 then
-      return ngx.log(ngx.INFO, ...)
+      ngx.log(ngx.INFO, ...)
     elseif DEBUG == _exp_0 then
-      return ngx.log(ngx.DEBUG, ...)
+      ngx.log(ngx.DEBUG, ...)
     end
+    return ngx.say(level, ...)
   else
     local lvl = COLOR_INFO
     local _exp_0 = level

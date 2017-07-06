@@ -27,15 +27,15 @@ myUrlHandler = function(opts)
   local cleanPath, querystring = string.match(opts.url, "([^?#]*)(.*)")
   local full_path = util.path_sanitize(cleanPath)
   local authHeaders = { }
+  full_path = util.path_sanitize(tostring(full_path) .. "/index.moon")
   if opts.aws and opts.aws.aws_s3_code_path then
+    opts.aws.request_path = "/" .. tostring(opts.aws.aws_s3_code_path) .. "/" .. tostring(full_path)
     local aws = aws_auth.AwsAuth(opts.aws)
-    local host = aws.options.aws_host
-    full_path = "https://" .. tostring(host) .. "/" .. tostring(opts.aws.aws_s3_code_path) .. "/" .. tostring(full_path)
+    full_path = "https://" .. tostring(aws.options.aws_host) .. tostring(opts.aws.request_path)
     authHeaders = aws:get_auth_headers()
   else
     full_path = tostring(opts.remote_path) .. "/" .. tostring(full_path)
   end
-  full_path = tostring(full_path) .. "/index.moon"
   log.debug("code load: " .. tostring(full_path))
   local req = {
     url = full_path,
@@ -211,7 +211,7 @@ do
         codeHandler = myUrlHandler,
         code_cache_size = 10000
       }
-      opts = util.applyDefaults(opts, defOpts)
+      util.applyDefaults(opts, defOpts)
       if (opts.ttl < 120) then
         opts.ttl = 120
       end

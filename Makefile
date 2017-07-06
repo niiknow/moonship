@@ -7,7 +7,7 @@ INSTALL ?= install
 
 .PHONY: all test test-moon install build
 
-all: ;
+all: build ;
 
 install: all
 	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/moonship

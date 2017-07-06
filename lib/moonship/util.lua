@@ -1,11 +1,12 @@
 local url = require("moonship.url")
 local cjson_safe = require("cjson.safe")
+local log = require("moonship.log")
 local concat, insert, sort
 do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local url_unescape, url_escape, url_parse, url_default_port, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults
+local url_unescape, url_escape, url_parse, url_default_port, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, clone, applyDefaults
 url_unescape = function(str)
   str = str:gsub('+', ' ')
   return str:gsub("%%(%x%x)", function(c)
@@ -151,6 +152,15 @@ resolveGithubRaw = function(modname)
   end
   return __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 end
+clone = function(src, dest)
+  if dest == nil then
+    dest = { }
+  end
+  for k, v in pairs(src) do
+    dest[k] = v
+  end
+  return dest
+end
 applyDefaults = function(opts, defOpts)
   for k, v in pairs(defOpts) do
     if not (opts[k]) then
@@ -173,6 +183,7 @@ return {
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
+  clone = clone,
   query_string_encode = query_string_encode,
   resolveGithubRaw = resolveGithubRaw,
   applyDefaults = applyDefaults

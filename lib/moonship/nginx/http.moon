@@ -1,6 +1,7 @@
 
 http_handle       = require "resty.http"
 util              = require "moonship.util"
+log               = require "moonship.log"
 
 local *
 request_ngx = (request_uri, opts={}) ->
@@ -24,7 +25,6 @@ request_ngx = (request_uri, opts={}) ->
   for k,v in pairs(h) do
     ngx.req.set_header(k, v)
 
-  -- ngx.say util.to_json h
   req_t.body = opts.body if opts.body
 
   rsp, err = ngx.location.capture(capture_url, req_t)

@@ -1,6 +1,7 @@
 local config = require("moonship.config")
 local codecacher = require("moonship.codecacher")
 local util = require("moonship.util")
+local log = require("moonship.log")
 local Engine
 do
   local _class_0
@@ -22,7 +23,7 @@ do
       return rst
     end,
     engage = function(self, req)
-      local rst, err = self.codeCache:get(req, self.options.data)
+      local rst, err = self.codeCache:get(req, self.options:get())
       if err then
         return {
           error = err,
@@ -54,7 +55,7 @@ do
         }
       end
       self.options = config.Config(options)
-      self.codeCache = codecacher.CodeCacher(self.options.data)
+      self.codeCache = codecacher.CodeCacher(self.options:get())
     end,
     __base = _base_0,
     __name = "Engine"

@@ -1,4 +1,5 @@
 local util = require("moonship.util")
+local log = require("moonship.log")
 local aws_region = os.getenv("AWS_DEFAULT_REGION")
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -6,10 +7,15 @@ local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local app_path = os.getenv("MOONSHIP_APP_PATH")
 local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
+local _data = { }
 local Config
 do
   local _class_0
-  local _base_0 = { }
+  local _base_0 = {
+    get = function(self)
+      return util.clone(_data)
+    end
+  }
   _base_0.__index = _base_0
   _class_0 = setmetatable({
     __init = function(self, newOpts)
@@ -28,7 +34,8 @@ do
         code_cache_size = code_cache_size,
         remote_path = remote_path
       }
-      self.data = util.applyDefaults(newOpts, defaultOpts)
+      util.applyDefaults(newOpts, defaultOpts)
+      _data = newOpts
     end,
     __base = _base_0,
     __name = "Config"
