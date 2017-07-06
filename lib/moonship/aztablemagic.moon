@@ -8,6 +8,8 @@ mydate = require "moonship.date"
 string_gsub = string.gsub
 my_max_number = 9007199254740991  -- from javascript max safe int
 
+local *
+
 env_id = (env="dev") ->
   switch type env
     when "dev"
@@ -40,7 +42,7 @@ generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
   newopts.mt_table = newopts.table_name
 
   -- trim ending number and replace with dt
-  newopts.table_name = string_gsub(newopts.mt_table, "\d+$", "") .. os.date(format, ts)
+  newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
   newopts
 
 -- generate array of daily opts
@@ -71,7 +73,7 @@ opts_yearly = (opts={ :table_name, :tenant, :env, :pk, :prefix }, years=1, ts=os
   multiplier = days and 1 or -1
   new_ts = ts
   for i = 1, days
-    rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
+    rst[#rst + 1] = generate_opts(opts, "%Y", new_ts)
     new_ts = mydate.add_year(new_ts, years)
 
   rst

@@ -4,7 +4,7 @@ local sharedkeylite
 sharedkeylite = azureauth.sharedkeylite
 local to_json
 to_json = util.to_json
-local item_list
+local item_list, item_create, item_update, item_retrieve, item_delete, table_opts
 item_list = function(opts, query)
   if opts == nil then
     opts = {
@@ -45,7 +45,6 @@ item_list = function(opts, query)
     }
   }
 end
-local item_create
 item_create = function(opts, item)
   if opts == nil then
     opts = {
@@ -70,7 +69,6 @@ item_create = function(opts, item)
     }
   }
 end
-local item_update
 item_update = function(opts, item, method)
   if opts == nil then
     opts = {
@@ -102,7 +100,6 @@ item_update = function(opts, item, method)
     }
   }
 end
-local item_retrieve
 item_retrieve = function(opts)
   if opts == nil then
     opts = {
@@ -118,7 +115,6 @@ item_retrieve = function(opts)
     top = 1
   })
 end
-local item_delete
 item_delete = function(opts)
   if opts == nil then
     opts = {
@@ -147,28 +143,26 @@ item_delete = function(opts)
     }
   }
 end
-local _ = {
-  table_opts = function(self, opts)
-    opts.table_name = opts:gsub("^/*", "")
-    auth.sharedkeylite(opts)
-    local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
-    local autho = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
-    local headers = {
-      ["Authorization"] = autho,
-      ["x-ms-date"] = opts.date,
-      ["Accept"] = "application/json;odata=nometadata",
-      ["x-ms-version"] = "2016-05-31"
-    }
-    if not ((opts.method == "GET" or opts.method == "DELETE")) then
-      headers["Content-Type"] = "application/json"
-    end
-    return {
-      method = opts.method,
-      url = url,
-      headers = headers
-    }
+table_opts = function(self, opts)
+  opts.table_name = opts:gsub("^/*", "")
+  auth.sharedkeylite(opts)
+  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
+  local autho = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
+  local headers = {
+    ["Authorization"] = autho,
+    ["x-ms-date"] = opts.date,
+    ["Accept"] = "application/json;odata=nometadata",
+    ["x-ms-version"] = "2016-05-31"
+  }
+  if not ((opts.method == "GET" or opts.method == "DELETE")) then
+    headers["Content-Type"] = "application/json"
   end
-}
+  return {
+    method = opts.method,
+    url = url,
+    headers = headers
+  }
+end
 return {
   item_create = item_create,
   item_retrieve = item_retrieve,

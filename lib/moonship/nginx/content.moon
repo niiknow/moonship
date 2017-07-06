@@ -1,25 +1,34 @@
-engine = require "moonship.engine"
+log        =  require "moonship.log"
+-- log.level(log.DEBUG)
 
-log =  require "moonship.log"
+engine     = require "moonship.engine"
+awsauth    = require "moonship.awsauth"
+aztm       = require "moonship.aztablemagic"
+util       = require "moonship.util"
+crypto     = require "moonship.crypto"
+hmacauth   = require "moonship.hmacauth"
+http       = require "moonship.http"
+logger     = require "moonship.logger"
+oauth1     = require "moonship.oauth1"
 
-log.level(log.DEBUG)
+import table_clone from util
 
-ngin = engine {
+opts = {
   useS3: true,
   plugins: {
-    awsauth: require "moonship.plugins.awsauth",
-    azureauth: require "moonship.plugins.azureauth",
-    crypto: require "moonship.plugins.crypto",
-    hmacauth: require "moonship.plugins.hmacauth",
-    http: require "moonship.plugins.http",
-    jwt: require "moonship.plugins.jwt",
-    log: require "moonship.plugins.log",
-    oauth1: require "moonship.plugins.oauth1",
-    require: require "moonship.plugins.require",
-    request: require "moonship.plugins.request",
-    util: require "moonship.plugins.util"
+    awsauth: awsauth,
+    azauth: table_clone(aztm),
+    crypto: table_clone(crypto),
+    hmacauth: table_clone(hmacauth),
+    http: table_clone(http),
+    log: logger(),
+    oauth1: table_clone(oauth1),
+    util: table_clone(util)
   }
 }
+ngin = engine opts
+
+
 rst = ngin\engage()
 
 if rst

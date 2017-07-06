@@ -3,6 +3,8 @@ azureauth     = require "moonship.azauth"
 import sharedkeylite from azureauth
 import to_json from util
 
+local *
+
 -- list items
 item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter, :top, :select }) ->
   sharedkeylite(opts)
@@ -91,7 +93,7 @@ item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
   }
 
 -- get table header to create or delete table
-table_opts: (opts) =>
+table_opts = (opts) =>
   opts.table_name = opts\gsub("^/*", "")
   auth.sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
@@ -111,11 +113,4 @@ table_opts: (opts) =>
     headers: headers
   }
 
-{
-  :item_create,
-  :item_retrieve,
-  :item_update,
-  :item_delete,
-  :item_list,
-  :table_opts
-}
+{ :item_create, :item_retrieve, :item_update, :item_delete, :item_list, :table_opts }

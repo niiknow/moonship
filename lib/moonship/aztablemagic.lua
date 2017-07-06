@@ -3,7 +3,7 @@ local aztable = require("moonship.aztable")
 local mydate = require("moonship.date")
 local string_gsub = string.gsub
 local my_max_number = 9007199254740991
-local env_id
+local env_id, opts_name, generate_opts, opts_daily, opts_monthly, opts_yearly, opts_cache_get, opts_cache_set
 env_id = function(env)
   if env == nil then
     env = "dev"
@@ -22,7 +22,6 @@ env_id = function(env)
   end
   return 79
 end
-local opts_name
 opts_name = function(opts)
   if opts == nil then
     opts = {
@@ -40,7 +39,6 @@ opts_name = function(opts)
   opts.prefix = (tostring(opts.tenant) .. tostring(opts.env_id)):gsub("[^a-zA-Z0-9]", "")
   opts.table_name = (tostring(opts.prefix) .. tostring(opts.table)):gsub("[^a-zA-Z0-9]", "")
 end
-local generate_opts
 generate_opts = function(opts, format, ts)
   if opts == nil then
     opts = {
@@ -55,10 +53,9 @@ generate_opts = function(opts, format, ts)
   end
   local newopts = util.table_clone(opts)
   newopts.mt_table = newopts.table_name
-  newopts.table_name = string_gsub(newopts.mt_table, "\d+$", "") .. os.date(format, ts)
+  newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
   return newopts
 end
-local opts_daily
 opts_daily = function(opts, days, ts)
   if opts == nil then
     opts = {
@@ -84,7 +81,6 @@ opts_daily = function(opts, days, ts)
   end
   return rst
 end
-local opts_monthly
 opts_monthly = function(opts, months, ts)
   if opts == nil then
     opts = {
@@ -110,7 +106,6 @@ opts_monthly = function(opts, months, ts)
   end
   return rst
 end
-local opts_yearly
 opts_yearly = function(opts, years, ts)
   if opts == nil then
     opts = {
@@ -131,12 +126,11 @@ opts_yearly = function(opts, years, ts)
   local multiplier = days and 1 or -1
   local new_ts = ts
   for i = 1, days do
-    rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
+    rst[#rst + 1] = generate_opts(opts, "%Y", new_ts)
     new_ts = mydate.add_year(new_ts, years)
   end
   return rst
 end
-local opts_cache_get
 opts_cache_get = function(opts)
   if opts == nil then
     opts = {
@@ -153,7 +147,6 @@ opts_cache_get = function(opts)
   newopts.rk = my_max_number - os.time()
   newopts.query = "(PartitionKey eq '" .. tostring(newopts.pk) .. "') and (RowKey le '" .. tostring(newopts.rk) .. "')"
 end
-local opts_cache_set
 opts_cache_set = function(opts)
   if opts == nil then
     opts = {

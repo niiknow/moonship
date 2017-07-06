@@ -352,13 +352,14 @@
 
     1 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
     1 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
+    1 app_env               = os.getenv("MOONSHIP_APP_ENV")
 
 ****0 table_clone           = util.table_clone
 
 ****0 _data = {}
 
     1 class Config
-****0   new: (newOpts={ aws_region: 'us-east-1', code_cache_size: 10000 }) =>
+****0   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
     1     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path }
 
 ****0     util.applyDefaults(newOpts, defaultOpts)
@@ -1110,7 +1111,7 @@ File                       Hits Missed Coverage
 -----------------------------------------------
 ./moonship/awsauth.moon    37   18     67.27%
 ./moonship/codecacher.moon 82   57     58.99%
-./moonship/config.moon     11   6      64.71%
+./moonship/config.moon     12   6      66.67%
 ./moonship/crypto.moon     22   8      73.33%
 ./moonship/engine.moon     12   12     50.00%
 ./moonship/http.moon       13   12     52.00%
@@ -1122,4 +1123,4 @@ File                       Hits Missed Coverage
 ./moonship/url.moon        38   42     47.50%
 ./moonship/util.moon       55   28     66.27%
 -----------------------------------------------
-Total                      405  248    62.02%
+Total                      406  248    62.08%
