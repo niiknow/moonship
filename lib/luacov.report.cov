@@ -357,42 +357,42 @@
     6 crypto        = require "crypto"
     6 crypto_hmac   = require "crypto.hmac"
     6 mybcrypt      = require "bcrypt"
-    6 mime          = require "mime"
+    6 basexx        = require "basexx"
 
-    6 { :b64, :unb64 } = mime
+    6 { :to_base64, :from_base64 } = basexx
 
-****0 local *
+    6 local *
 
-    6 base64_encode = (...) -> (b64 ...)
+****0 base64_encode = to_base64
 
-    1 base64_decode = (...) -> (unb64 ...)
+****0 base64_decode = from_base64
 
-****0 crypto_wrapper = (dtype, str) ->
-   10   {
-****0     digest: () -> crypto.digest(dtype, str, true)
-    3     hex: () -> crypto.digest(dtype, str, false)
+   10 crypto_wrapper = (dtype, str) ->
+        {
+    7     digest: () -> crypto.digest(dtype, str, true)
+   10     hex: () -> crypto.digest(dtype, str, false)
    10   }
 
-    7 hmac_wrapper = (key, str, algo) ->
-   10   {
-   10     digest: () -> crypto_hmac.digest(algo, str, key, true)
-    6     hex: () -> crypto_hmac.digest(algo, str, key, false)
-        }
+****0 hmac_wrapper = (key, str, algo) ->
+   12   {
+****0     digest: () -> crypto_hmac.digest(algo, str, key, true)
+    8     hex: () -> crypto_hmac.digest(algo, str, key, false)
+   12   }
 
-****0 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
-    8 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
+    4 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
+   12 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
    12 md5 = (str) -> crypto_wrapper("md5", str)
-****0 sha1 = (str) -> crypto_wrapper("sha1", str)
-    4 sha256 = (str) -> crypto_wrapper("sha256", str)
-   12 hmac = (key, str, algo) ->
-   12   if algo == md5
-    6     hmac_wrapper(key, str, "md5")
-****0   elseif algo == sha1
-    1     hmac_wrapper(key, str, "sha1")
-    1   elseif algo == sha256
-****0     hmac_wrapper(key, str, "sha256")
+    6 sha1 = (str) -> crypto_wrapper("sha1", str)
+****0 sha256 = (str) -> crypto_wrapper("sha256", str)
+    1 hmac = (key, str, algo) ->
+    1   if algo == md5
+****0     hmac_wrapper(key, str, "md5")
+    1   elseif algo == sha1
+    6     hmac_wrapper(key, str, "sha1")
+****0   elseif algo == sha256
+    1     hmac_wrapper(key, str, "sha256")
 
-    6 { :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac }
+****0 { :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac }
 
 ==============================================================================
 ./moonship/engine.moon
@@ -439,13 +439,17 @@
 
     3 util         = require "moonship.util"
     3 oauth1       = require "moonship.oauth1"
-    3 http         = require "httpclient"
+
+    3 ltn12        = require "ltn12"
+    3 string_upper = string.upper
+    3 http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
+
     3 has_zlib, zlib = pcall(require, "zlib")
 
     3 import concat from table
     3 import query_string_encode from util
 
-    3 string_upper = string.upper
+    6 string_upper = string.upper
 
       --{
       --  body = <response body>,
@@ -457,49 +461,50 @@
 ****0 local *
 ****0 request = (opts) ->
 
-****0   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
+   12   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
-    6   return { code: 0, err: "url is required" } unless opts.url
-
-    6   hc = http.new()
+****0   return { code: 0, err: "url is required" } unless opts.url
 
     6   opts["method"] = string_upper(opts["method"] or 'GET')
     6   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
-    6   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
+****0   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
         -- auto add content length
-    6   if opts["body"]
+****0   if opts["body"]
 ****0     opts["body"] = (type(opts["body"]) == "table") and query_string_encode(opts["body"]) or opts["body"]
 
-    6   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
+****0   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
 ****0   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
     6   opts.ssl_opts = {verify: "none"} unless opts["ssl_opts"]
 
-****0   if has_zlib then
-    6     opts.headers["accept-encoding"] = "gzip, deflate"
+    6   if has_zlib then
+****0     opts.headers["accept-encoding"] = "gzip, deflate"
 
-    6   if ngx and opts.capture_url
-    6     hc = http.new('httpclient.ngx_driver')
-****0     hc\set_default('capture_url', opts.capture_url)
-    6     hc\set_default('capture_variable', opts.capture_variable or "url")
+    6   unless ngx
+****0     resultChunks = {}
+    6     body = ""
+    6     opts.sink = ltn12.sink.table(resultChunks)
+    6     one, code, headers, status = http_handler.request(opts)
+   12     body = concat(resultChunks) if one
 
-****0   util.applyDefaults(opts, hc\get_defaults())
-****0   params = opts.params or nil
+    6     res =  {:body, :code, :headers, :status }
 
-   12   res = hc.client\request(opts.url, params, opts.method, opts)
-    6   if has_zlib and res.body
-    6     encoding = res.headers["content-encoding"] or ""
-    6     deflated = encoding\find("deflate")
-    6     gziped = encoding\find("gzip")
-    6     bodys = res.body
-    6     if (gziped or deflated)
-    6       stream = zlib.inflate()
-    6       status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
-    5       res.body = output
+****0     if has_zlib and res.body
+    6       encoding = res.headers["content-encoding"] or ""
+    6       deflated = encoding\find("deflate")
+    6       gziped = encoding\find("gzip")
+    6       bodys = res.body
+    6       if (gziped or deflated)
+****0         stream = zlib.inflate()
+    6         status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
+    6         res.body = output
 
-    5   res
-****0 { :request }
+    6     return res
+
+    6   http_handler.request(opts)
+
+    5 { :request }
 
 ==============================================================================
 ./moonship/log.moon
@@ -931,7 +936,6 @@
 
     7 url              = require "moonship.url"
     7 cjson_safe       = require "cjson.safe"
-    7 tablex           = require "pl.tablex"
 
     7 import concat, insert, sort from table
 
@@ -1071,14 +1075,14 @@ File                       Hits Missed Coverage
 ./moonship/awsauth.moon    36   18     66.67%
 ./moonship/codecacher.moon 75   58     56.39%
 ./moonship/config.moon     9    4      69.23%
-./moonship/crypto.moon     23   7      76.67%
+./moonship/crypto.moon     22   8      73.33%
 ./moonship/engine.moon     11   13     45.83%
-./moonship/http.moon       30   10     75.00%
+./moonship/http.moon       30   12     71.43%
 ./moonship/log.moon        5    2      71.43%
 ./moonship/logger.moon     45   24     65.22%
 ./moonship/oauth1.moon     32   8      80.00%
 ./moonship/sandbox.moon    39   26     60.00%
 ./moonship/url.moon        38   42     47.50%
-./moonship/util.moon       58   23     71.60%
+./moonship/util.moon       57   23     71.25%
 -----------------------------------------------
-Total                      401  235    63.05%
+Total                      399  238    62.64%

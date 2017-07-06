@@ -118,15 +118,17 @@ ADD ./dockerfiles /
 ADD ./lib/moonship /app/lib/moonship/
 RUN cd /usr/local/openresty/luajit/bin/ \
     && ./luarocks install lua-resty-jwt 0.1.10-1 \
+    && ./luarocks install lua-resty-http 0.08-0 \
     && ./luarocks install moonscript \
-    && ./luarocks install httpclient 0.1.0-8 \
     && ./luarocks install lua-zlib 1.1-0 \
     && ./luarocks install luacrypto 0.3.2-2 \
     && ./luarocks install bcrypt 2.1-4 \
     && ./luarocks install penlight 1.4.1 \
     && ./luarocks install lua-lru 1.0-1 \
+    && ./luarocks install basexx 0.1.0-1 \
+    && ./luarocks install --server=http://luarocks.org/dev ltn12 \
 
-RUN chown -R www-data:www-data /app; chmod -R 755 /app \
+    && chown -R www-data:www-data /app; chmod -R 755 /app \
     && mkdir -p /tmp/nginx/temp \
     && mkdir -p /tmp/nginx/cache/{ghr,code} \
     && chown -R www-data:www-data /tmp/nginx; chmod -R 755 /tmp/nginx

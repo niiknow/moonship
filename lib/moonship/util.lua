@@ -1,6 +1,5 @@
 local url = require("moonship.url")
 local cjson_safe = require("cjson.safe")
-local tablex = require("pl.tablex")
 local concat, insert, sort
 do
   local _obj_0 = table

@@ -1,7 +1,6 @@
 
 url              = require "moonship.url"
 cjson_safe       = require "cjson.safe"
-tablex           = require "pl.tablex"
 
 import concat, insert, sort from table
 

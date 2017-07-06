@@ -1,15 +1,15 @@
 crypto        = require "crypto"
 crypto_hmac   = require "crypto.hmac"
 mybcrypt      = require "bcrypt"
-mime          = require "mime"
+basexx        = require "basexx"
 
-{ :b64, :unb64 } = mime
+{ :to_base64, :from_base64 } = basexx
 
 local *
 
-base64_encode = (...) -> (b64 ...)
+base64_encode = to_base64
 
-base64_decode = (...) -> (unb64 ...)
+base64_decode = from_base64
 
 crypto_wrapper = (dtype, str) ->
   {

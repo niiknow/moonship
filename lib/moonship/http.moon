@@ -1,7 +1,14 @@
 
 util         = require "moonship.util"
 oauth1       = require "moonship.oauth1"
-http         = require "httpclient"
+
+ltn12        = require "ltn12"
+string_upper = string.upper
+
+-- http.compat.socket is for local testing only, it doesn't work with openresty
+-- Failed installing dependency: https://luarocks.org/compat53-0.3-1.src.rock - Build error: Failed compiling object ltablib.o
+http_handler = (ngx and require "moonship.nginx.http") or require "http.compat.socket"
+
 has_zlib, zlib = pcall(require, "zlib")
 
 import concat from table
@@ -23,8 +30,6 @@ request = (opts) ->
 
   return { code: 0, err: "url is required" } unless opts.url
 
-  hc = http.new()
-
   opts["method"] = string_upper(opts["method"] or 'GET')
   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
@@ -41,24 +46,27 @@ request = (opts) ->
   if has_zlib then
     opts.headers["accept-encoding"] = "gzip, deflate"
 
-  if ngx and opts.capture_url
-    hc = http.new('httpclient.ngx_driver')
-    hc\set_default('capture_url', opts.capture_url)
-    hc\set_default('capture_variable', opts.capture_variable or "url")
+  unless ngx
+    resultChunks = {}
+    body = ""
+    opts.sink = ltn12.sink.table(resultChunks)
+    one, code, headers, status = http_handler.request(opts)
+    body = concat(resultChunks) if one
 
-  util.applyDefaults(opts, hc\get_defaults())
-  params = opts.params or nil
+    res =  {:body, :code, :headers, :status }
 
-  res = hc.client\request(opts.url, params, opts.method, opts)
-  if has_zlib and res.body
-    encoding = res.headers["content-encoding"] or ""
-    deflated = encoding\find("deflate")
-    gziped = encoding\find("gzip")
-    bodys = res.body
-    if (gziped or deflated)
-      stream = zlib.inflate()
-      status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
-      res.body = output
+    if has_zlib and res.body
+      encoding = res.headers["content-encoding"] or ""
+      deflated = encoding\find("deflate")
+      gziped = encoding\find("gzip")
+      bodys = res.body
+      if (gziped or deflated)
+        stream = zlib.inflate()
+        status, output, eof, bytes_in, bytes_out = pcall(stream, bodys)
+        res.body = output
 
-  res
+    return res
+
+  http_handler.request(opts)
+
 { :request }

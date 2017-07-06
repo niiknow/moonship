@@ -7,7 +7,7 @@ INSTALL ?= install
 
 .PHONY: all test test-moon install build
 
-all: build
+all: ;
 
 install: all
 	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/moonship
@@ -21,5 +21,5 @@ test: all
 build:
 	cd lib && $(MAKE) build
 
-test-moon:
+test-base:
 	cd lib && $(MAKE) test
