@@ -29,8 +29,6 @@ printLogger = (level, ...) ->
       when DEBUG
         ngx.log(ngx.DEBUG, ...)
 
-    ngx.say level, ...
-
   else
     lvl = COLOR_INFO
     switch level
