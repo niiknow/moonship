@@ -19,3 +19,24 @@ describe "moonship.awsauth", ->
     actual = aws_auth.AwsAuth(opts)\get_auth_headers()
 
     assert.same expected, actual
+
+  it "correctly retrieve file from aws", ->
+    expected = 200
+
+    awsOpts = {
+      timestamp: os.time(), aws_host: "s3.amazonaws.com", aws_region: "us-east-1",
+      aws_service: "s3", content_type: "application/x-www-form-urlencoded", request_method: "GET",
+      request_path: "/brick-code/test/localhost/index.lua", request_body: "",
+      aws_secret_access_key: os.getenv("AWS_SECRET_ACCESS_KEY"), aws_access_key_id: os.getenv("AWS_ACCESS_KEY_ID")
+    }
+
+    aws = awsauth.AwsAuth(awsOpts)
+    headers = aws\get_auth_headers()
+    opts = {
+      url: "https://s3.amazonaws.com/brick-code/test/localhost/index.lua",
+      headers: headers
+    }
+
+    rsp = http.request opts
+
+    assert.same awsOpts, rsp

@@ -50,7 +50,6 @@ myUrlHandler = function(opts)
     req.headers[k] = v
   end
   local res, err = httpc.request(req)
-  ngx.say(util.to_json(authHeaders))
   if not (err) then
     return res
   end

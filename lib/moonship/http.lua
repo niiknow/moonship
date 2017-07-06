@@ -2,7 +2,10 @@ local util = require("moonship.util")
 local oauth1 = require("moonship.oauth1")
 local ltn12 = require("ltn12")
 local string_upper = string.upper
-local http_handler = require("moonship.nginx.http")
+local http_handler = nil
+if ngx then
+  http_handler = require("moonship.nginx.http")
+end
 if not (ngx) then
   http_handler = require("http.compat.socket")
 end
@@ -45,10 +48,10 @@ request = function(opts)
       verify = "none"
     }
   end
-  if has_zlib then
-    opts.headers["accept-encoding"] = "gzip, deflate"
-  end
   if not (ngx) then
+    if has_zlib then
+      opts.headers["accept-encoding"] = "gzip, deflate"
+    end
     local resultChunks = { }
     local body = ""
     opts.sink = ltn12.sink.table(resultChunks)

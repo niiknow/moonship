@@ -46,7 +46,6 @@ myUrlHandler = (opts) ->
 
   res, err = httpc.request(req)
 
-  ngx.say util.to_json authHeaders
   return res unless err
 
   log.debug "code load error: #{err}"
