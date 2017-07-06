@@ -9,7 +9,7 @@ sign = function(key, data, algo)
   if algo == nil then
     algo = "sha256"
   end
-  return crypto.hmac(key, str, algo).digest()
+  return base64_encode(crypto.hmac(key, str, algo).digest())
 end
 verify = function(key, data, algo)
   if algo == nil then
@@ -30,13 +30,13 @@ sign_custom = function(key, data, ttl, ts, algo)
   if algo == nil then
     algo = "sha256"
   end
-  return base64_encode(tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data) .. ":" .. sign(tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data)))
+  return tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data) .. ":" .. sign(tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data))
 end
 verify_custom = function(key, payload, algo)
   if algo == nil then
     algo = "sha256"
   end
-  local ts, ttl, data, sig = unpack(string_split(base64_decode(payload), ":"))
+  local ts, ttl, data = unpack(string_split(payload, ":"))
   if (ts < (os.time() - tonumber(str[2]))) then
     return {
       valid = false,
@@ -44,7 +44,7 @@ verify_custom = function(key, payload, algo)
     }
   end
   return {
-    valid = (sig == sign(key, data, ttl, ts))
+    valid = (sign(key, data, ttl, ts) == payload)
   }
 end
 return {
