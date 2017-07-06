@@ -1,5 +1,5 @@
 local util = require("moonship.util")
-local azureauth = require("moonship.azureauth")
+local azureauth = require("moonship.azauth")
 local sharedkeylite
 sharedkeylite = azureauth.sharedkeylite
 local to_json
@@ -77,14 +77,14 @@ item_update = function(opts, item, method)
       account_name = account_name,
       account_key = account_key,
       table_name = table_name,
-      PartitionKey = PartitionKey,
-      RowKey = RowKey
+      pk = pk,
+      rk = rk
     }
   end
   if method == nil then
     method = "PUT"
   end
-  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(item.PartitionKey) .. "',RowKey='" .. tostring(item.RowKey) .. "')"
+  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(item.pk) .. "',RowKey='" .. tostring(item.rk) .. "')"
   opts.table_name = table
   sharedkeylite(opts)
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
@@ -109,12 +109,12 @@ item_retrieve = function(opts)
       account_name = account_name,
       account_key = account_key,
       table_name = table_name,
-      PartitionKey = PartitionKey,
-      RowKey = RowKey
+      pk = pk,
+      rk = rk
     }
   end
   return item_list(opts, {
-    filter = "(PartitionKey eq '" .. tostring(opts.PartitionKey) .. "' and RowKey eq '" .. tostring(opts.RowKey) .. "')",
+    filter = "(PartitionKey eq '" .. tostring(opts.pk) .. "' and RowKey eq '" .. tostring(opts.rk) .. "')",
     top = 1
   })
 end
@@ -125,11 +125,11 @@ item_delete = function(opts)
       account_name = account_name,
       account_key = account_key,
       table_name = table_name,
-      PartitionKey = PartitionKey,
-      RowKey = RowKey
+      pk = pk,
+      rk = rk
     }
   end
-  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(item.PartitionKey) .. "',RowKey='" .. tostring(item.RowKey) .. "')"
+  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(item.pk) .. "',RowKey='" .. tostring(item.rk) .. "')"
   opts.table_name = table
   sharedkeylite(opts)
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)

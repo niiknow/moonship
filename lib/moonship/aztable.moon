@@ -1,5 +1,5 @@
 util          = require "moonship.util"
-azureauth     = require "moonship.azureauth"
+azureauth     = require "moonship.azauth"
 import sharedkeylite from azureauth
 import to_json from util
 
@@ -45,8 +45,8 @@ item_create = (opts={ :account_name, :account_key, :table_name }, item) ->
   }
 
 -- update an item, method can be MERGE to upsert
-item_update = (opts={ :account_name, :account_key, :table_name, :PartitionKey, :RowKey }, item, method="PUT") ->
-  table = "#{opts.table_name}(PartitionKey='#{item.PartitionKey}',RowKey='#{item.RowKey}')"
+item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, item, method="PUT") ->
+  table = "#{opts.table_name}(PartitionKey='#{item.pk}',RowKey='#{item.rk}')"
   opts.table_name = table
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
@@ -66,12 +66,12 @@ item_update = (opts={ :account_name, :account_key, :table_name, :PartitionKey, :
   }
 
 -- retrieve an item
-item_retrieve = (opts={ :account_name, :account_key, :table_name, :PartitionKey, :RowKey }) ->
-  item_list(opts, { filter: "(PartitionKey eq '#{opts.PartitionKey}' and RowKey eq '#{opts.RowKey}')", top: 1 })
+item_retrieve = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
+  item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
 
 -- delete an item
-item_delete = (opts={ :account_name, :account_key, :table_name, :PartitionKey, :RowKey }) ->
-  table = "#{opts.table_name}(PartitionKey='#{item.PartitionKey}',RowKey='#{item.RowKey}')"
+item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
+  table = "#{opts.table_name}(PartitionKey='#{item.pk}',RowKey='#{item.rk}')"
   opts.table_name = table
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
