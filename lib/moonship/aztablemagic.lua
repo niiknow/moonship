@@ -37,8 +37,8 @@ opts_name = function(opts)
   opts.tenant = opts.tenant or "a"
   opts.table = opts.table_name
   opts.env_id = env_id(env)
-  opts.prefix = tostring(opts.tenant) .. tostring(opts.env_id)
-  opts.table_name = tostring(opts.prefix) .. tostring(opts.table)
+  opts.prefix = (tostring(opts.tenant) .. tostring(opts.env_id)):gsub("[^a-zA-Z0-9]", "")
+  opts.table_name = (tostring(opts.prefix) .. tostring(opts.table)):gsub("[^a-zA-Z0-9]", "")
 end
 local generate_opts
 generate_opts = function(opts, format, ts)
@@ -151,7 +151,7 @@ opts_cache_get = function(opts)
   local newopts = opts_daily(opts)
   newopts.pk = newopts.cache_key
   newopts.rk = my_max_number - os.time()
-  local qry = "(PartitionKey eq '" .. tostring(newopts.pk) .. "') and (RowKey le '" .. tostring(newopts.rk) .. "')"
+  newopts.query = "(PartitionKey eq '" .. tostring(newopts.pk) .. "') and (RowKey le '" .. tostring(newopts.rk) .. "')"
 end
 local opts_cache_set
 opts_cache_set = function(opts)

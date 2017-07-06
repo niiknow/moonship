@@ -30,12 +30,15 @@ opts_name = (opts={ :table_name, :tenant, :env, :pk, :prefix }) ->
   opts.tenant = opts.tenant or "a"
   opts.table = opts.table_name
   opts.env_id = env_id(env)
-  opts.prefix = "#{opts.tenant}#{opts.env_id}"
-  opts.table_name = "#{opts.prefix}#{opts.table}"
+  opts.prefix = "#{opts.tenant}#{opts.env_id}"\gsub("[^a-zA-Z0-9]", "")
+
+  -- strip invalid chars
+  opts.table_name = "#{opts.prefix}#{opts.table}"\gsub("[^a-zA-Z0-9]", "")
 
 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
   newopts = util.table_clone(opts)
   newopts.mt_table = newopts.table_name
+
   -- trim ending number and replace with dt
   newopts.table_name = string_gsub(newopts.mt_table, "\d+$", "") .. os.date(format, ts)
   newopts
@@ -77,7 +80,7 @@ opts_cache_get = (opts={ :table_name, :tenant, :env, :pk, :prefix, :cache_key })
   newopts = opts_daily(opts)
   newopts.pk = newopts.cache_key
   newopts.rk = my_max_number - os.time()
-  qry = "(PartitionKey eq '#{newopts.pk}') and (RowKey le '#{newopts.rk}')"
+  newopts.query = "(PartitionKey eq '#{newopts.pk}') and (RowKey le '#{newopts.rk}')"
 
 opts_cache_set = (opts={ :table_name, :tenant, :env, :pk, :rk, :prefix, :cache_ttl, :cache_key, :cache_value }) ->
   newopts = opts_daily(opts)
