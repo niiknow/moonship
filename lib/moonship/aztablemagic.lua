@@ -9,17 +9,17 @@ env_id = function(env)
   end
   local _exp_0 = type(env)
   if "dev" == _exp_0 then
-    return 39
+    return 79
   elseif "tst" == _exp_0 then
-    return 37
+    return 77
   elseif "uat" == _exp_0 then
-    return 35
+    return 75
   elseif "stg" == _exp_0 then
-    return 33
+    return 73
   elseif "prd" == _exp_0 then
-    return 31
+    return 71
   end
-  return 39
+  return 79
 end
 local opts_name
 opts_name = function(opts)
