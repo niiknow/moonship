@@ -5,7 +5,7 @@ do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local url_unescape, url_escape, url_parse, url_default_port, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_deepclone
+local url_unescape, url_escape, url_parse, url_default_port, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_clone
 url_unescape = function(str)
   return str:gsub('+', ' '):gsub("%%(%x%x)", function(c)
     return string.char(tonumber(c, 16))
@@ -156,7 +156,10 @@ applyDefaults = function(opts, defOpts)
   end
   return opts
 end
-table_deepclone = function(t)
+table_clone = function(t, deep)
+  if deep == nil then
+    deep = false
+  end
   if not (("table" == type(t) or "userdata" == type(t))) then
     return nil
   end
@@ -164,7 +167,11 @@ table_deepclone = function(t)
   for k, v in pairs(t) do
     if "__" ~= string.sub(k, 1, 2) then
       if "table" == type(v) or "userdata" == type(v) then
-        ret[k] = table_deepclone(v)
+        if deep then
+          ret[k] = v
+        else
+          ret[k] = table_clone(v, deep)
+        end
       else
         ret[k] = v
       end
@@ -186,7 +193,7 @@ return {
   json_encodable = json_encodable,
   from_json = from_json,
   to_json = to_json,
-  table_deepclone = table_deepclone,
+  table_clone = table_clone,
   query_string_encode = query_string_encode,
   resolveGithubRaw = resolveGithubRaw,
   applyDefaults = applyDefaults

@@ -353,7 +353,7 @@
     1 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
     1 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
 
-****0 table_deepclone       = util.table_deepclone
+****0 table_clone           = util.table_clone
 
 ****0 _data = {}
 
@@ -365,7 +365,7 @@
 
 ****0     _data = newOpts
 
-****0   get: () => table_deepclone(_data)
+****0   get: () => table_clone(_data)
 
 ****0 { :Config }
 
@@ -1083,14 +1083,14 @@
 
         opts
 
-****0 table_deepclone = (t) ->
+****0 table_clone = (t, deep=false) ->
    20   return nil unless ("table"==type(t) or "userdata"==type(t))
 
 ****0   ret = {}
    40   for k,v in pairs(t) do
 ****0     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
    40       if "table" == type(v) or "userdata" == type(v) then
-   20         ret[k] = table_deepclone(v)
+   20         ret[k] = if deep then v else table_clone(v, deep)
             else
 ****0         ret[k] = v
 
@@ -1098,7 +1098,7 @@
 
     6 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
     7   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-****0   :json_encodable, :from_json, :to_json, :table_deepclone,
+****0   :json_encodable, :from_json, :to_json, :table_clone,
     1   :query_string_encode, :resolveGithubRaw, :applyDefaults
     1 }
 

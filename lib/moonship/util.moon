@@ -123,14 +123,14 @@ applyDefaults = (opts, defOpts) ->
 
   opts
 
-table_deepclone = (t) ->
+table_clone = (t, deep=false) ->
   return nil unless ("table"==type(t) or "userdata"==type(t))
 
   ret = {}
   for k,v in pairs(t) do
     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
       if "table" == type(v) or "userdata" == type(v) then
-        ret[k] = table_deepclone(v)
+        ret[k] = if deep then v else table_clone(v, deep)
       else
         ret[k] = v
 
@@ -138,6 +138,6 @@ table_deepclone = (t) ->
 
 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-  :json_encodable, :from_json, :to_json, :table_deepclone,
+  :json_encodable, :from_json, :to_json, :table_clone,
   :query_string_encode, :resolveGithubRaw, :applyDefaults
 }
