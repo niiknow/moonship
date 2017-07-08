@@ -81,14 +81,18 @@ opts_yearly = (opts={ :table_name, :tenant, :env, :pk, :prefix }, years=1, ts=os
 opts_cache_get = (opts={ :table_name, :tenant, :env, :pk, :prefix, :cache_key }) ->
   newopts = opts_daily(opts)
   newopts.pk = newopts.cache_key
-  newopts.rk = my_max_number - os.time()
-  newopts.query = "(PartitionKey eq '#{newopts.pk}') and (RowKey le '#{newopts.rk}')"
+  newopts.rk = tenant
+  newopts.query = "PartitionKey eq '#{newopts.pk}' and RowKey eq '#{tenant}'"
+  newopts.top = 1
+  newopts
 
 opts_cache_set = (opts={ :table_name, :tenant, :env, :pk, :rk, :prefix, :cache_ttl, :cache_key, :cache_value }) ->
   newopts = opts_monthly(opts)
   newopts.pk = newopts.cache_key
-  expiresAt = os.time() + tonumber(newopts.cache_ttl)
-  newopts.rk = my_max_number  - expiresAt
-  newopts.item = { RowKey: newopts.rk, value: value, ttl: cache_ttl, expAt: expiresAt }
+  ts = os.time()
+  dtc = os.date("%Y-%m-%dT%H:%M:%S", ts + ttl)
+  newopts.rk = tenant
+  newopts.item = { RowKey: newopts.rk, expAt: dtc, 'expAt@odata.type': 'Edm.DateTime', v: cache_value, ttl: cache_ttl, ttlx: ts + ttl }
+  newopts
 
 { :azauth, :aztable, :opts_name, :opts_daily, :opts_monthly, :opts_yearly, :opts_cache_get, :opts_cache_set }

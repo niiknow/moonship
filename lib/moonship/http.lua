@@ -37,7 +37,7 @@ request = function(opts)
     opts.headers["content-length"] = #body
   end
   if opts["auth"] then
-    opts.headers["Authorization"] = "Basic " .. tostring(encode_base64(concat(opts.auth, '\n')))
+    opts.headers["Authorization"] = "Basic " .. tostring(encode_base64(concat(opts.auth, ':')))
   end
   if opts["oauth"] then
     opts.headers["Authorization"] = oauth1.create_signature(opts, opts["oauth"])

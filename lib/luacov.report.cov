@@ -495,7 +495,7 @@
 ****0     opts.body = body
     7     opts.headers["content-length"] = #body
 
-****0   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, '\n'))}" if opts["auth"]
+****0   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, ':'))}" if opts["auth"]
     7   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
 ****0   http_handler.request(opts)

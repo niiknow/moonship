@@ -17,11 +17,11 @@ install: all
 	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/moonship/nginx
 	$(INSTALL) lib/moonship/nginx/*.* $(DESTDIR)/$(LUA_LIB_DIR)/moonship/nginx
 
-test: all
+test-resty: all
 	PATH=$(OPENRESTY_PREFIX)/nginx/sbin:$$PATH prove -I../test-nginx/lib -r t
 
 build:
 	cd lib && $(MAKE) build
 
-test-base:
+test:
 	cd lib && $(MAKE) test

@@ -144,8 +144,10 @@ opts_cache_get = function(opts)
   end
   local newopts = opts_daily(opts)
   newopts.pk = newopts.cache_key
-  newopts.rk = my_max_number - os.time()
-  newopts.query = "(PartitionKey eq '" .. tostring(newopts.pk) .. "') and (RowKey le '" .. tostring(newopts.rk) .. "')"
+  newopts.rk = tenant
+  newopts.query = "PartitionKey eq '" .. tostring(newopts.pk) .. "' and RowKey eq '" .. tostring(tenant) .. "'"
+  newopts.top = 1
+  return newopts
 end
 opts_cache_set = function(opts)
   if opts == nil then
@@ -163,14 +165,18 @@ opts_cache_set = function(opts)
   end
   local newopts = opts_monthly(opts)
   newopts.pk = newopts.cache_key
-  local expiresAt = os.time() + tonumber(newopts.cache_ttl)
-  newopts.rk = my_max_number - expiresAt
+  local ts = os.time()
+  local dtc = os.date("%Y-%m-%dT%H:%M:%S", ts + ttl)
+  newopts.rk = tenant
   newopts.item = {
     RowKey = newopts.rk,
-    value = value,
+    expAt = dtc,
+    ['expAt@odata.type'] = 'Edm.DateTime',
+    v = cache_value,
     ttl = cache_ttl,
-    expAt = expiresAt
+    ttlx = ts + ttl
   }
+  return newopts
 end
 return {
   azauth = azauth,
