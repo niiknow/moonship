@@ -119,7 +119,8 @@ resolveGithubRaw = (modname) ->
 
 applyDefaults = (opts, defOpts) ->
   for k, v in pairs(defOpts) do
-    opts[k] = v unless opts[k]
+    if "__" ~= string.sub(k,1,2) then   -- don't clone meta
+      opts[k] = v unless opts[k]
 
   opts
 

@@ -150,8 +150,10 @@ resolveGithubRaw = function(modname)
 end
 applyDefaults = function(opts, defOpts)
   for k, v in pairs(defOpts) do
-    if not (opts[k]) then
-      opts[k] = v
+    if "__" ~= string.sub(k, 1, 2) then
+      if not (opts[k]) then
+        opts[k] = v
+      end
     end
   end
   return opts
