@@ -24,11 +24,9 @@ describe "moonship.codecacher", ->
     opts = {
       app_path: plpath.abs("./t"),
       remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote",
-      plugins: {
-        request: require("moonship.plugins.request")
-      }
+      requestbuilder: require("moonship.requestbuilder")
     }
-    opts.plugins.request.set({
+    opts.requestbuilder.set({
       host: "localhost",
       path: "/hello"
     })

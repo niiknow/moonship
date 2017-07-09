@@ -7,6 +7,7 @@ local lru = require("lru")
 local plpath = require("path")
 local log = require("moonship.logger")
 local fs = require("path.fs")
+local requestbuilder = require("moonship.requestbuilder")
 local mkdirp, loadCode, myUrlHandler, getSandboxEnv, require_new, CodeCacher
 mkdirp = function(p)
   return fs.makedirs(p)
@@ -137,7 +138,7 @@ do
       end
     end,
     get = function(self, aws)
-      local req = self.options.plugins.request.build()
+      local req = self.options.requestbuilder.build()
       local url = util.path_sanitize(tostring(req.host) .. "/" .. tostring(req.path))
       local valHolder = self.codeCache:get()
       if not (valHolder) then
@@ -187,7 +188,8 @@ do
         app_path = "/app",
         ttl = 3600,
         codeHandler = myUrlHandler,
-        code_cache_size = 10000
+        code_cache_size = 10000,
+        requestbuilder = requestbuilder
       }
       util.applyDefaults(opts, defOpts)
       if (opts.ttl < 120) then

@@ -1,14 +1,15 @@
 
-aws_auth      = require "moonship.awsauth"
-httpc         = require "moonship.http"
-sandbox       = require "moonship.sandbox"
-util          = require "moonship.util"
+aws_auth       = require "moonship.awsauth"
+httpc          = require "moonship.http"
+sandbox        = require "moonship.sandbox"
+util           = require "moonship.util"
 
-lfs           = require "lfs"
-lru           = require "lru"
-plpath        = require "path"
-log           = require "moonship.logger"
-fs            = require "path.fs"
+lfs            = require "lfs"
+lru            = require "lru"
+plpath         = require "path"
+log            = require "moonship.logger"
+fs             = require "path.fs"
+requestbuilder = require "moonship.requestbuilder"
 
 local *
 
@@ -102,7 +103,7 @@ require_new = (modname) ->
 class CodeCacher
 
   new: (opts={}) =>
-    defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
+    defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000, :requestbuilder}
     util.applyDefaults(opts, defOpts)
 
     -- should not be lower than 2 minutes
@@ -168,7 +169,7 @@ class CodeCacher
       os.remove(valHolder.localFullPath)
 
   get: (aws) =>
-    req = @options.plugins.request.build()
+    req = @options.requestbuilder.build()
     url = util.path_sanitize("#{req.host}/#{req.path}")
     valHolder = @codeCache\get()
 

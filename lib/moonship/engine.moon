@@ -1,18 +1,20 @@
-config     = require "moonship.config"
-codecacher = require "moonship.codecacher"
-util       = require "moonship.util"
-log        = require "moonship.logger"
-
+config         = require "moonship.config"
+codecacher     = require "moonship.codecacher"
+util           = require "moonship.util"
+log            = require "moonship.logger"
+requestbuilder = require "moonship.requestbuilder"
 -- response with
 -- :body, :code, :headers, :status, :error
 class Engine
-  new: (options={}) =>
+  new: (opts) =>
+    options = util.applyDefaults(opts, {:requestbuilder})
     if (options.useS3)
       options.aws = {
         aws_access_key_id: options.aws_access_key_id,
         aws_secret_access_key: options.aws_secret_access_key,
         aws_s3_code_path: options.aws_s3_code_path
       }
+
     @options = config(options)
     @codeCache = codecacher.CodeCacher(@options\get())
 
@@ -27,7 +29,7 @@ class Engine
   engage: (req) =>
     opts = @options\get()
 
-    opts.plugins.request.set(req) if req
+    opts.requestbuilder.set(req) if req
 
     rst, err = @codeCache\get(opts)
 

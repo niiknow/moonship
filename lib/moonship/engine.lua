@@ -2,6 +2,7 @@ local config = require("moonship.config")
 local codecacher = require("moonship.codecacher")
 local util = require("moonship.util")
 local log = require("moonship.logger")
+local requestbuilder = require("moonship.requestbuilder")
 local Engine
 do
   local _class_0
@@ -25,7 +26,7 @@ do
     engage = function(self, req)
       local opts = self.options:get()
       if req then
-        opts.plugins.request.set(req)
+        opts.requestbuilder.set(req)
       end
       local rst, err = self.codeCache:get(opts)
       if err then
@@ -47,10 +48,10 @@ do
   }
   _base_0.__index = _base_0
   _class_0 = setmetatable({
-    __init = function(self, options)
-      if options == nil then
-        options = { }
-      end
+    __init = function(self, opts)
+      local options = util.applyDefaults(opts, {
+        requestbuilder = requestbuilder
+      })
       if (options.useS3) then
         options.aws = {
           aws_access_key_id = options.aws_access_key_id,

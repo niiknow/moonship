@@ -92,16 +92,17 @@
 ./moonship/codecacher.moon
 ==============================================================================
 
-    2 aws_auth      = require "moonship.awsauth"
-    2 httpc         = require "moonship.http"
-    2 sandbox       = require "moonship.sandbox"
-    2 util          = require "moonship.util"
+    2 aws_auth       = require "moonship.awsauth"
+    2 httpc          = require "moonship.http"
+    2 sandbox        = require "moonship.sandbox"
+    2 util           = require "moonship.util"
 
-    2 lfs           = require "lfs"
-    2 lru           = require "lru"
-    2 plpath        = require "path"
-    2 log           = require "moonship.logger"
-****0 fs            = require "path.fs"
+    2 lfs            = require "lfs"
+    2 lru            = require "lru"
+    2 plpath         = require "path"
+    2 log            = require "moonship.logger"
+    2 fs             = require "path.fs"
+****0 requestbuilder = require "moonship.requestbuilder"
 
     2 local *
 
@@ -195,7 +196,7 @@
       class CodeCacher
 
     2   new: (opts={}) =>
-****0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
+****0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000, :requestbuilder}
     2     util.applyDefaults(opts, defOpts)
 
           -- should not be lower than 2 minutes
@@ -261,7 +262,7 @@
 ****0       os.remove(valHolder.localFullPath)
 
 ****0   get: (aws) =>
-    3     req = @options.plugins.request.build()
+    3     req = @options.requestbuilder.build()
     1     url = util.path_sanitize("#{req.host}/#{req.path}")
 ****0     valHolder = @codeCache\get()
 
@@ -281,30 +282,30 @@
 ****0       valHolder = {
     3         url: url,
 ****0         localPath: fileBasePath,
-****0         localFullPath: localFullPath,
-    3         lastCheck: os.time(),
+    3         localFullPath: localFullPath,
+****0         lastCheck: os.time(),
     3         fileMod: lfs.attributes localFullPath, "modification"
-            }
+    3       }
 
             -- use aws s3 if available
-    6       valHolder["aws"] = @options.aws if (@options.aws)
+    3       valHolder["aws"] = @options.aws if (@options.aws)
 
     3     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
             -- load file if it exists
-    2       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-****0       if valHolder.fileMod
-    2         log.debug tostring(valHolder.fileMod)
+    5       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
+    2       if valHolder.fileMod
+****0         log.debug tostring(valHolder.fileMod)
     2         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
 
               -- set it back immediately for the next guy
               -- set next ttl
     3         valHolder.lastCheck = os.time()
-    2         @codeCache\set url, valHolder
+    3         @codeCache\set url, valHolder
             else
               -- delete reference if file no longer exists/purged
     2         valHolder.value = nil
 
-    2       @doCheckRemoteFile(valHolder, req, aws)
+****0       @doCheckRemoteFile(valHolder, req, aws)
 
           -- remove from cache if not found
     2     @codeCache\delete(url) if valHolder.value == nil
@@ -393,36 +394,38 @@
 ==============================================================================
 ./moonship/engine.moon
 ==============================================================================
-    1 config     = require "moonship.config"
-    1 codecacher = require "moonship.codecacher"
-    1 util       = require "moonship.util"
-    1 log        = require "moonship.logger"
-
+    1 config         = require "moonship.config"
+    1 codecacher     = require "moonship.codecacher"
+    1 util           = require "moonship.util"
+    1 log            = require "moonship.logger"
+    1 requestbuilder = require "moonship.requestbuilder"
       -- response with
       -- :body, :code, :headers, :status, :error
-    1 class Engine
-****0   new: (options={}) =>
+      class Engine
+    1   new: (opts) =>
+****0     options = util.applyDefaults(opts, {:requestbuilder})
     1     if (options.useS3)
 ****0       options.aws = {
 ****0         aws_access_key_id: options.aws_access_key_id,
 ****0         aws_secret_access_key: options.aws_secret_access_key,
 ****0         aws_s3_code_path: options.aws_s3_code_path
             }
+
 ****0     @options = config(options)
 ****0     @codeCache = codecacher.CodeCacher(@options\get())
 
-****0   handleResponse: (rst) =>
+    1   handleResponse: (rst) =>
     1     return {body: rst, code: 500, status: "500 unexpected response", headers: {'Content-Type': "text/plain"}} if type(rst) ~= 'table'
 
     1     rst.code = rst.code or 200
     1     rst.headers = rst.headers or {}
-    1     rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"
-          rst
+****0     rst.headers["Content-Type"] = rst.headers["Content-Type"] or "text/plain"
+    2     rst
 
     2   engage: (req) =>
-    2     opts = @options\get()
+****0     opts = @options\get()
 
-    2     opts.plugins.request.set(req) if req
+    2     opts.requestbuilder.set(req) if req
 
 ****0     rst, err = @codeCache\get(opts)
 
@@ -431,7 +434,7 @@
 
 ****0     @handleResponse(rst)
 
-    2 Engine
+    1 Engine
 
 ==============================================================================
 ./moonship/http.moon
@@ -623,7 +626,7 @@
     1 { :create_signature }
 
 ==============================================================================
-./moonship/plugins/request.moon
+./moonship/requestbuilder.moon
 ==============================================================================
       -- build request plugins based on options
 
@@ -1057,20 +1060,20 @@
 Summary
 ==============================================================================
 
-File                            Hits Missed Coverage
-----------------------------------------------------
-./moonship/awsauth.moon         37   18     67.27%
-./moonship/codecacher.moon      79   40     66.39%
-./moonship/config.moon          12   6      66.67%
-./moonship/crypto.moon          22   8      73.33%
-./moonship/engine.moon          14   12     53.85%
-./moonship/http.moon            11   13     45.83%
-./moonship/httpsocket.moon      11   8      57.89%
-./moonship/logger.moon          7    11     38.89%
-./moonship/oauth1.moon          32   8      80.00%
-./moonship/plugins/request.moon 5    22     18.52%
-./moonship/sandbox.moon         39   26     60.00%
-./moonship/url.moon             38   42     47.50%
-./moonship/util.moon            56   28     66.67%
-----------------------------------------------------
-Total                           363  242    60.00%
+File                           Hits Missed Coverage
+---------------------------------------------------
+./moonship/awsauth.moon        37   18     67.27%
+./moonship/codecacher.moon     80   41     66.12%
+./moonship/config.moon         12   6      66.67%
+./moonship/crypto.moon         22   8      73.33%
+./moonship/engine.moon         15   13     53.57%
+./moonship/http.moon           11   13     45.83%
+./moonship/httpsocket.moon     11   8      57.89%
+./moonship/logger.moon         7    11     38.89%
+./moonship/oauth1.moon         32   8      80.00%
+./moonship/requestbuilder.moon 5    22     18.52%
+./moonship/sandbox.moon        39   26     60.00%
+./moonship/url.moon            38   42     47.50%
+./moonship/util.moon           56   28     66.67%
+---------------------------------------------------
+Total                          365  244    59.93%
