@@ -25,3 +25,9 @@ build:
 
 test:
 	cd lib && $(MAKE) test
+
+clean:
+	rm -rf doc/
+
+doc:
+	cd lib && $(MAKE) doc

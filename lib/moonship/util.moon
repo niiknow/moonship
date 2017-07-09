@@ -1,5 +1,8 @@
+----
+-- utility functions
+-- @module util
 
--- this module cannot reference log
+-- this module cannot and should not reference log
 url              = require "moonship.url"
 cjson_safe       = require "cjson.safe"
 
@@ -9,17 +12,25 @@ import concat, insert, sort from table
 -- for ngx stuff, put it inside ngin.lua file
 local *
 
-trim = (str, regex="%s*") ->
+
+--- trim a string.
+-- @param str the string
+-- @param pattern trim pattern
+-- @return trimed string
+trim = (str, pattern="%s*") ->
   str = tostring str
 
   if #str > 200
-    str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
+    str\gsub("^#{pattern}", "")\reverse()\gsub("^#{pattern}", "")\reverse()
   else
-    str\match "^#{regex}(.-)#{regex}$"
+    str\match "^#{pattern}(.-)#{pattern}$"
 
--- path should not have double quote, single quote, period
--- purposely left casing alone because paths are case-sensitive
--- finally, remove double period and make single forward slash
+--- sanitize a path.
+-- path should not have double quote, single quote, period <br />
+-- purposely left casing alone because paths are case-sensitive <br />
+-- finally, remove double period and make single forward slash <br />
+-- @param str the path
+-- @return a sanitized path
 path_sanitize = (str) -> (tostring str)\gsub("[^a-zA-Z0-9.-_/\\]", "")\gsub("%.%.+", "")\gsub("//+", "/")\gsub("\\\\+", "/")
 
 url_unescape = (str) -> str\gsub('+', ' ')\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))

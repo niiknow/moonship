@@ -17,10 +17,10 @@ build:
 watch: build
 	moonc -w moonship
 
-clean:
-	rm $$(find src/ | grep \.lua$$)
-	mkdir -p ./t/localhost
+clean: build
+	rm $$(find ./ | grep \.lua$$)
 	rm -rf ./t/localhost
+	mkdir -p ./t/localhost
 
 init:
 	luarocks install busted
@@ -37,3 +37,6 @@ init:
 	luarocks install lua-resty-http 0.08-0
 	luarocks install lua-lru 1.0-1
 	luarocks install lua-resty-jwt 0.1.10-1
+
+doc: clean
+	ldoc .

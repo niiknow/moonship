@@ -6,15 +6,15 @@ do
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
 local trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_clone
-trim = function(str, regex)
-  if regex == nil then
-    regex = "%s*"
+trim = function(str, pattern)
+  if pattern == nil then
+    pattern = "%s*"
   end
   str = tostring(str)
   if #str > 200 then
-    return str:gsub("^" .. tostring(regex), ""):reverse():gsub("^" .. tostring(regex), ""):reverse()
+    return str:gsub("^" .. tostring(pattern), ""):reverse():gsub("^" .. tostring(pattern), ""):reverse()
   else
-    return str:match("^" .. tostring(regex) .. "(.-)" .. tostring(regex) .. "$")
+    return str:match("^" .. tostring(pattern) .. "(.-)" .. tostring(pattern) .. "$")
   end
 end
 path_sanitize = function(str)
