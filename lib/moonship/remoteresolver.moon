@@ -1,7 +1,7 @@
 util        = require "moonship.url"
 httpc       = require "moonship.http"
 
-import url_parse, string_split from util
+import url_parse, trim from util
 
 loadCode = (url) ->
   req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
@@ -26,11 +26,20 @@ resolve_github = (modname) ->
   parsed
 
 resolve = (modname) ->
+  modname = (modname)
   rst = {}
 
-  -- if github, then parse and store new basepath
+  -- remote is a url, then parse the url
   rst = resolve_remote(modname) if modname\find("http") == 1
-  rst = resolve_github(modname) if modname\find("github%.com/")
+
+  -- if github, then parse and store new basepath
+  rst = resolve_github(modname) if modname\find("github%.com/") == 1
+
+  -- if _remotebase, parse relative to it
+  remotebase = _G["_remotebase"]
+  if remotebase
+    remotemodname = "#{remotebase}/#{modname}"
+    rst = resolve_remote(remotemodname) if remotemodname\find("http") == 1
 
   -- remove .moon extension to convert period to forward slash
   -- then add back moon extension

@@ -1,7 +1,7 @@
 local util = require("moonship.url")
 local httpc = require("moonship.http")
-local url_parse, string_split
-url_parse, string_split = util.url_parse, util.string_split
+local url_parse, trim
+url_parse, trim = util.url_parse, util.trim
 local loadCode
 loadCode = function(url)
   local req = {
@@ -36,12 +36,20 @@ resolve_github = function(modname)
 end
 local resolve
 resolve = function(modname)
+  modname = (modname)
   local rst = { }
   if modname:find("http") == 1 then
     rst = resolve_remote(modname)
   end
-  if modname:find("github%.com/") then
+  if modname:find("github%.com/") == 1 then
     rst = resolve_github(modname)
+  end
+  local remotebase = _G["_remotebase"]
+  if remotebase then
+    local remotemodname = tostring(remotebase) .. "/" .. tostring(modname)
+    if remotemodname:find("http") == 1 then
+      rst = resolve_remote(remotemodname)
+    end
   end
   if not (rst.path) then
     local _ = {

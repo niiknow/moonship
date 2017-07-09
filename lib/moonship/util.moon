@@ -17,6 +17,11 @@ trim = (str, regex="%s*") ->
   else
     str\match "^#{regex}(.-)#{regex}$"
 
+-- path should not have double quote, single quote, period
+-- purposely left casing alone because paths are case-sensitive
+-- finally, remove double period and make single forward slash
+path_sanitize = (str) -> (tostring str)\gsub("[^a-zA-Z0-9.-_/\\]", "")\gsub("%.%.+", "")\gsub("//+", "/")\gsub("\\\\+", "/")
+
 url_unescape = (str) -> str\gsub('+', ' ')\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
 
 -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
@@ -37,6 +42,8 @@ url_default_port = (scheme) -> url.default_port(scheme)
 url_build = (parts, includeQuery=true) ->
   out = parts.path or ""
 
+  out = path_sanitize(out)
+
   if host = parts.host
     host = "//#{host}"
     host = "#{host}:#{parts.port}" if parts.port
@@ -50,11 +57,6 @@ url_build = (parts, includeQuery=true) ->
     out = "#{out}##{parts.fragment}" if parts.fragment
 
   out
-
--- path should not have double quote, single quote, period
--- purposely left casing alone because paths are case-sensitive
--- finally, remove double period and make single forward slash
-path_sanitize = (str) -> (tostring str)\gsub("[^a-zA-Z0-9.-_/\\]", "")\gsub("%.%.+", "")\gsub("//+", "/")\gsub("\\\\+", "/")
 
 
 slugify = (str) -> ((tostring str)\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!

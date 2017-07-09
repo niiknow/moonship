@@ -5,7 +5,7 @@ do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local trim, url_unescape, url_escape, url_parse, url_default_port, url_build, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_clone
+local trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_clone
 trim = function(str, regex)
   if regex == nil then
     regex = "%s*"
@@ -16,6 +16,9 @@ trim = function(str, regex)
   else
     return str:match("^" .. tostring(regex) .. "(.-)" .. tostring(regex) .. "$")
   end
+end
+path_sanitize = function(str)
+  return (tostring(str)):gsub("[^a-zA-Z0-9.-_/\\]", ""):gsub("%.%.+", ""):gsub("//+", "/"):gsub("\\\\+", "/")
 end
 url_unescape = function(str)
   return str:gsub('+', ' '):gsub("%%(%x%x)", function(c)
@@ -38,6 +41,7 @@ url_build = function(parts, includeQuery)
     includeQuery = true
   end
   local out = parts.path or ""
+  out = path_sanitize(out)
   do
     local host = parts.host
     if host then
@@ -66,9 +70,6 @@ url_build = function(parts, includeQuery)
     end
   end
   return out
-end
-path_sanitize = function(str)
-  return (tostring(str)):gsub("[^a-zA-Z0-9.-_/\\]", ""):gsub("%.%.+", ""):gsub("//+", "/"):gsub("\\\\+", "/")
 end
 slugify = function(str)
   return ((tostring(str)):gsub("[%s_]+", "-"):gsub("[^%w%-]+", ""):gsub("-+", "-")):lower()
