@@ -1,5 +1,5 @@
 hmacauth = require "moonship.hmacauth"
-base64_encode = (require "moonship.util").base64_encode
+base64_encode = (require "moonship.crypto").base64_encode
 
 local *
 

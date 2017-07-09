@@ -1,5 +1,5 @@
-local log = require("moonship.log")
-log.level(log.DEBUG)
+local log = require("moonship.logger")
+log.set_lvl("info")
 local engine = require("moonship.engine")
 local awsauth = require("moonship.awsauth")
 local azts = require("moonship.aztablestategy")

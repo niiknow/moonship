@@ -5,7 +5,7 @@ local util = require("moonship.util")
 local lfs = require("lfs")
 local lru = require("lru")
 local plpath = require("path")
-local log = require("moonship.log")
+local log = require("moonship.logger")
 local fs = require("path.fs")
 local mkdirp, loadCode, myUrlHandler, getSandboxEnv, require_new, CodeCacher
 mkdirp = function(p)

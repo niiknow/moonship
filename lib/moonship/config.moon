@@ -1,6 +1,6 @@
 
 util = require "moonship.util"
-log = require "moonship.log"
+log = require "moonship.logger"
 
 aws_region            = os.getenv("AWS_DEFAULT_REGION")
 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")

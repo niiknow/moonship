@@ -1,5 +1,5 @@
 local util = require("moonship.util")
-local log = require("moonship.log")
+local log = require("moonship.logger")
 local aws_region = os.getenv("AWS_DEFAULT_REGION")
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")

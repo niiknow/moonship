@@ -7,9 +7,9 @@ basexx        = require "basexx"
 
 local *
 
-base64_encode = to_base64
+base64_encode = ngx and ngx.encode_base64 or to_base64
 
-base64_decode = from_base64
+base64_decode = ngx and ngx.decode_base64 or from_base64
 
 crypto_wrapper = (dtype, str) ->
   {

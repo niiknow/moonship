@@ -1,6 +1,6 @@
 local http_handle = require("resty.http")
 local util = require("moonship.util")
-local log = require("moonship.log")
+local log = require("moonship.logger")
 local request_ngx, request
 request_ngx = function(request_uri, opts)
   if opts == nil then

@@ -1,4 +1,4 @@
-local log = require("moonship.log")
+local log = require("moonship.logger")
 local insert
 insert = table.insert
 local re_match, tonumber, setmetatable, string_split, ports, default_port, split, parse

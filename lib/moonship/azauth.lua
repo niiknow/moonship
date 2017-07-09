@@ -1,5 +1,5 @@
 local hmacauth = require("moonship.hmacauth")
-local base64_encode = (require("moonship.util")).base64_encode
+local base64_encode = (require("moonship.crypto")).base64_encode
 local date_utc, sharedkeylite
 date_utc = function(date)
   if date == nil then

@@ -1,5 +1,5 @@
-log        =  require "moonship.log"
-log.level(log.DEBUG)
+log        =  require "moonship.logger"
+log.set_lvl("info")
 
 engine     = require "moonship.engine"
 awsauth    = require "moonship.awsauth"

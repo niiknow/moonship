@@ -7,7 +7,7 @@ util          = require "moonship.util"
 lfs           = require "lfs"
 lru           = require "lru"
 plpath        = require "path"
-log           = require "moonship.log"
+log           = require "moonship.logger"
 fs            = require "path.fs"
 
 local *

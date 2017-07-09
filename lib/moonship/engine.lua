@@ -1,7 +1,7 @@
 local config = require("moonship.config")
 local codecacher = require("moonship.codecacher")
 local util = require("moonship.util")
-local log = require("moonship.log")
+local log = require("moonship.logger")
 local Engine
 do
   local _class_0

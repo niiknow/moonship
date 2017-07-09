@@ -7,7 +7,7 @@ package.path = package.path .. ";lib/?.lua"
 -- local web server demonstrates using github
 engine = require "moonship.engine"
 plpath = require "path"
-log = require "moonship.log"
+log = require "moonship.logger"
 
 log.level(log.DEBUG)
 

@@ -1,7 +1,7 @@
 
 http_handle       = require "resty.http"
 util              = require "moonship.util"
-log               = require "moonship.log"
+log               = require "moonship.logger"
 
 local *
 request_ngx = (request_uri, opts={}) ->
