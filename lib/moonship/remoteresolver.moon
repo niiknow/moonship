@@ -1,9 +1,10 @@
-util        = require "moonship.url"
+util        = require "moonship.util"
 httpc       = require "moonship.http"
+log         = require "moonship.log"
 
-import url_parse, trim from util
+import url_parse, trim, path_sanitize, url_build from util
 
-loadCode = (url) ->
+loadcode = (url) ->
   req = { url: url, method: "GET", capture_url: "/__libpublic", headers: {} }
   res, err = httpc.request(req)
 
@@ -13,20 +14,22 @@ loadCode = (url) ->
 
 resolve_remote = (modname) ->
   parsed = url_parse modname
-  parsed.basepath, parsed.file = string.match(parsed.path, "^(.*/)([^/]*)$")
+  parsed.basepath, file = string.match(parsed.path, "^(.*)/([^/]*)$")
+  parsed.file = trim(file, "/*") or ""
+  parsed.basepath = "/" unless parsed.basepath
   parsed
 
 -- attempt to parse and store new basepath
 resolve_github = (modname) ->
   modname = modname\gsub("github%.com/", "https://raw.githubusercontent.com/")
   parsed = resolve_remote(modname)
-  user, repo, tree, branch, rest = string.match(parsed.basepath, "([^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
-  parsed.basepath =  "#{user}#{repo}#{branch}#{rest}"
-  parsed.path = "#{parsed.pathx}#{parsed.file}"
+  user, repo, blobortree, branch, rest = string.match(parsed.basepath, "(/[^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
+  parsed.basepath = path_sanitize("#{user}#{repo}#{branch}#{rest}")
+  parsed.path = "#{parsed.basepath}/#{parsed.file}"
   parsed
 
 resolve = (modname) ->
-  modname = (modname)
+  originalName = tostring(modname)\gsub("%.moon$", "")
   rst = {}
 
   -- remote is a url, then parse the url
@@ -37,26 +40,31 @@ resolve = (modname) ->
 
   -- if _remotebase, parse relative to it
   remotebase = _G["_remotebase"]
-  if remotebase
+
+  if remotebase ~= nil and rst.path == nil
     remotemodname = "#{remotebase}/#{modname}"
     rst = resolve_remote(remotemodname) if remotemodname\find("http") == 1
+    rst._remotebase = remotebase
 
   return { path: modname } unless rst.path
 
   -- remove .moon extension to convert period to forward slash
   -- then add back moon extension
-  -- reprocess parsed path by converting all period to forward slash
+  -- reprocess rst path by converting all period to forward slash
   -- keep basepath the way it is
-  parsed.file = parsed.file\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
-  parsed.path = parsed.path\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
+  rst.file = rst.file\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
+  rst.path = rst.path\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
 
   -- save old path
-  oldpath = parsed.path
-  parsed.path = util.sanitize_path(parsed.basepath)
-  parsed.basepath = url_build(parsed, false)
-  parsed.path = oldpath
-  parsed.loader = loadCode
+  oldpath = rst.path
+  rst.path = path_sanitize(rst.basepath)
+  rst.basepath = url_build(rst, false)
+  rst.path = oldpath
+  rst.codeloader = loadcode
 
-  parsed
+  -- no period in module original name means this is the basepath
+  rst._remotebase = trim(rst.basepath, "/") unless originalName\find("%.")
 
-{ :resolve }
+  rst
+
+{ :resolve, :resolve_github, :resolve_remote, :loadcode }

@@ -18,29 +18,35 @@ remoteresolver        = require "moonship.remoteresolver"
 
 build_requires = (opts) ->
   (modname) ->
-    unless _G[modname]
-      parsed = remoteresolver.resolve(modname)
-      if parsed.basepath
-        loadPath = "#{parsed.basepath}/#{parsed.file}"
+    mod = _G[modname]
+    return mod if mod
 
-        rsp = parsed.loader(loadPath)
+    parsed = remoteresolver.resolve(modname)
+    if parsed._remotebase
+      loadPath = "#{parsed._remotebase}/#{parsed.file}"
 
-        if (rsp.code == 200)
-          lua_src, err = sandbox.compile_moon rsp.body
+      rsp = parsed.codeloader(loadPath)
 
-          return nil, "error compiling '#{modname}' with message: #{err}" unless lua_src
+      if (rsp.code == 200)
+        lua_src, err = sandbox.compile_moon rsp.body
 
-          opts.sandbox_env._remotebase = parsed.basepath
-          fn, err = sandbox.loadstring_safe lua_src, loadPath, opts.sandbox_env
+        return nil, "error compiling `#{modname}` with message: #{err}" unless lua_src
 
-          return nil, "error loading '#{modname}' with message: #{err}" unless fn
+        opts.sandbox_env._remotebase = parsed._remotebase
+        fn, err = sandbox.loadstring_safe lua_src, loadPath, opts.sandbox_env
 
-          rst, err = sandbox.exec(fn)
-          return nil, "error executing '#{modname}' with message: #{err}" unless rst
+        return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
-          _G[modname] = rst
+        rst, err = sandbox.exec(fn)
+        return nil, "error executing `#{modname}` with message: #{err}" unless rst
 
-    _G[modname]
+        _G[modname] = rst
+
+        return rst
+
+      nil, "error loading `#{modname}` with code: #{rsp.code }"
+
+    _G[modname], "unable to resolve `#{modname}`"
 
 class Config
   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>

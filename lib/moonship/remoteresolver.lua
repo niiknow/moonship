@@ -2,8 +2,8 @@ local util = require("moonship.url")
 local httpc = require("moonship.http")
 local url_parse, trim
 url_parse, trim = util.url_parse, util.trim
-local loadCode
-loadCode = function(url)
+local loadcode
+loadcode = function(url)
   local req = {
     url = url,
     method = "GET",
@@ -36,7 +36,7 @@ resolve_github = function(modname)
 end
 local resolve
 resolve = function(modname)
-  modname = (modname)
+  local originalName = tostring(modname):gsub("%.moon$", "")
   local rst = { }
   if modname:find("http") == 1 then
     rst = resolve_remote(modname)
@@ -45,7 +45,7 @@ resolve = function(modname)
     rst = resolve_github(modname)
   end
   local remotebase = _G["_remotebase"]
-  if remotebase then
+  if remotebase and rst.path then
     local remotemodname = tostring(remotebase) .. "/" .. tostring(modname)
     if remotemodname:find("http") == 1 then
       rst = resolve_remote(remotemodname)
@@ -56,15 +56,21 @@ resolve = function(modname)
       path = modname
     }
   end
-  parsed.file = parsed.file:gsub("%.moon$", ""):gsub('%.', "/") .. ".moon"
+  parsed.file = parsed.file:gsub('%.', "/") .. ".moon"
   parsed.path = parsed.path:gsub("%.moon$", ""):gsub('%.', "/") .. ".moon"
   local oldpath = parsed.path
   parsed.path = util.sanitize_path(parsed.basepath)
   parsed.basepath = url_build(parsed, false)
   parsed.path = oldpath
-  parsed.loader = loadCode
+  parsed.codeloader = loadcode
+  if originalName:find("%.") then
+    parsed._remotebase = parsed.basepath
+  end
   return parsed
 end
 return {
-  resolve = resolve
+  resolve = resolve,
+  resolve_github,
+  resolve_remote,
+  loadcode = loadcode
 }

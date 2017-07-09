@@ -14,32 +14,36 @@ local remoteresolver = require("moonship.remoteresolver")
 local build_requires
 build_requires = function(opts)
   return function(modname)
-    if not (_G[modname]) then
-      local parsed = remoteresolver.resolve(modname)
-      if parsed.basepath then
-        local loadPath = tostring(parsed.basepath) .. "/" .. tostring(parsed.file)
-        local rsp = parsed.loader(loadPath)
-        if (rsp.code == 200) then
-          local lua_src, err = sandbox.compile_moon(rsp.body)
-          if not (lua_src) then
-            return nil, "error compiling '" .. tostring(modname) .. "' with message: " .. tostring(err)
-          end
-          opts.sandbox_env._remotebase = parsed.basepath
-          local fn
-          fn, err = sandbox.loadstring_safe(lua_src, loadPath, opts.sandbox_env)
-          if not (fn) then
-            return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
-          end
-          local rst
-          rst, err = sandbox.exec(fn)
-          if not (rst) then
-            return nil, "error executing '" .. tostring(modname) .. "' with message: " .. tostring(err)
-          end
-          _G[modname] = rst
-        end
-      end
+    local mod = _G[modname]
+    if mod then
+      return mod
     end
-    return _G[modname]
+    local parsed = remoteresolver.resolve(modname)
+    if parsed._remotebase then
+      local loadPath = tostring(parsed._remotebase) .. "/" .. tostring(parsed.file)
+      local rsp = parsed.codeloader(loadPath)
+      if (rsp.code == 200) then
+        local lua_src, err = sandbox.compile_moon(rsp.body)
+        if not (lua_src) then
+          return nil, "error compiling `" .. tostring(modname) .. "` with message: " .. tostring(err)
+        end
+        opts.sandbox_env._remotebase = parsed._remotebase
+        local fn
+        fn, err = sandbox.loadstring_safe(lua_src, loadPath, opts.sandbox_env)
+        if not (fn) then
+          return nil, "error loading `" .. tostring(modname) .. "` with message: " .. tostring(err)
+        end
+        local rst
+        rst, err = sandbox.exec(fn)
+        if not (rst) then
+          return nil, "error executing `" .. tostring(modname) .. "` with message: " .. tostring(err)
+        end
+        _G[modname] = rst
+        return rst
+      end
+      local _ = nil, "error loading `" .. tostring(modname) .. "` with code: " .. tostring(rsp.code)
+    end
+    return _G[modname], "unable to resolve `" .. tostring(modname) .. "`"
   end
 end
 local Config

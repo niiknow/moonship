@@ -50,7 +50,6 @@ url_build = (parts, includeQuery=true) ->
     host = "#{parts.scheme}:#{host}"  if parts.scheme and trim(parts.scheme) ~= ""
     out = "/#{out}" if parts.path and out\sub(1,1) ~= "/"
     out = "#{host}#{out}"
-    out = "#{out}#{parts.file}" if parts.file
 
   if includeQuery
     out = "#{out}?#{parts.query}" if parts.query
