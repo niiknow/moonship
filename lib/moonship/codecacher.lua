@@ -8,25 +8,9 @@ local plpath = require("path")
 local log = require("moonship.log")
 local fs = require("path.fs")
 local requestbuilder = require("moonship.requestbuilder")
-local mkdirp, loadCode, myUrlHandler, CodeCacher
+local mkdirp, myUrlHandler, CodeCacher
 mkdirp = function(p)
   return fs.makedirs(p)
-end
-loadCode = function(url)
-  local req = {
-    url = url,
-    method = "GET",
-    capture_url = "/__ghraw",
-    headers = { }
-  }
-  local res, err = httpc.request(req)
-  if not (err) then
-    return res
-  end
-  return {
-    code = 0,
-    body = err
-  }
 end
 myUrlHandler = function(opts)
   local cleanPath, querystring = string.match(opts.url, "([^?#]*)(.*)")

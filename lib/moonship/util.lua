@@ -5,7 +5,18 @@ do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local url_unescape, url_escape, url_parse, url_default_port, url_build, trim, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_clone
+local trim, url_unescape, url_escape, url_parse, url_default_port, url_build, path_sanitize, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_clone
+trim = function(str, regex)
+  if regex == nil then
+    regex = "%s*"
+  end
+  str = tostring(str)
+  if #str > 200 then
+    return str:gsub("^" .. tostring(regex), ""):reverse():gsub("^" .. tostring(regex), ""):reverse()
+  else
+    return str:match("^" .. tostring(regex) .. "(.-)" .. tostring(regex) .. "$")
+  end
+end
 url_unescape = function(str)
   return str:gsub('+', ' '):gsub("%%(%x%x)", function(c)
     return string.char(tonumber(c, 16))
@@ -27,42 +38,34 @@ url_build = function(parts, includeQuery)
     includeQuery = true
   end
   local out = parts.path or ""
-  if includeQuery then
-    if parts.query then
-      out = out .. ("?" .. parts.query)
-    end
-    if parts.fragment then
-      out = out .. ("#" .. parts.fragment)
-    end
-  end
   do
     local host = parts.host
     if host then
-      host = "//" .. host
+      host = "//" .. tostring(host)
       if parts.port then
-        host = host .. (":" .. parts.port)
+        host = tostring(host) .. ":" .. tostring(parts.port)
       end
-      if parts.scheme and parts.scheme ~= "" then
-        host = parts.scheme .. ":" .. host
+      if parts.scheme and trim(parts.scheme) ~= "" then
+        host = tostring(parts.scheme) .. ":" .. tostring(host)
       end
       if parts.path and out:sub(1, 1) ~= "/" then
-        out = "/" .. out
+        out = "/" .. tostring(out)
       end
-      out = host .. out
+      out = tostring(host) .. tostring(out)
+      if parts.file then
+        out = tostring(out) .. tostring(parts.file)
+      end
+    end
+  end
+  if includeQuery then
+    if parts.query then
+      out = tostring(out) .. "?" .. tostring(parts.query)
+    end
+    if parts.fragment then
+      out = tostring(out) .. "#" .. tostring(parts.fragment)
     end
   end
   return out
-end
-trim = function(str, regex)
-  if regex == nil then
-    regex = "%s*"
-  end
-  str = tostring(str)
-  if #str > 200 then
-    return str:gsub("^" .. tostring(regex), ""):reverse():gsub("^" .. tostring(regex), ""):reverse()
-  else
-    return str:match("^" .. tostring(regex) .. "(.-)" .. tostring(regex) .. "$")
-  end
 end
 path_sanitize = function(str)
   return (tostring(str)):gsub("[^a-zA-Z0-9.-_/\\]", ""):gsub("%.%.+", ""):gsub("//+", "/"):gsub("\\\\+", "/")

@@ -9,6 +9,14 @@ import concat, insert, sort from table
 -- for ngx stuff, put it inside ngin.lua file
 local *
 
+trim = (str, regex="%s*") ->
+  str = tostring str
+
+  if #str > 200
+    str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
+  else
+    str\match "^#{regex}(.-)#{regex}$"
+
 url_unescape = (str) -> str\gsub('+', ' ')\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
 
 -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
@@ -29,27 +37,19 @@ url_default_port = (scheme) -> url.default_port(scheme)
 url_build = (parts, includeQuery=true) ->
   out = parts.path or ""
 
-  if includeQuery
-    out ..= "?" .. parts.query if parts.query
-    out ..= "#" .. parts.fragment if parts.fragment
-
   if host = parts.host
-    host = "//" .. host
-    host ..= ":" .. parts.port if parts.port
-    host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
-    out = "/" .. out if parts.path and out\sub(1,1) != "/"
-    out = host .. out
+    host = "//#{host}"
+    host = "#{host}:#{parts.port}" if parts.port
+    host = "#{parts.scheme}:#{host}"  if parts.scheme and trim(parts.scheme) ~= ""
+    out = "/#{out}" if parts.path and out\sub(1,1) ~= "/"
+    out = "#{host}#{out}"
+    out = "#{out}#{parts.file}" if parts.file
+
+  if includeQuery
+    out = "#{out}?#{parts.query}" if parts.query
+    out = "#{out}##{parts.fragment}" if parts.fragment
 
   out
-
-
-trim = (str, regex="%s*") ->
-  str = tostring str
-
-  if #str > 200
-    str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
-  else
-    str\match "^#{regex}(.-)#{regex}$"
 
 -- path should not have double quote, single quote, period
 -- purposely left casing alone because paths are case-sensitive

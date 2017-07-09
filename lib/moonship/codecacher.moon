@@ -1,28 +1,20 @@
 
-aws_auth       = require "moonship.awsauth"
-httpc          = require "moonship.http"
-sandbox        = require "moonship.sandbox"
-util           = require "moonship.util"
+aws_auth         = require "moonship.awsauth"
+httpc            = require "moonship.http"
+sandbox          = require "moonship.sandbox"
+util             = require "moonship.util"
 
-lfs            = require "lfs"
-lru            = require "lru"
-plpath         = require "path"
-log            = require "moonship.log"
-fs             = require "path.fs"
-requestbuilder = require "moonship.requestbuilder"
+lfs              = require "lfs"
+lru              = require "lru"
+plpath           = require "path"
+log              = require "moonship.log"
+fs               = require "path.fs"
+requestbuilder   = require "moonship.requestbuilder"
 
 local *
 
 mkdirp = (p) ->
   fs.makedirs p
-
-loadCode = (url) ->
-  req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
-  res, err = httpc.request(req)
-
-  return res unless err
-
-  { code: 0, body: err }
 
 myUrlHandler = (opts) ->
   -- ngx.log(ngx.ERR, "mydebug: " .. secret_key)

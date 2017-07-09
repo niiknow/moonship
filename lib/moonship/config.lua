@@ -10,23 +10,23 @@ local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local app_env = os.getenv("MOONSHIP_APP_ENV")
 local table_clone = util.table_clone
-local _data = { }
+local remoteresolver = require("moonship.remoteresolver")
 local build_requires
 build_requires = function(opts)
   return function(modname)
     if not (_G[modname]) then
-      local base, file, query = util.resolveGithubRaw(modname)
-      if base then
-        local loadPath = tostring(base) .. tostring(file) .. tostring(query)
-        local rsp = loadCode(loadPath)
+      local parsed = remoteresolver.resolve(modname)
+      if parsed.basepath then
+        local loadPath = tostring(parsed.basepath) .. "/" .. tostring(parsed.file)
+        local rsp = parsed.loader(loadPath)
         if (rsp.code == 200) then
           local lua_src, err = sandbox.compile_moon(rsp.body)
           if not (lua_src) then
             return nil, "error compiling '" .. tostring(modname) .. "' with message: " .. tostring(err)
           end
+          opts.sandbox_env._remotebase = parsed.basepath
           local fn
           fn, err = sandbox.loadstring_safe(lua_src, loadPath, opts.sandbox_env)
-          _G["__remotebase"] = base
           if not (fn) then
             return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
           end
@@ -72,7 +72,7 @@ do
       }
       util.applyDefaults(newOpts, defaultOpts)
       newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
-      newOpts["sandbox_env"] = sandbox.build_env(_G, newOpts.plugins or { }, sandbox.whitelist)
+      newOpts["sandbox_env"] = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
       self.__data = newOpts
     end,
     __base = _base_0,

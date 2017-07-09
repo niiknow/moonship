@@ -92,59 +92,51 @@
 ./moonship/codecacher.moon
 ==============================================================================
 
-   2 aws_auth       = require "moonship.awsauth"
-   2 httpc          = require "moonship.http"
-   2 sandbox        = require "moonship.sandbox"
-   2 util           = require "moonship.util"
+   2 aws_auth         = require "moonship.awsauth"
+   2 httpc            = require "moonship.http"
+   2 sandbox          = require "moonship.sandbox"
+   2 util             = require "moonship.util"
 
-   2 lfs            = require "lfs"
-   2 lru            = require "lru"
-   2 plpath         = require "path"
-   2 log            = require "moonship.log"
-   2 fs             = require "path.fs"
-***0 requestbuilder = require "moonship.requestbuilder"
+   2 lfs              = require "lfs"
+   2 lru              = require "lru"
+   2 plpath           = require "path"
+   2 log              = require "moonship.log"
+   2 fs               = require "path.fs"
+***0 requestbuilder   = require "moonship.requestbuilder"
 
    2 local *
 
-***0 mkdirp = (p) ->
-***0   fs.makedirs p
+   4 mkdirp = (p) ->
+   4   fs.makedirs p
 
-***0 loadCode = (url) ->
-***0   req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
-***0   res, err = httpc.request(req)
-
-***0   return res unless err
-
-***0   { code: 0, body: err }
-
-***0 myUrlHandler = (opts) ->
+   8 myUrlHandler = (opts) ->
        -- ngx.log(ngx.ERR, "mydebug: " .. secret_key)
 ***0   cleanPath, querystring  = string.match(opts.url, "([^?#]*)(.*)")
-   2   full_path               = util.path_sanitize(cleanPath)
+***0   full_path               = util.path_sanitize(cleanPath)
 ***0   authHeaders             = {}
-   4   full_path               = util.path_sanitize("#{full_path}/index.moon")
+***0   full_path               = util.path_sanitize("#{full_path}/index.moon")
 
    4   if opts.aws and opts.aws.aws_s3_code_path
          -- process s3 stuff
    4     opts.aws.request_path = "/#{opts.aws.aws_s3_code_path}/#{full_path}"
-***0     aws = aws_auth(opts.aws)
-***0     full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
+   4     aws = aws_auth(opts.aws)
+   4     full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
 ***0     authHeaders = aws\get_auth_headers()
        else
-***0     full_path = "#{opts.remote_path}/#{full_path}"
+   4     full_path = "#{opts.remote_path}/#{full_path}"
 
-***0   log.debug "code load: #{full_path}"
+   4   log.debug "code load: #{full_path}"
 
-   4   req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
+***0   req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
    4   req.headers["If-Modified-Since"] = opts.last_modified if opts.last_modified
 
 ***0   for k, v in pairs(authHeaders) do
    4     req.headers[k] = v
 
    4   res, err = httpc.request(req)
-   2   return res unless err
+***0   return res unless err
 
-   4   log.debug "code load error: #{err}"
+***0   log.debug "code load error: #{err}"
 
 ***0   { code: 0, body: err }
 
@@ -156,19 +148,19 @@
      --4. use ttl (in seconds) to determine how often to check remote file
      -- when we have the file, it is recommended to check every hour
      -- when we don't have the file, check every x seconds - limit by proxy
-   2 class CodeCacher
+     class CodeCacher
 
    2   new: (opts={}) =>
-   2     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000, :requestbuilder}
-***0     util.applyDefaults(opts, defOpts)
+***0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000, :requestbuilder}
+   3     util.applyDefaults(opts, defOpts)
 
          -- should not be lower than 2 minutes
          -- user should use cache clearing mechanism
-***0     opts.ttl = 120 if (opts.ttl < 120)
+   3     opts.ttl = 120 if (opts.ttl < 120)
 
    2     opts.localBasePath = plpath.abs(opts.app_path)
-***0     @codeCache = lru.new(opts.code_cache_size)
-   3     @options = opts
+   2     @codeCache = lru.new(opts.code_cache_size)
+   2     @options = opts
 
      --
      --if value holder is nil, initialize value holder
@@ -186,11 +178,11 @@
 
      --NOTE: urlHandler should use capture to simulate debounce
 
-   1   doCheckRemoteFile: (valHolder, aws) =>
-   1     opts = {
-   1       url: valHolder.url,
-***0       remote_path: @options.remote_path
-   4     }
+   3   doCheckRemoteFile: (valHolder, aws) =>
+   3     opts = {
+   3       url: valHolder.url,
+   3       remote_path: @options.remote_path
+   3     }
 
    3     opts["last_modified"] = os.date("%c", valHolder.fileMod) if (valHolder.fileMod ~= nil)
 
@@ -202,36 +194,36 @@
    3     rsp, err = @options.codeHandler(opts)
 
 
-   3     if (rsp.code == 200)
+***0     if (rsp.code == 200)
            -- ngx.say(valHolder.localPath)
            -- write file, load data
    3       if (rsp.body)
    3         lua_src = sandbox.compile_moon rsp.body
-   3         if (lua_src)
-   3           mkdirp(valHolder.localPath)
-***0           file = io.open(valHolder.localFullPath, "w")
-***0           if file
+   2         if (lua_src)
+   4           mkdirp(valHolder.localPath)
+   2           file = io.open(valHolder.localFullPath, "w")
+   4           if file
 ***0             file\write(lua_src)
-   3             file\close()
+   1             file\close()
 
    3             valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-   2             valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, @options.sandbox_env
+***0             valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, @options.sandbox_env
 
-   2     elseif (rsp.code == 404)
+   1     elseif (rsp.code == 404)
            -- on 404 - set nil and delete local file
-***0       valHolder.value = nil
-   1       os.remove(valHolder.localFullPath)
+   3       valHolder.value = nil
+   2       os.remove(valHolder.localFullPath)
 
-   3   get: (aws) =>
-***0     req = @options.requestbuilder.build()
-   3     @options.sandbox_env.request = req
-   1     url = util.path_sanitize("#{req.host}/#{req.path}")
-***0     valHolder = @codeCache\get()
+   1   get: (aws) =>
+   2     req = @options.requestbuilder.build()
+***0     @options.sandbox_env.request = req
+   2     url = util.path_sanitize("#{req.host}/#{req.path}")
+   4     valHolder = @codeCache\get()
 
          -- initialize valHolder
          unless valHolder
            -- strip query string and http/https://
-   2       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
+   3       domainAndPath, query = string.match(url, "([^?#]*)(.*)")
 ***0       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
 
            -- expect directory
@@ -243,34 +235,34 @@
 
 ***0       valHolder = {
    3         url: url,
-***0         localPath: fileBasePath,
+   6         localPath: fileBasePath,
    3         localFullPath: localFullPath,
-***0         lastCheck: os.time(),
-   3         fileMod: lfs.attributes localFullPath, "modification"
-   3       }
+   5         lastCheck: os.time(),
+   2         fileMod: lfs.attributes localFullPath, "modification"
+           }
 
            -- use aws s3 if available
-   3       valHolder["aws"] = @options.aws if (@options.aws)
+***0       valHolder["aws"] = @options.aws if (@options.aws)
 
    3     if (valHolder.value == nil or (valHolder.lastCheck < (os.time() - @options.ttl)))
            -- load file if it exists
    2       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-***0       if valHolder.fileMod
+   2       if valHolder.fileMod
    2         log.debug tostring(valHolder.fileMod)
    2         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, @options.sandbox_env
 
              -- set it back immediately for the next guy
              -- set next ttl
-   3         valHolder.lastCheck = os.time()
+   2         valHolder.lastCheck = os.time()
    2         @codeCache\set url, valHolder
            else
              -- delete reference if file no longer exists/purged
-   2         valHolder.value = nil
+***0         valHolder.value = nil
 
-   2       @doCheckRemoteFile(valHolder, aws)
+***0       @doCheckRemoteFile(valHolder, aws)
 
          -- remove from cache if not found
-   2     @codeCache\delete(url) if valHolder.value == nil
+***0     @codeCache\delete(url) if valHolder.value == nil
 ***0     return sandbox.exec(valHolder.value) if (type(valHolder.value) == "function")
 
          valHolder.value
@@ -281,9 +273,9 @@
 ./moonship/config.moon
 ==============================================================================
 
-   1 util    = require "moonship.util"
-   1 log     = require "moonship.log"
-   1 sandbox = require "moonship.sandbox"
+   1 util                  = require "moonship.util"
+   1 log                   = require "moonship.log"
+   1 sandbox               = require "moonship.sandbox"
 
    1 aws_region            = os.getenv("AWS_DEFAULT_REGION")
    1 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
@@ -294,24 +286,27 @@
    1 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
    1 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
    1 app_env               = os.getenv("MOONSHIP_APP_ENV")
-
 ***0 table_clone           = util.table_clone
 
-***0 _data = {}
+***0 remoteresolver        = require "moonship.remoteresolver"
+
 ***0 build_requires = (opts) ->
 ***0   (modname) ->
 ***0     unless _G[modname]
-***0       base, file, query = util.resolveGithubRaw(modname)
-***0       if base
-***0         loadPath = "#{base}#{file}#{query}"
-***0         rsp = loadCode(loadPath)
+***0       parsed = remoteresolver.resolve(modname)
+***0       if parsed.basepath
+***0         loadPath = "#{parsed.basepath}/#{parsed.file}"
+
+***0         rsp = parsed.loader(loadPath)
+
 ***0         if (rsp.code == 200)
 ***0           lua_src, err = sandbox.compile_moon rsp.body
 
 ***0           return nil, "error compiling '#{modname}' with message: #{err}" unless lua_src
 
+***0           opts.sandbox_env._remotebase = parsed.basepath
 ***0           fn, err = sandbox.loadstring_safe lua_src, loadPath, opts.sandbox_env
-***0           _G["__remotebase"] = base
+
 ***0           return nil, "error loading '#{modname}' with message: #{err}" unless fn
 
 ***0           rst, err = sandbox.exec(fn)
@@ -319,20 +314,20 @@
 
 ***0           _G[modname] = rst
 
-         _G[modname]
+   2     _G[modname]
 
-     class Config
-   2   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
-   1     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
+   1 class Config
+***0   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
+***0     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
    1     util.applyDefaults(newOpts, defaultOpts)
 ***0     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
-***0     newOpts["sandbox_env"] = sandbox.build_env(_G, newOpts.plugins or {}, sandbox.whitelist)
+   4     newOpts["sandbox_env"] = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
 
 ***0     @__data = newOpts
 
-   1   get: () => table_clone(@__data, true)
+   2   get: () => table_clone(@__data, true) -- preserving config through cloning
 
-   1 Config
+   2 Config
 
 ==============================================================================
 ./moonship/crypto.moon
@@ -609,6 +604,63 @@
    1   "OAuth " .. query_string_encode(parameters, ",", "\"")
 
    1 { :create_signature }
+
+==============================================================================
+./moonship/remoteresolver.moon
+==============================================================================
+   1 util        = require "moonship.url"
+   1 httpc       = require "moonship.http"
+
+   1 import url_parse, string_split from util
+
+***0 loadCode = (url) ->
+***0   req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
+***0   res, err = httpc.request(req)
+
+***0   return res unless err
+
+***0   { code: 0, body: err }
+
+***0 resolve_remote = (modname) ->
+***0   parsed = url_parse "modname"
+***0   parsed.pathx, parsed.file = string.match(parsed.path, "^(.*/)([^/]*)$")
+       parsed
+
+     -- attempt to parse and store new basepath
+***0 resolve_github = (modname) ->
+   1   modname = modname\gsub("github%.com/", "https://raw.githubusercontent.com/")
+   1   parsed = resolve_remote(modname)
+***0   user, repo, tree, branch, rest = string.match(parsed.pathx, "([^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
+***0   parsed.basepath =  "#{user}#{repo}#{branch}#{rest}"
+***0   parsed.path = "#{parsed.pathx}#{parsed.file}"
+       parsed
+
+   1 resolve = (modname) ->
+***0   rst = {}
+
+       -- if github, then parse and store new basepath
+***0   rst = resolve_remote(modname) if modname\find("http") == 1
+***0   rst = resolve_github(modname) if modname\find("github%.com/")
+
+       -- remove .moon extension to convert period to forward slash
+       -- then add back moon extension
+   1   { path: modname } unless rst.path
+
+       -- reprocess parsed path by converting all period to forward slash
+       -- keep basepath the way it is
+***0   parsed.file = parsed.file\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
+***0   parsed.path = parsed.path\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
+
+       -- save old path
+***0   oldpath = parsed.path
+***0   parsed.path = util.sanitize_path(parsed.basepath)
+***0   parsed.basepath = url_build(parsed, false)
+***0   parsed.path = oldpath
+***0   parsed.loader = loadCode
+
+       parsed
+
+***0 { :resolve }
 
 ==============================================================================
 ./moonship/requestbuilder.moon
@@ -906,16 +958,24 @@
 
      -- our utils lib, nothing here should depend on ngx
      -- for ngx stuff, put it inside ngin.lua file
-   3 local *
+   5 local *
 
-   3 url_unescape = (str) -> str\gsub('+', ' ')\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
+***0 trim = (str, regex="%s*") ->
+   5   str = tostring str
+
+   2   if #str > 200
+***0     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
+       else
+***0     str\match "^#{regex}(.-)#{regex}$"
+
+***0 url_unescape = (str) -> str\gsub('+', ' ')\gsub("%%(%x%x)", (c) -> return string.char(tonumber(c, 16)))
 
      -- https://stackoverflow.com/questions/2322764/what-characters-must-be-escaped-in-an-http-query-string
-  44 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]%c])", (c) -> string.format("%%%02X", string.byte(c)))
+   3 url_escape = (str) -> string.gsub(str, "([ /?:@~!$&'()*+,;=%[%]%c])", (c) -> string.format("%%%02X", string.byte(c)))
 
-  44 url_parse = (myurl) -> url.parse(myurl)
+***0 url_parse = (myurl) -> url.parse(myurl)
 
-***0 url_default_port = (scheme) -> url.default_port(scheme)
+  23 url_default_port = (scheme) -> url.default_port(scheme)
 
      -- {
      --     [path] = "/test"
@@ -926,120 +986,112 @@
      --     [query] = "hello=world"
      -- }
    2 url_build = (parts, includeQuery=true) ->
-   2   out = parts.path or ""
+   1   out = parts.path or ""
 
-   1   if includeQuery
-***0     out ..= "?" .. parts.query if parts.query
-   1     out ..= "#" .. parts.fragment if parts.fragment
+   2   if host = parts.host
+***0     host = "//#{host}"
+   2     host = "#{host}:#{parts.port}" if parts.port
+   2     host = "#{parts.scheme}:#{host}"  if parts.scheme and trim(parts.scheme) ~= ""
+   2     out = "/#{out}" if parts.path and out\sub(1,1) ~= "/"
+   2     out = "#{host}#{out}"
+   1     out = "#{out}#{parts.file}" if parts.file
 
-***0   if host = parts.host
-***0     host = "//" .. host
-***0     host ..= ":" .. parts.port if parts.port
-   2     host = parts.scheme .. ":" .. host if parts.scheme and parts.scheme != ""
-   2     out = "/" .. out if parts.path and out\sub(1,1) != "/"
-   2     out = host .. out
+   4   if includeQuery
+   2     out = "#{out}?#{parts.query}" if parts.query
+***0     out = "#{out}##{parts.fragment}" if parts.fragment
 
-   1   out
-
-
-   2 trim = (str, regex="%s*") ->
-***0   str = tostring str
-
-***0   if #str > 200
-***0     str\gsub("^#{regex}", "")\reverse()\gsub("^#{regex}", "")\reverse()
-       else
-***0     str\match "^#{regex}(.-)#{regex}$"
+       out
 
      -- path should not have double quote, single quote, period
      -- purposely left casing alone because paths are case-sensitive
      -- finally, remove double period and make single forward slash
-   3 path_sanitize = (str) -> (tostring str)\gsub("[^a-zA-Z0-9.-_/\\]", "")\gsub("%.%.+", "")\gsub("//+", "/")\gsub("\\\\+", "/")
+***0 path_sanitize = (str) -> (tostring str)\gsub("[^a-zA-Z0-9.-_/\\]", "")\gsub("%.%.+", "")\gsub("//+", "/")\gsub("\\\\+", "/")
 
 
-   3 slugify = (str) -> ((tostring str)\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
+   2 slugify = (str) -> ((tostring str)\gsub("[%s_]+", "-")\gsub("[^%w%-]+", "")\gsub("-+", "-"))\lower!
 
-   2 string_split = url.string_split
+   1 string_split = url.string_split
 
-   2 json_encodable = (obj, seen={}) ->
-***0   switch type obj
-   7     when "table"
+   1 json_encodable = (obj, seen={}) ->
+   1   switch type obj
+         when "table"
 ***0       unless seen[obj]
-  15         seen[obj] = true
+   2         seen[obj] = true
    7         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
 ***0     when "function", "userdata", "thread"
-   5       nil
+  15       nil
          else
-   7       obj
+           obj
 
-   5 from_json = (obj) -> cjson_safe.decode obj
+   7 from_json = (obj) -> cjson_safe.decode obj
 
 ***0 to_json = (obj) -> cjson_safe.encode json_encodable obj
 
    5 query_string_encode = (t, sep="&", quote="", seen={}) ->
-   2   query = {}
-   2   keys = {}
-   2   for k in pairs(t) do keys[#keys+1] = tostring(k)
-   6   sort(keys)
+***0   query = {}
+   5   keys = {}
+   5   for k in pairs(t) do keys[#keys+1] = tostring(k)
+   2   sort(keys)
 
-   8   for _,k in ipairs(keys) do
-***0     v = t[k]
+   2   for _,k in ipairs(keys) do
+   6     v = t[k]
 
-   2     switch type v
+   8     switch type v
            when "table"
-   3         unless seen[v]
-   1           seen[v] = true
+***0         unless seen[v]
+   2           seen[v] = true
 ***0           tv = query_string_encode(v, sep, quote, seen)
-   2           v = tv
-***0       when "function", "userdata", "thread"
-   7         nil
+   3           v = tv
+   1       when "function", "userdata", "thread"
+             nil
            else
-   1         v = url_escape(tostring(v))
+***0         v = url_escape(tostring(v))
 
 ***0     k = url_escape(tostring(k))
 
    7     if v ~= "" then
 ***0       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
          else
-   4       query[#query+1] = name
+   7       query[#query+1] = name
 
    6   concat(query, sep)
 
 ***0 resolveGithubRaw = (modname) ->
    6   capturePath = "https://raw.githubusercontent.com/"
-   6   if string.find(modname, "github.com/")
+   5   if string.find(modname, "github.com/")
 ***0     user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
    6     path, file = string.match(pathx, "^(.*/)([^/]*)$")
    6     base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
 
          -- convert period to folder before return
-***0     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
+   6     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
 
-  26   __remotebase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
+  20   __remotebase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
-  20 applyDefaults = (opts, defOpts) ->
-  20   for k, v in pairs(defOpts) do
-***0     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
-***0       opts[k] = v unless opts[k]
+   6 applyDefaults = (opts, defOpts) ->
+  26   for k, v in pairs(defOpts) do
+  20     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
+  20       opts[k] = v unless opts[k]
 
        opts
 
-  20 table_clone = (t, deep=false) ->
+***0 table_clone = (t, deep=false) ->
 ***0   return nil unless ("table"==type(t) or "userdata"==type(t))
 
-  40   ret = {}
+  20   ret = {}
 ***0   for k,v in pairs(t) do
-  40     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
-  20       if "table,userdata"\find(type(v)) then
-  20         ret[k] = if deep then v else table_clone(v, deep)
+***0     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
+  40       if "table,userdata"\find(type(v)) then
+***0         ret[k] = if deep then v else table_clone(v, deep)
            else
-***0         ret[k] = v
+  20         ret[k] = v
 
        ret
 
-   7 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
+***0 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
 ***0   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-***0   :json_encodable, :from_json, :to_json, :table_clone,
-***0   :query_string_encode, :resolveGithubRaw, :applyDefaults
+   6   :json_encodable, :from_json, :to_json, :table_clone,
+   7   :query_string_encode, :resolveGithubRaw, :applyDefaults
      }
 
 ==============================================================================
@@ -1049,17 +1101,18 @@ Summary
 File                           Hits Missed Coverage
 ---------------------------------------------------
 ./moonship/awsauth.moon        37   18     67.27%
-./moonship/codecacher.moon     62   36     63.27%
-./moonship/config.moon         16   21     43.24%
+./moonship/codecacher.moon     66   25     72.53%
+./moonship/config.moon         17   22     43.59%
 ./moonship/crypto.moon         22   8      73.33%
 ./moonship/engine.moon         14   14     50.00%
 ./moonship/http.moon           11   13     45.83%
 ./moonship/httpsocket.moon     11   8      57.89%
 ./moonship/log.moon            5    12     29.41%
 ./moonship/oauth1.moon         32   8      80.00%
+./moonship/remoteresolver.moon 7    23     23.33%
 ./moonship/requestbuilder.moon 6    22     21.43%
 ./moonship/sandbox.moon        38   28     57.58%
 ./moonship/url.moon            33   47     41.25%
-./moonship/util.moon           53   30     63.86%
+./moonship/util.moon           53   27     66.25%
 ---------------------------------------------------
-Total                          340  265    56.20%
+Total                          352  275    56.14%
