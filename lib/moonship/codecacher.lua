@@ -29,7 +29,7 @@ myUrlHandler = function(opts)
   local req = {
     url = full_path,
     method = "GET",
-    capture_url = "/__code",
+    capture_url = "/__libprivate",
     headers = { }
   }
   if opts.last_modified then

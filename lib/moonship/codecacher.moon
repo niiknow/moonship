@@ -34,7 +34,7 @@ myUrlHandler = (opts) ->
 
   log.debug "code load: #{full_path}"
 
-  req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
+  req = { url: full_path, method: "GET", capture_url: "/__libprivate", headers: {} }
   req.headers["If-Modified-Since"] = opts.last_modified if opts.last_modified
 
   for k, v in pairs(authHeaders) do

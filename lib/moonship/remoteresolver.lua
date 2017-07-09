@@ -7,7 +7,7 @@ loadCode = function(url)
   local req = {
     url = url,
     method = "GET",
-    capture_url = "/__ghraw",
+    capture_url = "/__libpublic",
     headers = { }
   }
   local res, err = httpc.request(req)
@@ -21,15 +21,15 @@ loadCode = function(url)
 end
 local resolve_remote
 resolve_remote = function(modname)
-  local parsed = url_parse("modname")
-  parsed.pathx, parsed.file = string.match(parsed.path, "^(.*/)([^/]*)$")
+  local parsed = url_parse(modname)
+  parsed.basepath, parsed.file = string.match(parsed.path, "^(.*/)([^/]*)$")
   return parsed
 end
 local resolve_github
 resolve_github = function(modname)
   modname = modname:gsub("github%.com/", "https://raw.githubusercontent.com/")
   local parsed = resolve_remote(modname)
-  local user, repo, tree, branch, rest = string.match(parsed.pathx, "([^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
+  local user, repo, tree, branch, rest = string.match(parsed.basepath, "([^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
   parsed.basepath = tostring(user) .. tostring(repo) .. tostring(branch) .. tostring(rest)
   parsed.path = tostring(parsed.pathx) .. tostring(parsed.file)
   return parsed
@@ -52,7 +52,7 @@ resolve = function(modname)
     end
   end
   if not (rst.path) then
-    local _ = {
+    return {
       path = modname
     }
   end

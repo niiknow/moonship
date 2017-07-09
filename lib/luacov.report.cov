@@ -127,7 +127,7 @@
 
    4   log.debug "code load: #{full_path}"
 
-***0   req = { url: full_path, method: "GET", capture_url: "/__code", headers: {} }
+***0   req = { url: full_path, method: "GET", capture_url: "/__libprivate", headers: {} }
    4   req.headers["If-Modified-Since"] = opts.last_modified if opts.last_modified
 
 ***0   for k, v in pairs(authHeaders) do
@@ -614,7 +614,7 @@
    1 import url_parse, trim from util
 
 ***0 loadCode = (url) ->
-***0   req = { url: url, method: "GET", capture_url: "/__ghraw", headers: {} }
+***0   req = { url: url, method: "GET", capture_url: "/__libpublic", headers: {} }
 ***0   res, err = httpc.request(req)
 
 ***0   return res unless err
@@ -622,15 +622,15 @@
 ***0   { code: 0, body: err }
 
 ***0 resolve_remote = (modname) ->
-***0   parsed = url_parse "modname"
-***0   parsed.pathx, parsed.file = string.match(parsed.path, "^(.*/)([^/]*)$")
+***0   parsed = url_parse modname
+***0   parsed.basepath, parsed.file = string.match(parsed.path, "^(.*/)([^/]*)$")
        parsed
 
      -- attempt to parse and store new basepath
 ***0 resolve_github = (modname) ->
    1   modname = modname\gsub("github%.com/", "https://raw.githubusercontent.com/")
    1   parsed = resolve_remote(modname)
-***0   user, repo, tree, branch, rest = string.match(parsed.pathx, "([^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
+***0   user, repo, tree, branch, rest = string.match(parsed.basepath, "([^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
 ***0   parsed.basepath =  "#{user}#{repo}#{branch}#{rest}"
 ***0   parsed.path = "#{parsed.pathx}#{parsed.file}"
        parsed
@@ -651,10 +651,10 @@
 ***0     remotemodname = "#{remotebase}/#{modname}"
 ***0     rst = resolve_remote(remotemodname) if remotemodname\find("http") == 1
 
+***0   return { path: modname } unless rst.path
+
        -- remove .moon extension to convert period to forward slash
        -- then add back moon extension
-***0   { path: modname } unless rst.path
-
        -- reprocess parsed path by converting all period to forward slash
        -- keep basepath the way it is
 ***0   parsed.file = parsed.file\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
