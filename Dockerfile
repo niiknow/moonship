@@ -125,6 +125,7 @@ RUN cd /usr/local/openresty/luajit/bin/ \
     && ./luarocks install lua-lru 1.0-1 \
     && ./luarocks install basexx 0.1.0-1 \
     && ./luarocks install lpath 0.1.0-1  \
+    && ./luarocks install lua-log 0.1.6-1 \
     && ./luarocks install --server=http://luarocks.org/dev ltn12 \
     && ./luarocks install luasec 0.6-1 \
 

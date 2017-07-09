@@ -17,9 +17,10 @@ luarocks install lua-resty-http 0.08-0
 luarocks install moonscript
 luarocks install luacrypto 0.3.2-2
 luarocks install bcrypt 2.1-4
-luarocks install lpath 0.1.0-1 
 luarocks install lua-lru 1.0-1
 luarocks install basexx 0.1.0-1
+luarocks install lpath 0.1.0-1 
+luarocks install lua-log 0.1.6-1
 luarocks install --server=http://luarocks.org/dev ltn12
 
 # this is for local only, openresty uses lua-resty-http

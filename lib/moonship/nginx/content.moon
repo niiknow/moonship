@@ -22,7 +22,6 @@ opts = {
     crypto: table_clone(crypto),
     hmacauth: table_clone(hmacauth),
     http: table_clone(http),
-    log: logger(),
     oauth1: table_clone(oauth1),
     request: request
     util: table_clone(util)
