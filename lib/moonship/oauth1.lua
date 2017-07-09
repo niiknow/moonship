@@ -1,4 +1,4 @@
-local log = require("moonship.logger")
+local log = require("moonship.log")
 local util = require("moonship.util")
 local crypto = require("moonship.crypto")
 local string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port

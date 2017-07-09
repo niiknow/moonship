@@ -1,6 +1,6 @@
-local engine = require("moonship.engine")
+local Engine = require("moonship.engine")
 local _VERSION = require("moonship.version")
 return {
-  Engine = engine,
+  Engine = Engine,
   _VERSION = _VERSION
 }

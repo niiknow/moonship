@@ -74,7 +74,7 @@ json_encodable = (obj, seen={}) ->
 
 from_json = (obj) -> cjson_safe.decode obj
 
-to_json = (obj) -> cjson_safe.encode (json_encodable obj)
+to_json = (obj) -> cjson_safe.encode json_encodable obj
 
 query_string_encode = (t, sep="&", quote="", seen={}) ->
   query = {}
@@ -130,7 +130,7 @@ table_clone = (t, deep=false) ->
   ret = {}
   for k,v in pairs(t) do
     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
-      if "table" == type(v) or "userdata" == type(v) then
+      if "table,userdata"\find(type(v)) then
         ret[k] = if deep then v else table_clone(v, deep)
       else
         ret[k] = v

@@ -155,7 +155,7 @@ return {
   loadstring_safe = loadstring_safe,
   loadfile = loadfile,
   loadfile_safe = loadfile_safe,
-  compile_moon = compile_moon,
   exec = exec,
-  exec_code = exec_code
+  exec_code = exec_code,
+  compile_moon = compile_moon
 }

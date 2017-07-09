@@ -1,6 +1,6 @@
 
 util    = require "moonship.util"
-log     = require "moonship.logger"
+log     = require "moonship.log"
 sandbox = require "moonship.sandbox"
 
 aws_region            = os.getenv("AWS_DEFAULT_REGION")
@@ -16,7 +16,6 @@ app_env               = os.getenv("MOONSHIP_APP_ENV")
 table_clone           = util.table_clone
 
 _data = {}
-
 build_requires = (opts) ->
   (modname) ->
     unless _G[modname]
@@ -45,10 +44,10 @@ class Config
     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
     util.applyDefaults(newOpts, defaultOpts)
     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
-    newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins or {}, sandbox.whitelist)
+    newOpts["sandbox_env"] = sandbox.build_env(_G, newOpts.plugins or {}, sandbox.whitelist)
 
-    _data = newOpts
+    @__data = newOpts
 
-  get: () => table_clone(_data)
+  get: () => table_clone(@__data, true)
 
 Config

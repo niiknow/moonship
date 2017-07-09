@@ -1,4 +1,4 @@
-log               = require "moonship.logger"
+log               = require "moonship.log"
 util              = require "moonship.util"
 crypto            = require "moonship.crypto"
 

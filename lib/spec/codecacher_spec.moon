@@ -8,7 +8,8 @@ describe "moonship.codecacher", ->
     expected = 200
     opts = {
       url: "localhost/hello?yo=dawg",
-      remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
+      remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote",
+      sandbox_env: {}
     }
 
     res = codecacher.myUrlHandler(opts)
@@ -19,7 +20,8 @@ describe "moonship.codecacher", ->
     opts = {
       app_path: plpath.abs("./t"),
       remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote",
-      requestbuilder: require("moonship.requestbuilder")
+      requestbuilder: require("moonship.requestbuilder"),
+      sandbox_env: {}
     }
     opts.requestbuilder.set({
       host: "localhost",

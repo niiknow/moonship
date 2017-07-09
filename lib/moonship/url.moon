@@ -1,8 +1,6 @@
 -- custom url parsing implementation
 -- since there are so many that does not meet requirements - wtf?
 
-log = require "moonship.logger"
-
 import insert from table
 
 local *

@@ -97,7 +97,7 @@ from_json = function(obj)
   return cjson_safe.decode(obj)
 end
 to_json = function(obj)
-  return cjson_safe.encode((json_encodable(obj)))
+  return cjson_safe.encode(json_encodable(obj))
 end
 query_string_encode = function(t, sep, quote, seen)
   if sep == nil then
@@ -168,7 +168,7 @@ table_clone = function(t, deep)
   local ret = { }
   for k, v in pairs(t) do
     if "__" ~= string.sub(k, 1, 2) then
-      if "table" == type(v) or "userdata" == type(v) then
+      if ("table,userdata"):find(type(v)) then
         if deep then
           ret[k] = v
         else

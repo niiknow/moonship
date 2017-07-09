@@ -131,4 +131,4 @@ compile_moon = (moon_code) ->
 
   lua_code
 
-{ :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :compile_moon, :exec, :exec_code }
+{ :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :exec, :exec_code, :compile_moon }

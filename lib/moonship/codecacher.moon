@@ -7,7 +7,7 @@ util           = require "moonship.util"
 lfs            = require "lfs"
 lru            = require "lru"
 plpath         = require "path"
-log            = require "moonship.logger"
+log            = require "moonship.log"
 fs             = require "path.fs"
 requestbuilder = require "moonship.requestbuilder"
 
@@ -75,7 +75,6 @@ class CodeCacher
 
     opts.localBasePath = plpath.abs(opts.app_path)
     @codeCache = lru.new(opts.code_cache_size)
-    log.debug(opts)
     @options = opts
 
 --
@@ -94,12 +93,11 @@ class CodeCacher
 
 --NOTE: urlHandler should use capture to simulate debounce
 
-  doCheckRemoteFile: (valHolder, req, aws) =>
+  doCheckRemoteFile: (valHolder, aws) =>
     opts = {
       url: valHolder.url,
       remote_path: @options.remote_path
     }
-
 
     opts["last_modified"] = os.date("%c", valHolder.fileMod) if (valHolder.fileMod ~= nil)
 
@@ -133,6 +131,7 @@ class CodeCacher
 
   get: (aws) =>
     req = @options.requestbuilder.build()
+    @options.sandbox_env.request = req
     url = util.path_sanitize("#{req.host}/#{req.path}")
     valHolder = @codeCache\get()
 
@@ -175,7 +174,7 @@ class CodeCacher
         -- delete reference if file no longer exists/purged
         valHolder.value = nil
 
-      @doCheckRemoteFile(valHolder, req, aws)
+      @doCheckRemoteFile(valHolder, aws)
 
     -- remove from cache if not found
     @codeCache\delete(url) if valHolder.value == nil

@@ -1,5 +1,5 @@
 local util = require("moonship.util")
-local log = require("moonship.logger")
+local log = require("moonship.log")
 local sandbox = require("moonship.sandbox")
 local aws_region = os.getenv("AWS_DEFAULT_REGION")
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
@@ -47,7 +47,7 @@ do
   local _class_0
   local _base_0 = {
     get = function(self)
-      return table_clone(_data)
+      return table_clone(self.__data, true)
     end
   }
   _base_0.__index = _base_0
@@ -72,8 +72,8 @@ do
       }
       util.applyDefaults(newOpts, defaultOpts)
       newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
-      newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins or { }, sandbox.whitelist)
-      _data = newOpts
+      newOpts["sandbox_env"] = sandbox.build_env(_G, newOpts.plugins or { }, sandbox.whitelist)
+      self.__data = newOpts
     end,
     __base = _base_0,
     __name = "Config"

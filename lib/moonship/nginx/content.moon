@@ -1,4 +1,4 @@
-log               =  require "moonship.logger"
+log               =  require "moonship.log"
 log.set_lvl("info")
 
 engine            = require "moonship.engine"
@@ -8,7 +8,7 @@ util              = require "moonship.util"
 crypto            = require "moonship.crypto"
 hmacauth          = require "moonship.hmacauth"
 http              = require "moonship.http"
-logger            = require "moonship.logger"
+logger            = require "moonship.log"
 oauth1            = require "moonship.oauth1"
 requestbuilder    = require "moonship.requestbuilder"
 

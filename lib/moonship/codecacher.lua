@@ -5,7 +5,7 @@ local util = require("moonship.util")
 local lfs = require("lfs")
 local lru = require("lru")
 local plpath = require("path")
-local log = require("moonship.logger")
+local log = require("moonship.log")
 local fs = require("path.fs")
 local requestbuilder = require("moonship.requestbuilder")
 local mkdirp, loadCode, myUrlHandler, CodeCacher
@@ -67,7 +67,7 @@ end
 do
   local _class_0
   local _base_0 = {
-    doCheckRemoteFile = function(self, valHolder, req, aws)
+    doCheckRemoteFile = function(self, valHolder, aws)
       local opts = {
         url = valHolder.url,
         remote_path = self.options.remote_path
@@ -100,6 +100,7 @@ do
     end,
     get = function(self, aws)
       local req = self.options.requestbuilder.build()
+      self.options.sandbox_env.request = req
       local url = util.path_sanitize(tostring(req.host) .. "/" .. tostring(req.path))
       local valHolder = self.codeCache:get()
       if not (valHolder) then
@@ -128,7 +129,7 @@ do
         else
           valHolder.value = nil
         end
-        self:doCheckRemoteFile(valHolder, req, aws)
+        self:doCheckRemoteFile(valHolder, aws)
       end
       if valHolder.value == nil then
         self.codeCache:delete(url)
@@ -158,7 +159,6 @@ do
       end
       opts.localBasePath = plpath.abs(opts.app_path)
       self.codeCache = lru.new(opts.code_cache_size)
-      log.debug(opts)
       self.options = opts
     end,
     __base = _base_0,

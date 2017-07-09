@@ -3,7 +3,7 @@ print(package.cpath)
 package.path = package.path .. ";lib/?.lua"
 local engine = require("moonship.engine")
 local plpath = require("path")
-local log = require("moonship.logger")
+local log = require("moonship.log")
 log.level(log.DEBUG)
 local port = 4000
 local http_server = require("http.server")

@@ -11,11 +11,11 @@ describe "moonship.awsauth", ->
       "x-amz-date": "20170703T155448Z"
     }
     opts = {
-        aws_region: "aws_region",
-        aws_access_key_id: "aws_access_key_id",
-        aws_secret_access_key: "aws_secret_access_key",
-        aws_s3_code_path: "aws_s3_code_path",
-        timestamp: 1499097288
+      aws_region: "aws_region",
+      aws_access_key_id: "aws_access_key_id",
+      aws_secret_access_key: "aws_secret_access_key",
+      aws_s3_code_path: "aws_s3_code_path",
+      timestamp: 1499097288
     }
     actual = aws_auth(opts)\get_auth_headers()
 
