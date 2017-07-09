@@ -67,11 +67,12 @@ do
         aws_s3_code_path = aws_s3_code_path,
         app_path = app_path,
         code_cache_size = code_cache_size,
-        remote_path = remote_path
+        remote_path = remote_path,
+        plugins = { }
       }
       util.applyDefaults(newOpts, defaultOpts)
+      newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
       newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins or { }, sandbox.whitelist)
-      newOpts.require = build_requires(newOpts)
       _data = newOpts
     end,
     __base = _base_0,

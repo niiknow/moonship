@@ -42,11 +42,11 @@ build_requires = (opts) ->
 
 class Config
   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
-    defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path }
+    defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
     util.applyDefaults(newOpts, defaultOpts)
-
+    newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
     newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins or {}, sandbox.whitelist)
-    newOpts.require = build_requires(newOpts)
+
     _data = newOpts
 
   get: () => table_clone(_data)
