@@ -23,7 +23,11 @@ do
       return rst
     end,
     engage = function(self, req)
-      local rst, err = self.codeCache:get(req, self.options:get())
+      local opts = self.options:get()
+      if req then
+        opts.plugins.request.set(req)
+      end
+      local rst, err = self.codeCache:get(opts)
       if err then
         return {
           error = err,

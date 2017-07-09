@@ -55,38 +55,13 @@ myUrlHandler = (opts) ->
   { code: 0, body: err }
 
 
-buildRequest = () ->
-  if ngx
-    ngx.req.read_body()
-    req_wrapper = {
-      body: ngx.req.get_body_data(),
-      form: ngx.req.get_post_args(),
-      headers: ngx.req.get_headers(),
-      host: ngx.var.host,
-      method: ngx.req.get_method(),
-      path: ngx.var.uri,
-      port: ngx.var.server_port,
-      query: ngx.req.get_uri_args(),
-      querystring: ngx.req.args,
-      remote_addr: ngx.var.remote_addr,
-      referer: ngx.var.http_referer or "-",
-      scheme: ngx.var.scheme,
-      server_addr: ngx.var.server_addr,
-      user_agent: ""
-    }
-    req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
-    return req_wrapper
-
-  {}
-
-
 getSandboxEnv = (req) ->
   env = {
     http: httpc,
     require: require_new,
     util: util,
     crypto: crypto,
-    request: req or buildRequest(),
+    request: req,
     __ghrawbase: __ghrawbase
   }
   sandbox.build_env(_G, env, sandbox.whitelist)
@@ -136,6 +111,7 @@ class CodeCacher
 
     opts.localBasePath = plpath.abs(opts.app_path)
     @codeCache = lru.new(opts.code_cache_size)
+    log.debug(opts)
     @options = opts
 
 --
@@ -191,7 +167,8 @@ class CodeCacher
       valHolder.value = nil
       os.remove(valHolder.localFullPath)
 
-  get: (req=buildRequest(), aws) =>
+  get: (aws) =>
+    req = @options.plugins.request.build()
     url = util.path_sanitize("#{req.host}/#{req.path}")
     valHolder = @codeCache\get()
 

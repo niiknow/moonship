@@ -7,7 +7,10 @@ describe "moonship.engine", ->
     expected = "hello from github"
     opts = {
       app_path: plpath.abs('./t'),
-      remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
+      remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote',
+      plugins: {
+        request: require("moonship.plugins.request")
+      }
     }
     ngin = engine(opts)
     res = ngin\engage({host: 'localhost', path: '/hello'})
@@ -18,7 +21,10 @@ describe "moonship.engine", ->
     expected = 404
     opts = {
       app_path: plpath.abs('./t'),
-      remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote'
+      remote_path: 'https://raw.githubusercontent.com/niiknow/moonship/master/remote',
+      plugins: {
+        request: require("moonship.plugins.request")
+      }
     }
     ngin = engine(opts)
     res = ngin\engage({host: 'localhost', path: '/world'})

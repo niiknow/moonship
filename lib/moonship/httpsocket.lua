@@ -12,6 +12,12 @@ make_request = function(opts)
 end
 local request
 request = function(opts)
+  if type(opts) == 'string' then
+    opts = {
+      url = opts,
+      method = 'GET'
+    }
+  end
   opts.source = stringsource(opts.body)
   local result = { }
   opts.sink = tablesink(result)

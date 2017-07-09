@@ -9,8 +9,6 @@ osx, install lua/luarocks:
 brew update
 brew install lua
 brew install openssl
-brew install zlib
-luarocks install lua-zlib ZLIB_DIR=/usr/local/opt/zlib
 luarocks install luasec CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
 
 luarocks install busted

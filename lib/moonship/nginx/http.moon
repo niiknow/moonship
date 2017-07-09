@@ -34,22 +34,18 @@ request_ngx = (request_uri, opts={}) ->
   { body: rsp.body, status: "#{rsp.status}", code: rsp.status, headers: rsp.headers, err: err }
 
 -- simulate socket.http
---{
+--request {
 --  method = string,
 --  url = string,
 --  headers = header-table,
---  body = string,
---  user = string,
---  password = string,
---  stay = string,
+--  body = string
 --}
---
--- {
---  body = string,
---  headers = header-table,
---  status = string,
---  code = number,
---  error = string
+--response {
+--  body = <response body>,
+--  code = <http status code>,
+--  headers = <table of headers>,
+--  status = <the http status message>,
+--  err = <nil or error message>
 --}
 request = (opts) ->
   opts = { url: opts, method: 'GET' } if type(opts) == 'string'

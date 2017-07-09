@@ -5,7 +5,6 @@ local http_handler = require("moonship.httpsocket")
 if ngx then
   http_handler = require("moonship.nginx.http")
 end
-local has_zlib, zlib = pcall(require, "zlib")
 local concat
 concat = table.concat
 local query_string_encode

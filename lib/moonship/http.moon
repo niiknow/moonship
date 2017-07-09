@@ -6,8 +6,6 @@ string_upper = string.upper
 http_handler = require "moonship.httpsocket"
 http_handler = require "moonship.nginx.http" if ngx
 
-has_zlib, zlib = pcall(require, "zlib")
-
 import concat from table
 import query_string_encode from util
 
@@ -17,7 +15,7 @@ string_upper = string.upper
 --  body = <response body>,
 --  code = <http status code>,
 --  headers = <table of headers>,
---  status_line = <the http status message>,
+--  status = <the http status message>,
 --  err = <nil or error message>
 -- }
 local *

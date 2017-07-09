@@ -10,7 +10,22 @@ make_request = (opts) ->
   return https.request(opts) if opts.url\find "https:"
   http.request(opts)
 
+--request {
+--  method = string,
+--  url = string,
+--  headers = header-table,
+--  body = string
+--}
+--response {
+--  body = <response body>,
+--  code = <http status code>,
+--  headers = <table of headers>,
+--  status = <the http status message>,
+--  err = <nil or error message>
+--}
 request = (opts) ->
+  opts = { url: opts, method: 'GET' } if type(opts) == 'string'
+
   opts.source = stringsource(opts.body)
 
   result = {}

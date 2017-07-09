@@ -7,7 +7,7 @@ local lru = require("lru")
 local plpath = require("path")
 local log = require("moonship.log")
 local fs = require("path.fs")
-local mkdirp, loadCode, myUrlHandler, buildRequest, getSandboxEnv, require_new, CodeCacher
+local mkdirp, loadCode, myUrlHandler, getSandboxEnv, require_new, CodeCacher
 mkdirp = function(p)
   return fs.makedirs(p)
 end
@@ -63,37 +63,13 @@ myUrlHandler = function(opts)
     body = err
   }
 end
-buildRequest = function()
-  if ngx then
-    ngx.req.read_body()
-    local req_wrapper = {
-      body = ngx.req.get_body_data(),
-      form = ngx.req.get_post_args(),
-      headers = ngx.req.get_headers(),
-      host = ngx.var.host,
-      method = ngx.req.get_method(),
-      path = ngx.var.uri,
-      port = ngx.var.server_port,
-      query = ngx.req.get_uri_args(),
-      querystring = ngx.req.args,
-      remote_addr = ngx.var.remote_addr,
-      referer = ngx.var.http_referer or "-",
-      scheme = ngx.var.scheme,
-      server_addr = ngx.var.server_addr,
-      user_agent = ""
-    }
-    req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
-    return req_wrapper
-  end
-  return { }
-end
 getSandboxEnv = function(req)
   local env = {
     http = httpc,
     require = require_new,
     util = util,
     crypto = crypto,
-    request = req or buildRequest(),
+    request = req,
     __ghrawbase = __ghrawbase
   }
   return sandbox.build_env(_G, env, sandbox.whitelist)
@@ -160,10 +136,8 @@ do
         return os.remove(valHolder.localFullPath)
       end
     end,
-    get = function(self, req, aws)
-      if req == nil then
-        req = buildRequest()
-      end
+    get = function(self, aws)
+      local req = self.options.plugins.request.build()
       local url = util.path_sanitize(tostring(req.host) .. "/" .. tostring(req.path))
       local valHolder = self.codeCache:get()
       if not (valHolder) then
@@ -221,6 +195,7 @@ do
       end
       opts.localBasePath = plpath.abs(opts.app_path)
       self.codeCache = lru.new(opts.code_cache_size)
+      log.debug(opts)
       self.options = opts
     end,
     __base = _base_0,

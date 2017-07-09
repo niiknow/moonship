@@ -23,13 +23,17 @@ describe "moonship.codecacher", ->
     expected = "hello from github"
     opts = {
       app_path: plpath.abs("./t"),
-      remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote"
+      remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote",
+      plugins: {
+        request: require("moonship.plugins.request")
+      }
     }
-    cc = codecacher.CodeCacher(opts)
-    res = cc\get({
+    opts.plugins.request.set({
       host: "localhost",
       path: "/hello"
     })
+    cc = codecacher.CodeCacher(opts)
+    res = cc\get()
 
     -- validate remote response
     assert.same expected, res.body
