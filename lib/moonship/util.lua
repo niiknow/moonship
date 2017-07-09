@@ -56,9 +56,6 @@ url_build = function(parts, includeQuery)
         out = "/" .. tostring(out)
       end
       out = tostring(host) .. tostring(out)
-      if parts.file then
-        out = tostring(out) .. tostring(parts.file)
-      end
     end
   end
   if includeQuery then
