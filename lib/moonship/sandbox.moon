@@ -46,6 +46,8 @@ utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
 
 
+opts = {plugins: {}}
+
 local *
 
 -- Builds the environment table for a sandbox.

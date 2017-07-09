@@ -115,7 +115,7 @@ resolveGithubRaw = (modname) ->
     -- convert period to folder before return
     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
 
-  __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
+  __remotebase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 
 applyDefaults = (opts, defOpts) ->
   for k, v in pairs(defOpts) do

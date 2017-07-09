@@ -55,43 +55,6 @@ myUrlHandler = (opts) ->
 
   { code: 0, body: err }
 
-
-getSandboxEnv = (req) ->
-  env = {
-    http: httpc,
-    require: require_new,
-    util: util,
-    crypto: crypto,
-    request: req,
-    __ghrawbase: __ghrawbase
-  }
-  sandbox.build_env(_G, env, sandbox.whitelist)
-
-
-require_new = (modname) ->
-  unless _G[modname]
-    base, file, query = util.resolveGithubRaw(modname)
-    if base
-      loadPath = "#{base}#{file}#{query}"
-      rsp = loadCode(loadPath)
-      if (rsp.code == 200)
-        lua_src, err = sandbox.compile_moon rsp.body
-
-        return nil, "error compiling '#{modname}' with message: #{err}" unless lua_src
-
-        fn, err = sandbox.loadstring_safe lua_src, loadPath, getSandboxEnv()
-
-        _G["__ghrawbase"] = base
-        return nil, "error loading '#{modname}' with message: #{err}" unless fn
-
-        rst, err = sandbox.exec(fn)
-        return nil, "error executing '#{modname}' with message: #{err}" unless rst
-
-        _G[modname] = rst
-
-  _G[modname]
-
-
 --
 -- the strategy of this cache is to:
 --1. dynamically load remote file
@@ -161,7 +124,7 @@ class CodeCacher
             file\close()
 
             valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
-            valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, getSandboxEnv(req)
+            valHolder.value = sandbox.loadstring_safe lua_src, valHolder.localFullPath, @options.sandbox_env
 
     elseif (rsp.code == 404)
       -- on 404 - set nil and delete local file
@@ -202,7 +165,7 @@ class CodeCacher
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
       if valHolder.fileMod
         log.debug tostring(valHolder.fileMod)
-        valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, getSandboxEnv(req)
+        valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, @options.sandbox_env
 
         -- set it back immediately for the next guy
         -- set next ttl
@@ -220,4 +183,4 @@ class CodeCacher
 
     valHolder.value
 
-{ :CodeCacher, :myUrlHandler, :require_new }
+{ :CodeCacher, :myUrlHandler }

@@ -8,7 +8,7 @@ local plpath = require("path")
 local log = require("moonship.logger")
 local fs = require("path.fs")
 local requestbuilder = require("moonship.requestbuilder")
-local mkdirp, loadCode, myUrlHandler, getSandboxEnv, require_new, CodeCacher
+local mkdirp, loadCode, myUrlHandler, CodeCacher
 mkdirp = function(p)
   return fs.makedirs(p)
 end
@@ -64,45 +64,6 @@ myUrlHandler = function(opts)
     body = err
   }
 end
-getSandboxEnv = function(req)
-  local env = {
-    http = httpc,
-    require = require_new,
-    util = util,
-    crypto = crypto,
-    request = req,
-    __ghrawbase = __ghrawbase
-  }
-  return sandbox.build_env(_G, env, sandbox.whitelist)
-end
-require_new = function(modname)
-  if not (_G[modname]) then
-    local base, file, query = util.resolveGithubRaw(modname)
-    if base then
-      local loadPath = tostring(base) .. tostring(file) .. tostring(query)
-      local rsp = loadCode(loadPath)
-      if (rsp.code == 200) then
-        local lua_src, err = sandbox.compile_moon(rsp.body)
-        if not (lua_src) then
-          return nil, "error compiling '" .. tostring(modname) .. "' with message: " .. tostring(err)
-        end
-        local fn
-        fn, err = sandbox.loadstring_safe(lua_src, loadPath, getSandboxEnv())
-        _G["__ghrawbase"] = base
-        if not (fn) then
-          return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
-        end
-        local rst
-        rst, err = sandbox.exec(fn)
-        if not (rst) then
-          return nil, "error executing '" .. tostring(modname) .. "' with message: " .. tostring(err)
-        end
-        _G[modname] = rst
-      end
-    end
-  end
-  return _G[modname]
-end
 do
   local _class_0
   local _base_0 = {
@@ -128,7 +89,7 @@ do
               file:write(lua_src)
               file:close()
               valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
-              valHolder.value = sandbox.loadstring_safe(lua_src, valHolder.localFullPath, getSandboxEnv(req))
+              valHolder.value = sandbox.loadstring_safe(lua_src, valHolder.localFullPath, self.options.sandbox_env)
             end
           end
         end
@@ -161,7 +122,7 @@ do
         valHolder.fileMod = lfs.attributes(valHolder.localFullPath, "modification")
         if valHolder.fileMod then
           log.debug(tostring(valHolder.fileMod))
-          valHolder.value = sandbox.loadfile_safe(valHolder.localFullPath, getSandboxEnv(req))
+          valHolder.value = sandbox.loadfile_safe(valHolder.localFullPath, self.options.sandbox_env)
           valHolder.lastCheck = os.time()
           self.codeCache:set(url, valHolder)
         else
@@ -215,6 +176,5 @@ do
 end
 return {
   CodeCacher = CodeCacher,
-  myUrlHandler = myUrlHandler,
-  require_new = require_new
+  myUrlHandler = myUrlHandler
 }

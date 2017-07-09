@@ -1,4 +1,5 @@
 -- build request plugins based on options
+sandbox = require "moonship.sandbox"
 
 local *
 

@@ -146,7 +146,7 @@ resolveGithubRaw = function(modname)
     local base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
     return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
   end
-  return __ghrawbase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
+  return __remotebase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
 end
 applyDefaults = function(opts, defOpts)
   for k, v in pairs(defOpts) do

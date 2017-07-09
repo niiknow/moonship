@@ -52,6 +52,9 @@ table.concat table.insert table.maxn table.pack table.remove table.sort table.un
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 ]]
+local opts = {
+  plugins = { }
+}
 local build_env, loadstring, loadstring_safe, loadfile, loadfile_safe, exec, exec_code, compile_moon
 build_env = function(src_env, dest_env, wl)
   if dest_env == nil then

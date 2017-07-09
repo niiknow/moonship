@@ -1,5 +1,6 @@
 local util = require("moonship.util")
 local log = require("moonship.logger")
+local sandbox = require("moonship.sandbox")
 local aws_region = os.getenv("AWS_DEFAULT_REGION")
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -10,6 +11,37 @@ local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local app_env = os.getenv("MOONSHIP_APP_ENV")
 local table_clone = util.table_clone
 local _data = { }
+local build_requires
+build_requires = function(opts)
+  return function(modname)
+    if not (_G[modname]) then
+      local base, file, query = util.resolveGithubRaw(modname)
+      if base then
+        local loadPath = tostring(base) .. tostring(file) .. tostring(query)
+        local rsp = loadCode(loadPath)
+        if (rsp.code == 200) then
+          local lua_src, err = sandbox.compile_moon(rsp.body)
+          if not (lua_src) then
+            return nil, "error compiling '" .. tostring(modname) .. "' with message: " .. tostring(err)
+          end
+          local fn
+          fn, err = sandbox.loadstring_safe(lua_src, loadPath, opts.sandbox_env)
+          _G["__remotebase"] = base
+          if not (fn) then
+            return nil, "error loading '" .. tostring(modname) .. "' with message: " .. tostring(err)
+          end
+          local rst
+          rst, err = sandbox.exec(fn)
+          if not (rst) then
+            return nil, "error executing '" .. tostring(modname) .. "' with message: " .. tostring(err)
+          end
+          _G[modname] = rst
+        end
+      end
+    end
+    return _G[modname]
+  end
+end
 local Config
 do
   local _class_0
@@ -38,6 +70,8 @@ do
         remote_path = remote_path
       }
       util.applyDefaults(newOpts, defaultOpts)
+      newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins or { }, sandbox.whitelist)
+      newOpts.require = build_requires(newOpts)
       _data = newOpts
     end,
     __base = _base_0,
