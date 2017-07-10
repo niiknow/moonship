@@ -53,7 +53,7 @@ resolve = function(modname)
   end
   local remotebase = _G["_remotebase"]
   local firstp = originalName:find("%.")
-  if firstp and rst.path == nil then
+  if remotebase and rst.path == nil then
     local remotemodname = tostring(remotebase) .. "/" .. tostring(modname)
     if remotemodname:find("http") == 1 then
       rst = resolve_remote(remotemodname)

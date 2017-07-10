@@ -26,7 +26,7 @@ build_requires = (opts) ->
     if parsed._remotebase
       loadPath = "#{parsed._remotebase}/#{parsed.file}"
 
-      log.error loadPath
+      -- log.error loadPath
       rsp = parsed.codeloader(loadPath)
       if (rsp.code == 200)
         lua_src, err = sandbox.compile_moon rsp.body
@@ -44,8 +44,8 @@ build_requires = (opts) ->
         return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
         rst, err = sandbox.exec(fn)
-        log.error rst
-        log.error err
+        --log.error rst
+        --log.error err
         return nil, "error executing `#{modname}` with message: #{err}" unless rst
 
         _G[modname] = rst

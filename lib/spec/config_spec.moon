@@ -19,6 +19,7 @@ import table_clone from util
 describe "moonship.config", ->
 
   it "config require can perform deep path resolution", ->
+    expected = "Bart: Ay, caramba!\nLisa: Do you even know what that means?\nMarge: Lisa, your food is getting cold.\n"
     opts =  {
       requestbuilder: requestbuilder,
       plugins: {}
@@ -26,6 +27,5 @@ describe "moonship.config", ->
     conf = config(opts)
     cf = conf\get()
     homer, err = cf.plugins.require("github.com/niiknow/moonship/tree/master/remote/simpson/homer.moon")
-    rst = homer
 
-    assert.same true, rst
+    assert.same expected, homer.body

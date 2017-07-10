@@ -542,42 +542,42 @@
     4     if parsed._remotebase
     4       loadPath = "#{parsed._remotebase}/#{parsed.file}"
 
-****0       log.error loadPath
-****0       rsp = parsed.codeloader(loadPath)
-    4       if (rsp.code == 200)
-    8         lua_src, err = sandbox.compile_moon rsp.body
+            -- log.error loadPath
+    4       rsp = parsed.codeloader(loadPath)
+    8       if (rsp.code == 200)
+    4         lua_src, err = sandbox.compile_moon rsp.body
 
     4         return nil, "error compiling `#{modname}` with message: #{err}" unless lua_src
 
-    4         opts.plugins["_remotebase"] = parsed._remotebase
-    8         opts.plugins["require"] = build_requires(opts)
-    4         fn, err = nil, nil
+    8         opts.plugins["_remotebase"] = parsed._remotebase
+    4         opts.plugins["require"] = build_requires(opts)
+****0         fn, err = nil, nil
 
-****0         oldremotebase = _G._remotebase
-    4         _G._remotebase = parsed._remotebase
-    8         fn, err = sandbox.loadstring lua_src, modname, opts["sandbox_env"]
+    4         oldremotebase = _G._remotebase
+    8         _G._remotebase = parsed._remotebase
+    4         fn, err = sandbox.loadstring lua_src, modname, opts["sandbox_env"]
 
-    4         return nil, "error loading `#{modname}` with message: #{err}" unless fn
+****0         return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
-****0         rst, err = sandbox.exec(fn)
-****0         log.error rst
-    4         log.error err
-    4         return nil, "error executing `#{modname}` with message: #{err}" unless rst
+    4         rst, err = sandbox.exec(fn)
+              --log.error rst
+              --log.error err
+****0         return nil, "error executing `#{modname}` with message: #{err}" unless rst
 
-****0         _G[modname] = rst
+    7         _G[modname] = rst
 
-****0         return rst
+    2         return rst
 
-    2       nil, "error loading `#{modname}` with code: #{rsp.code }"
+****0       nil, "error loading `#{modname}` with code: #{rsp.code }"
 
 ****0     _G[modname], "unable to resolve `#{modname}`"
 
     2 class Config
 ****0   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
-    5     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
-    2     util.applyDefaults(newOpts, defaultOpts)
+    2     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
+    4     util.applyDefaults(newOpts, defaultOpts)
 ****0     newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
-    2     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+    3     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
 
 ****0     @__data = newOpts
 
@@ -843,27 +843,27 @@
     8 util             = require "moonship.util"
 ****0 to_json          = util.to_json
 
-    4 doformat = (p) ->
+****0 doformat = (p) ->
 ****0   if type(p) == "table"
-    4     return to_json p
+****0     return to_json p
 
 ****0   if p == nil
-    4     return "nil"
+****0     return "nil"
 
     8   tostring(p)
 
 ****0 sep = ' '
 
 ****0 formatter = (...) ->
-   12   params = [doformat(v) for v in *{...}]
+****0   params = [doformat(v) for v in *{...}]
 
-   12   table.concat(params, sep)
+****0   table.concat(params, sep)
 
 ****0 local *
 
-    8 log = logger.new( "info", list_writer.new( console_color.new() ), formatter )
+****0 log = logger.new( "info", list_writer.new( console_color.new() ), formatter )
 
-    8 log
+      log
 
 ==============================================================================
 ./moonship/oauth1.moon
@@ -1378,32 +1378,32 @@
 
     9 string_split = url.string_split
 
-   14 json_encodable = (obj, seen={}) ->
-   14   switch type obj
+    5 json_encodable = (obj, seen={}) ->
+    5   switch type obj
           when "table"
-   14       unless seen[obj]
-   14         seen[obj] = true
-    6         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
-    6     when "function", "userdata", "thread"
-    6       nil
+    5       unless seen[obj]
+    5         seen[obj] = true
+    2         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
+    2     when "function", "userdata", "thread"
+    2       nil
           else
-    9       obj
+    4       obj
 
 ****0 from_json = (obj) -> cjson_safe.decode obj
 
-    6 to_json = (obj) -> cjson_safe.encode json_encodable obj
+    2 to_json = (obj) -> cjson_safe.encode json_encodable obj
 
-    8 query_string_encode = (t, sep="&", quote="", seen={}) ->
+    3 query_string_encode = (t, sep="&", quote="", seen={}) ->
     1   query = {}
 ****0   keys = {}
-    7   for k in pairs(t) do keys[#keys+1] = tostring(k)
+    2   for k in pairs(t) do keys[#keys+1] = tostring(k)
 ****0   sort(keys)
 
 ****0   for _,k in ipairs(keys) do
     1     v = t[k]
 
 ****0     switch type v
-   10       when "table"
+    2       when "table"
     9         unless seen[v]
 ****0           seen[v] = true
     6           tv = query_string_encode(v, sep, quote, seen)
@@ -1459,14 +1459,14 @@ File                           Hits Missed Coverage
 ./moonship/aztable.moon        8    74     9.76%
 ./moonship/aztablestategy.moon 5    55     8.33%
 ./moonship/codecacher.moon     65   29     69.15%
-./moonship/config.moon         33   15     68.75%
+./moonship/config.moon         33   12     73.33%
 ./moonship/crypto.moon         22   8      73.33%
 ./moonship/date.moon           4    15     21.05%
 ./moonship/engine.moon         14   14     50.00%
 ./moonship/hmacauth.moon       5    8      38.46%
 ./moonship/http.moon           11   13     45.83%
 ./moonship/httpsocket.moon     11   8      57.89%
-./moonship/log.moon            12   6      66.67%
+./moonship/log.moon            5    12     29.41%
 ./moonship/oauth1.moon         32   8      80.00%
 ./moonship/remoteresolver.moon 32   12     72.73%
 ./moonship/requestbuilder.moon 6    22     21.43%
@@ -1474,4 +1474,4 @@ File                           Hits Missed Coverage
 ./moonship/url.moon            33   47     41.25%
 ./moonship/util.moon           53   24     68.83%
 ---------------------------------------------------
-Total                          427  407    51.20%
+Total                          420  410    50.60%
