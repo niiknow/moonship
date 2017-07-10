@@ -51,7 +51,8 @@ resolve = function(modname)
     rst = resolve_github(modname)
   end
   local remotebase = _G["_remotebase"]
-  if remotebase ~= nil and rst.path == nil then
+  local firstp = originalName:find("%.")
+  if remotebase ~= nil and firstp and rst.path == nil then
     local remotemodname = tostring(remotebase) .. "/" .. tostring(modname)
     if remotemodname:find("http") == 1 then
       rst = resolve_remote(remotemodname)

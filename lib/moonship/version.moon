@@ -1,5 +1,5 @@
 ----
 -- version placeholder
--- @classmod _VERSION
+-- @module _VERSION
 
 "0.2.0"

@@ -43,6 +43,8 @@ string.upper
 table.concat table.insert table.maxn table.pack table.remove table.sort table.unpack
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
+
+moonship.http moonship.util moonship.crypto moonship.oauth1 moonship.awsauth
 ]]
 
 

@@ -1,4 +1,4 @@
-log               =  require "moonship.log"
+log               = require "moonship.log"
 log.set_lvl("info")
 
 engine            = require "moonship.engine"

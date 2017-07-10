@@ -40,8 +40,12 @@ resolve = (modname) ->
 
   -- if _remotebase, parse relative to it
   remotebase = _G["_remotebase"]
+  firstp = originalName\find("%.")
 
-  if remotebase ~= nil and rst.path == nil
+  if remotebase ~= nil and firstp and rst.path == nil
+    -- example: {url}/remote/simpson/homer.moon
+    -- _remotebase: {url}/remote/simpson
+    -- then: children.bart inside of homer would be -> /remote/simpson/children/bart.moon
     remotemodname = "#{remotebase}/#{modname}"
     rst = resolve_remote(remotemodname) if remotemodname\find("http") == 1
     rst._remotebase = remotebase
