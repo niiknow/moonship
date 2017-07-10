@@ -560,26 +560,25 @@
 ****0         return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
     4         rst, err = sandbox.exec(fn)
-              --log.error rst
-              --log.error err
+    4         log.debug rst, err
 ****0         return nil, "error executing `#{modname}` with message: #{err}" unless rst
 
-    7         _G[modname] = rst
+****0         _G[modname] = rst
 
-    2         return rst
+    7         return rst
 
-****0       nil, "error loading `#{modname}` with code: #{rsp.code }"
+    2       nil, "error loading `#{modname}` with code: #{rsp.code }"
 
 ****0     _G[modname], "unable to resolve `#{modname}`"
 
-    2 class Config
-****0   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
+      class Config
+    5   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
     2     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
-    4     util.applyDefaults(newOpts, defaultOpts)
-****0     newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
-    3     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+****0     util.applyDefaults(newOpts, defaultOpts)
+    2     newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
+    4     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
 
-****0     @__data = newOpts
+    3     @__data = newOpts
 
 ****0   get: () => table_clone(@__data, true) -- preserving config through cloning
 
@@ -1459,7 +1458,7 @@ File                           Hits Missed Coverage
 ./moonship/aztable.moon        8    74     9.76%
 ./moonship/aztablestategy.moon 5    55     8.33%
 ./moonship/codecacher.moon     65   29     69.15%
-./moonship/config.moon         33   12     73.33%
+./moonship/config.moon         35   10     77.78%
 ./moonship/crypto.moon         22   8      73.33%
 ./moonship/date.moon           4    15     21.05%
 ./moonship/engine.moon         14   14     50.00%
@@ -1474,4 +1473,4 @@ File                           Hits Missed Coverage
 ./moonship/url.moon            33   47     41.25%
 ./moonship/util.moon           53   24     68.83%
 ---------------------------------------------------
-Total                          420  410    50.60%
+Total                          422  408    50.84%

@@ -39,6 +39,7 @@ build_requires = function(opts)
         end
         local rst
         rst, err = sandbox.exec(fn)
+        log.debug(rst, err)
         if not (rst) then
           return nil, "error executing `" .. tostring(modname) .. "` with message: " .. tostring(err)
         end

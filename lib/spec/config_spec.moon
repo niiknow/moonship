@@ -28,7 +28,7 @@ describe "moonship.config", ->
     cf = conf\get()
     homer, err = cf.plugins.require("github.com/niiknow/moonship/tree/master/remote/simpson/homer.moon")
     rst = homer!
-    rst = homer! -- call two times to see if it actually reload othe rmodules
     assert.same expected, rst.body
-    -- call again
+    actual = homer! -- call two times to see if it actually reload other modules
+    assert.same expected, actual.body
 

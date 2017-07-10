@@ -44,8 +44,6 @@ build_requires = (opts) ->
         return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
         rst, err = sandbox.exec(fn)
-        --log.error rst
-        --log.error err
         return nil, "error executing `#{modname}` with message: #{err}" unless rst
 
         _G[modname] = rst
