@@ -1,7 +1,10 @@
 bart = require "children.bart"
 lisa = require "children.lisa"
 
-msg = "#{bart.say}\n"
-msg ..= "#{lisa.say}\n"
+woohoo = () ->
+  msg = "#{bart.say}\n"
+  msg ..= "#{lisa.say}\n"
 
-{ code: 200, body: msg}
+  { code: 200, body: msg}
+
+woohoo
