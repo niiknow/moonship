@@ -42,7 +42,12 @@ resolve_github = function(modname)
   return parsed
 end
 local resolve
-resolve = function(modname)
+resolve = function(modname, opts)
+  if opts == nil then
+    opts = {
+      plugins = { }
+    }
+  end
   local originalName = tostring(modname):gsub("%.moon$", "")
   local rst = { }
   if modname:find("http") == 1 then
@@ -51,22 +56,19 @@ resolve = function(modname)
   if modname:find("github%.com/") == 1 then
     rst = resolve_github(modname)
   end
-  local remotebase = _G["_remotebase"]
-  local firstp = originalName:find("%.")
+  local remotebase = opts.plugins._remotebase
   if remotebase and rst.path == nil then
     local remotemodname = tostring(remotebase) .. "/" .. tostring(modname)
     if remotemodname:find("http") == 1 then
       rst = resolve_remote(remotemodname)
     end
     rst._remotebase = remotebase
+    rst.isrelative = true
   end
   if not (rst.path) then
     return {
       path = modname
     }
-  end
-  if rst.github then
-    firstp = nil
   end
   rst.file = rst.file:gsub("%.moon$", ""):gsub('%.', "/") .. ".moon"
   rst.path = rst.path:gsub("%.moon$", ""):gsub('%.', "/") .. ".moon"
@@ -75,7 +77,7 @@ resolve = function(modname)
   rst.basepath = url_build(rst, false)
   rst.path = oldpath
   rst.codeloader = loadcode
-  if not (firstp) then
+  if not (rst.isrelative) then
     rst._remotebase = trim(rst.basepath, "%/*")
   end
   return rst

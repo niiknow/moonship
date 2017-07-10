@@ -21,7 +21,7 @@ build_requires = (opts) ->
     mod = _G[modname]
     return mod if mod
 
-    parsed = remoteresolver.resolve(modname)
+    parsed = remoteresolver.resolve(modname, opts)
 
     if parsed._remotebase
       loadPath = "#{parsed._remotebase}/#{parsed.file}"
@@ -33,13 +33,11 @@ build_requires = (opts) ->
 
         return nil, "error compiling `#{modname}` with message: #{err}" unless lua_src
 
-        opts.plugins["_remotebase"] = parsed._remotebase
-        opts.plugins["require"] = build_requires(opts)
         fn, err = nil, nil
 
-        oldremotebase = _G._remotebase
-        _G._remotebase = parsed._remotebase
-        fn, err = sandbox.loadstring lua_src, modname, opts["sandbox_env"]
+        opts.plugins._remotebase = parsed._remotebase
+        opts.sandbox_env = sandbox.build_env(_G, opts.plugins, sandbox.whitelist)
+        fn, err = sandbox.loadstring lua_src, modname, opts.sandbox_env
 
         return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
@@ -58,7 +56,6 @@ class Config
   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
     util.applyDefaults(newOpts, defaultOpts)
-    newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
 
     @__data = newOpts

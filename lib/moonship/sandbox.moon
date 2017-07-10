@@ -22,7 +22,7 @@ readfile = (file) ->
 
 --- List of safe library methods (5.1 to 5.3)
 whitelist = [[
-_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall _remotebase
+_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall
 
 bit32.arshift bit32.band bit32.bnot bit32.bor bit32.btest bit32.bxor bit32.extract bit32.lrotate
 bit32.lshift bit32.replace bit32.rrotate bit32.rshift
@@ -87,8 +87,6 @@ loadstring = (code, name, env=_G) ->
   assert(type(code) == "string", "code must be a string")
   assert(type(env) == "table", "env is required")
 
-  -- log.error 'wowx' .. tostring(env._remotebase)
-  -- log.error env._remotebase
   loads(code, name or "sandbox", "t", env)
 
 

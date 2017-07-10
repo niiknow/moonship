@@ -18,7 +18,7 @@ build_requires = function(opts)
     if mod then
       return mod
     end
-    local parsed = remoteresolver.resolve(modname)
+    local parsed = remoteresolver.resolve(modname, opts)
     if parsed._remotebase then
       local loadPath = tostring(parsed._remotebase) .. "/" .. tostring(parsed.file)
       local rsp = parsed.codeloader(loadPath)
@@ -27,19 +27,16 @@ build_requires = function(opts)
         if not (lua_src) then
           return nil, "error compiling `" .. tostring(modname) .. "` with message: " .. tostring(err)
         end
-        opts.plugins["_remotebase"] = parsed._remotebase
-        opts.plugins["require"] = build_requires(opts)
         local fn
         fn, err = nil, nil
-        local oldremotebase = _G._remotebase
-        _G._remotebase = parsed._remotebase
-        fn, err = sandbox.loadstring(lua_src, modname, opts["sandbox_env"])
+        opts.plugins._remotebase = parsed._remotebase
+        opts.sandbox_env = sandbox.build_env(_G, opts.plugins, sandbox.whitelist)
+        fn, err = sandbox.loadstring(lua_src, modname, opts.sandbox_env)
         if not (fn) then
           return nil, "error loading `" .. tostring(modname) .. "` with message: " .. tostring(err)
         end
         local rst
         rst, err = sandbox.exec(fn)
-        log.debug(rst, err)
         if not (rst) then
           return nil, "error executing `" .. tostring(modname) .. "` with message: " .. tostring(err)
         end
@@ -80,7 +77,6 @@ do
         plugins = { }
       }
       util.applyDefaults(newOpts, defaultOpts)
-      newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
       newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
       self.__data = newOpts
     end,

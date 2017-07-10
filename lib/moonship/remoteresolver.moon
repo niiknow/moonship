@@ -29,7 +29,7 @@ resolve_github = (modname) ->
   parsed.github = true
   parsed
 
-resolve = (modname) ->
+resolve = (modname, opts={plugins: {}}) ->
   originalName = tostring(modname)\gsub("%.moon$", "")
   rst = {}
 
@@ -39,12 +39,8 @@ resolve = (modname) ->
   -- if github, then parse and store new basepath
   rst = resolve_github(modname) if modname\find("github%.com/") == 1
 
-  -- if _remotebase, parse relative to it
-  remotebase = _G["_remotebase"]
-  firstp = originalName\find("%.")
-  --log.error "booo"
-  --log.error _G["_remotebase"]
-  --log.error modname
+  -- if _remotebase, try to parse relative to it
+  remotebase = opts.plugins._remotebase
 
   if remotebase and rst.path == nil
     -- example: {url}/remote/simpson/homer.moon
@@ -53,10 +49,9 @@ resolve = (modname) ->
     remotemodname = "#{remotebase}/#{modname}"
     rst = resolve_remote(remotemodname) if remotemodname\find("http") == 1
     rst._remotebase = remotebase
+    rst.isrelative = true
 
   return { path: modname } unless rst.path
-
-  firstp = nil if rst.github
 
   -- remove .moon extension to convert period to forward slash
   -- then add back moon extension
@@ -72,8 +67,8 @@ resolve = (modname) ->
   rst.path = oldpath
   rst.codeloader = loadcode
 
-  -- no period in module original name means this is the basepath
-  rst._remotebase = trim(rst.basepath, "%/*") unless firstp
+  -- it should set new _remotebase, unless it's a relative load
+  rst._remotebase = trim(rst.basepath, "%/*") unless rst.isrelative
   rst
 
 { :resolve, :resolve_github, :resolve_remote, :loadcode }

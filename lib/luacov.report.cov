@@ -474,7 +474,7 @@
             -- this way, a path can contain other paths
 ****0       localFullPath = fileBasePath .. "/index.lua"
 
-    4       valHolder = {
+    6       valHolder = {
     6         url: url,
     3         localPath: fileBasePath,
     6         localFullPath: localFullPath,
@@ -537,35 +537,32 @@
     4     mod = _G[modname]
     4     return mod if mod
 
-    4     parsed = remoteresolver.resolve(modname)
+    4     parsed = remoteresolver.resolve(modname, opts)
 
     4     if parsed._remotebase
     4       loadPath = "#{parsed._remotebase}/#{parsed.file}"
 
             -- log.error loadPath
     4       rsp = parsed.codeloader(loadPath)
-    8       if (rsp.code == 200)
+    4       if (rsp.code == 200)
     4         lua_src, err = sandbox.compile_moon rsp.body
 
-    4         return nil, "error compiling `#{modname}` with message: #{err}" unless lua_src
+    8         return nil, "error compiling `#{modname}` with message: #{err}" unless lua_src
 
-    8         opts.plugins["_remotebase"] = parsed._remotebase
-    4         opts.plugins["require"] = build_requires(opts)
 ****0         fn, err = nil, nil
 
-    4         oldremotebase = _G._remotebase
-    8         _G._remotebase = parsed._remotebase
-    4         fn, err = sandbox.loadstring lua_src, modname, opts["sandbox_env"]
+    4         opts.plugins._remotebase = parsed._remotebase
+    8         opts.sandbox_env = sandbox.build_env(_G, opts.plugins, sandbox.whitelist)
+    4         fn, err = sandbox.loadstring lua_src, modname, opts.sandbox_env
 
 ****0         return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
     4         rst, err = sandbox.exec(fn)
-    4         log.debug rst, err
 ****0         return nil, "error executing `#{modname}` with message: #{err}" unless rst
 
 ****0         _G[modname] = rst
 
-    7         return rst
+    3         return rst
 
     2       nil, "error loading `#{modname}` with code: #{rsp.code }"
 
@@ -575,10 +572,9 @@
     5   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
     2     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
 ****0     util.applyDefaults(newOpts, defaultOpts)
-    2     newOpts.sandbox_env = sandbox.build_env(_G, newOpts.plugins, sandbox.whitelist)
-    4     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+    2     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
 
-    3     @__data = newOpts
+****0     @__data = newOpts
 
 ****0   get: () => table_clone(@__data, true) -- preserving config through cloning
 
@@ -960,7 +956,7 @@
     7   parsed.github = true
         parsed
 
-    7 resolve = (modname) ->
+    7 resolve = (modname, opts={plugins: {}}) ->
     3   originalName = tostring(modname)\gsub("%.moon$", "")
     3   rst = {}
 
@@ -970,44 +966,39 @@
         -- if github, then parse and store new basepath
     2   rst = resolve_github(modname) if modname\find("github%.com/") == 1
 
-        -- if _remotebase, parse relative to it
-    3   remotebase = _G["_remotebase"]
-    3   firstp = originalName\find("%.")
-        --log.error "booo"
-        --log.error _G["_remotebase"]
-        --log.error modname
+        -- if _remotebase, try to parse relative to it
+    3   remotebase = opts.plugins._remotebase
 
 ****0   if remotebase and rst.path == nil
           -- example: {url}/remote/simpson/homer.moon
           -- _remotebase: {url}/remote/simpson
           -- then: children.bart inside of homer would be -> /remote/simpson/children/bart.moon
 ****0     remotemodname = "#{remotebase}/#{modname}"
-    5     rst = resolve_remote(remotemodname) if remotemodname\find("http") == 1
+****0     rst = resolve_remote(remotemodname) if remotemodname\find("http") == 1
     5     rst._remotebase = remotebase
+    5     rst.isrelative = true
 
-    4   return { path: modname } unless rst.path
-
-    8   firstp = nil if rst.github
+****0   return { path: modname } unless rst.path
 
         -- remove .moon extension to convert period to forward slash
         -- then add back moon extension
         -- reprocess rst path by converting all period to forward slash
         -- keep basepath the way it is
-****0   rst.file = rst.file\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
-****0   rst.path = rst.path\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
+    5   rst.file = rst.file\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
+    4   rst.path = rst.path\gsub("%.moon$", "")\gsub('%.', "/") .. ".moon"
 
         -- save old path
-    1   oldpath = rst.path
-****0   rst.path = path_sanitize(rst.basepath)
-    5   rst.basepath = url_build(rst, false)
-    5   rst.path = oldpath
+****0   oldpath = rst.path
+    4   rst.path = path_sanitize(rst.basepath)
+    4   rst.basepath = url_build(rst, false)
+****0   rst.path = oldpath
     5   rst.codeloader = loadcode
 
-        -- no period in module original name means this is the basepath
-    5   rst._remotebase = trim(rst.basepath, "%/*") unless firstp
-    5   rst
+        -- it should set new _remotebase, unless it's a relative load
+****0   rst._remotebase = trim(rst.basepath, "%/*") unless rst.isrelative
+        rst
 
-    4 { :resolve, :resolve_github, :resolve_remote, :loadcode }
+    5 { :resolve, :resolve_github, :resolve_remote, :loadcode }
 
 ==============================================================================
 ./moonship/requestbuilder.moon
@@ -1075,7 +1066,7 @@
 
       --- List of safe library methods (5.1 to 5.3)
       whitelist = [[
-      _VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall _remotebase
+      _VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall
 
       bit32.arshift bit32.band bit32.bnot bit32.bor bit32.btest bit32.bxor bit32.extract bit32.lrotate
       bit32.lshift bit32.replace bit32.rrotate bit32.rshift
@@ -1113,25 +1104,25 @@
 
     4     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
 ****0     if t_name
-   13       tbl = env[t_name]
+   14       tbl = env[t_name]
     1       env_t = src_env[t_name]
 ****0       if tbl == nil and env_t
-   13         tbl = {}
+   14         tbl = {}
     6         env[t_name] = tbl
 
-   13       if env_t
- 1391         t_tbl = type(tbl)
- 1378         if t_tbl ~= "table"
- 1378           error("field '".. t_name .. "' already added as " .. t_tbl)
+   14       if env_t
+ 1484         t_tbl = type(tbl)
+ 1470         if t_tbl ~= "table"
+ 1470           error("field '".. t_name .. "' already added as " .. t_tbl)
 
- 1196         tbl[field] = env_t[field]
+ 1288         tbl[field] = env_t[field]
 
           else
-   65       val = src_env[name]
+   70       val = src_env[name]
 ****0       assert(type(val) ~= "table", "can't copy table reference")
- 1196       env[name] = val
+ 1288       env[name] = val
 
-  884   env._G = dest_env
+  952   env._G = dest_env
 
 ****0   setmetatable(dest_env, { __index: env })
 
@@ -1140,9 +1131,7 @@
   182   assert(type(code) == "string", "code must be a string")
   182   assert(type(env) == "table", "env is required")
 
-        -- log.error 'wowx' .. tostring(env._remotebase)
-        -- log.error env._remotebase
-   13   loads(code, name or "sandbox", "t", env)
+****0   loads(code, name or "sandbox", "t", env)
 
 
       --- Executes Lua code in a sandbox.
@@ -1154,43 +1143,43 @@
       -- @return          The `env` where the code was ran, or `nil` in case of error.
       -- @return          The chunk return values, or an error message.
    13 loadstring_safe = (code, name, env={}, wl) ->
-    4   env = build_env(_G, env, wl)
-****0   loadstring(code, name, env)
+   13   env = build_env(_G, env, wl)
+   13   loadstring(code, name, env)
 
 
-****0 loadfile = (file, env=_G) ->
-    6   assert(type(file) == "string", "file name is required")
-    4   assert(type(env) == "table", "env is required")
+    4 loadfile = (file, env=_G) ->
+    1   assert(type(file) == "string", "file name is required")
+****0   assert(type(env) == "table", "env is required")
 
-****0   code = readfile(file)
-    2   loadstring(code, file, env)
+    4   code = readfile(file)
+    4   loadstring(code, file, env)
 
 
-    2 loadfile_safe = (file, env={}, wl) ->
-    2   env = build_env(_G, env, wl)
+****0 loadfile_safe = (file, env={}, wl) ->
+****0   env = build_env(_G, env, wl)
     2   loadfile(file, env)
 
 
-****0 exec = (fn) ->
-    2   ok, ret = pcall(fn)
+    2 exec = (fn) ->
+    4   ok, ret = pcall(fn)
 ****0   return nil, ret unless ok
 
-    2   ret
+        ret
 
-    4 exec_code = (code, name, env={}, wl) ->
-****0   fn = loadstring_safe(code, name, env, wl)
-    7   exec(fn)
+    2 exec_code = (code, name, env={}, wl) ->
+    2   fn = loadstring_safe(code, name, env, wl)
+    4   exec(fn)
 
-    1 compile_moon = (moon_code) ->
-****0   tree, err = parse.string moon_code
-    6   return nil, "Parse error: " .. err unless tree
+    7 compile_moon = (moon_code) ->
+    7   tree, err = parse.string moon_code
+    1   return nil, "Parse error: " .. err unless tree
 
-****0   lua_code, err, pos = compile.tree tree
-    1   return nil, compile.format_error err, pos, moon_code unless lua_code
+    6   lua_code, err, pos = compile.tree tree
+    4   return nil, compile.format_error err, pos, moon_code unless lua_code
 
-        lua_code
+    1   lua_code
 
-    1 { :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :exec, :exec_code, :compile_moon }
+****0 { :build_env, :whitelist, :loadstring, :loadstring_safe, :loadfile, :loadfile_safe, :exec, :exec_code, :compile_moon }
 
 ==============================================================================
 ./moonship/url.moon
@@ -1314,7 +1303,7 @@
 
       -- our utils lib, nothing here should depend on ngx
       -- for ngx stuff, put it inside ngin.lua file
-   19 local *
+   18 local *
 
 
       --- trim a string.
@@ -1458,7 +1447,7 @@ File                           Hits Missed Coverage
 ./moonship/aztable.moon        8    74     9.76%
 ./moonship/aztablestategy.moon 5    55     8.33%
 ./moonship/codecacher.moon     65   29     69.15%
-./moonship/config.moon         35   10     77.78%
+./moonship/config.moon         30   11     73.17%
 ./moonship/crypto.moon         22   8      73.33%
 ./moonship/date.moon           4    15     21.05%
 ./moonship/engine.moon         14   14     50.00%
@@ -1467,10 +1456,10 @@ File                           Hits Missed Coverage
 ./moonship/httpsocket.moon     11   8      57.89%
 ./moonship/log.moon            5    12     29.41%
 ./moonship/oauth1.moon         32   8      80.00%
-./moonship/remoteresolver.moon 32   12     72.73%
+./moonship/remoteresolver.moon 28   14     66.67%
 ./moonship/requestbuilder.moon 6    22     21.43%
-./moonship/sandbox.moon        41   26     61.19%
+./moonship/sandbox.moon        43   24     64.18%
 ./moonship/url.moon            33   47     41.25%
 ./moonship/util.moon           53   24     68.83%
 ---------------------------------------------------
-Total                          422  408    50.84%
+Total                          415  409    50.36%

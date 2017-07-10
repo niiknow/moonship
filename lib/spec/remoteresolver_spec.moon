@@ -36,7 +36,6 @@ describe "moonship.remoteresolver", ->
 
 
   it "correctly resolve with _remotebase", ->
-    _G["_remotebase"] = "http://noogen.net"
     expected = {
       "_remotebase": 'http://noogen.net'
       "authority": 'noogen.net'
@@ -45,11 +44,11 @@ describe "moonship.remoteresolver", ->
       "host": 'noogen.net'
       "path": '/remoteresolver.moon'
       "port": '80'
+      "isrelative": true
       "scheme": 'http',
       "fragment": '!yep',
       "query": "hello=worl%20d"
     }
-    actual = remoteresolver.resolve("remoteresolver.moon?hello=worl%20d#!yep")
+    actual = remoteresolver.resolve("remoteresolver.moon?hello=worl%20d#!yep", {plugins: {_remotebase: "http://noogen.net"}})
     actual.codeloader = nil
-    _G["_remotebase"] = nil
     assert.same expected, actual
