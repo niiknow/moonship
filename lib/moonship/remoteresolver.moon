@@ -26,6 +26,7 @@ resolve_github = (modname) ->
   user, repo, blobortree, branch, rest = string.match(parsed.basepath, "(/[^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
   parsed.basepath = path_sanitize("#{user}#{repo}#{branch}#{rest}")
   parsed.path = "#{parsed.basepath}/#{parsed.file}"
+  parsed.github = true
   parsed
 
 resolve = (modname) ->
@@ -41,8 +42,11 @@ resolve = (modname) ->
   -- if _remotebase, parse relative to it
   remotebase = _G["_remotebase"]
   firstp = originalName\find("%.")
+  --log.error "booo"
+  --log.error _G["_remotebase"]
+  --log.error modname
 
-  if remotebase ~= nil and firstp and rst.path == nil
+  if remotebase and rst.path == nil
     -- example: {url}/remote/simpson/homer.moon
     -- _remotebase: {url}/remote/simpson
     -- then: children.bart inside of homer would be -> /remote/simpson/children/bart.moon
@@ -51,6 +55,8 @@ resolve = (modname) ->
     rst._remotebase = remotebase
 
   return { path: modname } unless rst.path
+
+  firstp = nil if rst.github
 
   -- remove .moon extension to convert period to forward slash
   -- then add back moon extension
@@ -67,8 +73,7 @@ resolve = (modname) ->
   rst.codeloader = loadcode
 
   -- no period in module original name means this is the basepath
-  rst._remotebase = trim(rst.basepath, "/") unless originalName\find("%.")
-
+  rst._remotebase = trim(rst.basepath, "%/*") unless firstp
   rst
 
 { :resolve, :resolve_github, :resolve_remote, :loadcode }

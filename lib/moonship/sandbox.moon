@@ -1,6 +1,7 @@
 parse   = require "moonscript.parse"
 compile = require "moonscript.compile"
 util    = require "moonship.util"
+log     = require "moonship.log"
 
 table_pack = table.pack or (...) -> { n: select("#", ...), ... }
 has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"
@@ -21,7 +22,7 @@ readfile = (file) ->
 
 --- List of safe library methods (5.1 to 5.3)
 whitelist = [[
-_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall
+_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall _remotebase
 
 bit32.arshift bit32.band bit32.bnot bit32.bor bit32.btest bit32.bxor bit32.extract bit32.lrotate
 bit32.lshift bit32.replace bit32.rrotate bit32.rshift
@@ -44,7 +45,7 @@ table.concat table.insert table.maxn table.pack table.remove table.sort table.un
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 
-moonship.http moonship.util moonship.crypto moonship.oauth1 moonship.awsauth
+moonship.http moonship.util moonship.crypto moonship.oauth1 moonship.awsauth moonship.log
 ]]
 
 
@@ -56,6 +57,7 @@ local *
 build_env = (src_env, dest_env={}, wl=whitelist) ->
   env = {}
   for name in wl\gmatch "%S+" do
+
     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
     if t_name
       tbl = env[t_name]
@@ -85,6 +87,8 @@ loadstring = (code, name, env=_G) ->
   assert(type(code) == "string", "code must be a string")
   assert(type(env) == "table", "env is required")
 
+  -- log.error 'wowx' .. tostring(env._remotebase)
+  -- log.error env._remotebase
   loads(code, name or "sandbox", "t", env)
 
 

@@ -30,3 +30,11 @@ describe "moonship.sandbox", ->
     actual = fn!
     assert.same expected, actual
 
+
+  it "correctly pass in global variables", ->
+    expected = "hello world"
+    env = sandbox.build_env(_G, {_remotebase: expected }, sandbox.whitelist)
+    fn = sandbox.loadstring "return _G._remotebase", "test", env
+    actual = fn!
+    assert.same expected, actual
+

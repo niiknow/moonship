@@ -38,6 +38,7 @@ resolve_github = function(modname)
   local user, repo, blobortree, branch, rest = string.match(parsed.basepath, "(/[^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
   parsed.basepath = path_sanitize(tostring(user) .. tostring(repo) .. tostring(branch) .. tostring(rest))
   parsed.path = tostring(parsed.basepath) .. "/" .. tostring(parsed.file)
+  parsed.github = true
   return parsed
 end
 local resolve
@@ -52,7 +53,7 @@ resolve = function(modname)
   end
   local remotebase = _G["_remotebase"]
   local firstp = originalName:find("%.")
-  if remotebase ~= nil and firstp and rst.path == nil then
+  if firstp and rst.path == nil then
     local remotemodname = tostring(remotebase) .. "/" .. tostring(modname)
     if remotemodname:find("http") == 1 then
       rst = resolve_remote(remotemodname)
@@ -64,6 +65,9 @@ resolve = function(modname)
       path = modname
     }
   end
+  if rst.github then
+    firstp = nil
+  end
   rst.file = rst.file:gsub("%.moon$", ""):gsub('%.', "/") .. ".moon"
   rst.path = rst.path:gsub("%.moon$", ""):gsub('%.', "/") .. ".moon"
   local oldpath = rst.path
@@ -71,8 +75,8 @@ resolve = function(modname)
   rst.basepath = url_build(rst, false)
   rst.path = oldpath
   rst.codeloader = loadcode
-  if not (originalName:find("%.")) then
-    rst._remotebase = trim(rst.basepath, "/")
+  if not (firstp) then
+    rst._remotebase = trim(rst.basepath, "%/*")
   end
   return rst
 end

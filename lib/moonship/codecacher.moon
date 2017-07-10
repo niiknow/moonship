@@ -66,6 +66,8 @@ class CodeCacher
     opts.ttl = 120 if (opts.ttl < 120)
 
     opts.localBasePath = plpath.abs(opts.app_path)
+
+    opts["sandbox_env"] = sandbox.build_env(_G, opts.plugins, sandbox.whitelist)
     @codeCache = lru.new(opts.code_cache_size)
     @options = opts
 
@@ -156,6 +158,7 @@ class CodeCacher
       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
       if valHolder.fileMod
         log.debug tostring(valHolder.fileMod)
+
         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, @options.sandbox_env
 
         -- set it back immediately for the next guy

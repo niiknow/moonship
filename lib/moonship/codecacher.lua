@@ -142,6 +142,7 @@ do
         opts.ttl = 120
       end
       opts.localBasePath = plpath.abs(opts.app_path)
+      opts["sandbox_env"] = sandbox.build_env(_G, opts.plugins, sandbox.whitelist)
       self.codeCache = lru.new(opts.code_cache_size)
       self.options = opts
     end,

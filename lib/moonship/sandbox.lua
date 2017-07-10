@@ -1,6 +1,7 @@
 local parse = require("moonscript.parse")
 local compile = require("moonscript.compile")
 local util = require("moonship.util")
+local log = require("moonship.log")
 local table_pack = table.pack or function(...)
   return {
     n = select("#", ...),
@@ -29,7 +30,7 @@ readfile = function(file)
   f:close()
   return content
 end
-local whitelist = [[_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall
+local whitelist = [[_VERSION assert error ipairs next pairs pcall select tonumber tostring type unpack xpcall _remotebase
 
 bit32.arshift bit32.band bit32.bnot bit32.bor bit32.btest bit32.bxor bit32.extract bit32.lrotate
 bit32.lshift bit32.replace bit32.rrotate bit32.rshift
@@ -52,7 +53,7 @@ table.concat table.insert table.maxn table.pack table.remove table.sort table.un
 
 utf8.char utf8.charpattern utf8.codepoint utf8.codes utf8.len utf8.offset
 
-moonship.http moonship.util moonship.crypto moonship.oauth1 moonship.awsauth
+moonship.http moonship.util moonship.crypto moonship.oauth1 moonship.awsauth moonship.log
 ]]
 local opts = {
   plugins = { }

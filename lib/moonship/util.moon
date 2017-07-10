@@ -117,18 +117,6 @@ query_string_encode = (t, sep="&", quote="", seen={}) ->
 
   concat(query, sep)
 
-resolveGithubRaw = (modname) ->
-  capturePath = "https://raw.githubusercontent.com/"
-  if string.find(modname, "github.com/")
-    user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
-    path, file = string.match(pathx, "^(.*/)([^/]*)$")
-    base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
-
-    -- convert period to folder before return
-    return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
-
-  __remotebase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
-
 applyDefaults = (opts, defOpts) ->
   for k, v in pairs(defOpts) do
     if "__" ~= string.sub(k,1,2) then   -- don't clone meta
@@ -152,5 +140,5 @@ table_clone = (t, deep=false) ->
 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
   :json_encodable, :from_json, :to_json, :table_clone,
-  :query_string_encode, :resolveGithubRaw, :applyDefaults
+  :query_string_encode, :applyDefaults
 }

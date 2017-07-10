@@ -5,7 +5,7 @@ do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, resolveGithubRaw, applyDefaults, table_clone
+local trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, applyDefaults, table_clone
 trim = function(str, pattern)
   if pattern == nil then
     pattern = "%s*"
@@ -139,16 +139,6 @@ query_string_encode = function(t, sep, quote, seen)
   end
   return concat(query, sep)
 end
-resolveGithubRaw = function(modname)
-  local capturePath = "https://raw.githubusercontent.com/"
-  if string.find(modname, "github.com/") then
-    local user, repo, branch, pathx, query = string.match(modname, "github%.com/([^/]+)(/[^/]+)/tree(/[^/]+)(/[^?#]*)(.*)")
-    local path, file = string.match(pathx, "^(.*/)([^/]*)$")
-    local base = string.format("%s%s%s%s%s", capturePath, user, repo, branch, path)
-    return base, string.gsub(string.gsub(file, "%.moon$", ""), '%.', "/") .. ".moon", query
-  end
-  return __remotebase, string.gsub(string.gsub(modname, "%.moon$", ""), '%.', "/") .. ".moon", ""
-end
 applyDefaults = function(opts, defOpts)
   for k, v in pairs(defOpts) do
     if "__" ~= string.sub(k, 1, 2) then
@@ -198,6 +188,5 @@ return {
   to_json = to_json,
   table_clone = table_clone,
   query_string_encode = query_string_encode,
-  resolveGithubRaw = resolveGithubRaw,
   applyDefaults = applyDefaults
 }

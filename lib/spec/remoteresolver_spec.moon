@@ -10,8 +10,8 @@ describe "moonship.remoteresolver", ->
       "host": 'github.com'
       "path": '/niiknow/moonship/blob/master/lib/moonship/remoteresolver.moon'
       "port": '443'
-      "scheme": 'https',
-      "fragment": '!yep',
+      "scheme": 'https'
+      "fragment": '!yep'
       "query": "hello=worl%20d"
     }
     actual = remoteresolver.resolve_remote("https://github.com/niiknow/moonship/blob/master/lib/moonship/remoteresolver.moon?hello=worl%20d#!yep")
@@ -25,9 +25,10 @@ describe "moonship.remoteresolver", ->
       "file": 'remoteresolver.moon'
       "host": 'raw.githubusercontent.com'
       "path": '/niiknow/moonship/master/lib/moonship/remoteresolver.moon'
+      "github": true
       "port": '443'
-      "scheme": 'https',
-      "fragment": '!yep',
+      "scheme": 'https'
+      "fragment": '!yep'
       "query": "hello=worl%20d"
     }
     actual = remoteresolver.resolve_github("github.com/niiknow/moonship/blob/master/lib/moonship/remoteresolver.moon?hello=worl%20d#!yep")
