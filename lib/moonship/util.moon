@@ -12,6 +12,18 @@ import concat, insert, sort from table
 -- for ngx stuff, put it inside ngin.lua file
 local *
 
+table_pairsByKeys = (t, f) ->
+  a = {}
+  for n in pairs(t) do insert(a, n)
+  sort(a, f)
+
+  i = 0
+  iter = () ->
+    i = i + 1
+    return nil if a[i] == nil
+    a[i], t[a[i]]
+
+  iter
 
 --- trim a string.
 -- @param str the string
@@ -88,13 +100,13 @@ from_json = (obj) -> cjson_safe.decode obj
 
 to_json = (obj) -> cjson_safe.encode json_encodable obj
 
-query_string_encode = (t, sep="&", quote="", seen={}) ->
+query_string_encode = (t, sep="&", quote="", escape=url_escape) ->
   query = {}
   keys = {}
   for k in pairs(t) do keys[#keys+1] = tostring(k)
   sort(keys)
 
-  for _,k in ipairs(keys) do
+  for _, k in ipairs(keys) do
     v = t[k]
 
     switch type v
@@ -106,9 +118,9 @@ query_string_encode = (t, sep="&", quote="", seen={}) ->
       when "function", "userdata", "thread"
         nil
       else
-        v = url_escape(tostring(v))
+        v = escape(tostring(v))
 
-    k = url_escape(tostring(k))
+    k = escape(tostring(k))
 
     if v ~= "" then
       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
@@ -124,6 +136,15 @@ applyDefaults = (opts, defOpts) ->
 
   opts
 
+table_extend = (table1, table2) ->
+  for k, v in pairs(table2) do
+    if (type(table1[k]) == 'table' and type(v) == 'table') then
+      table_extend(table1[k], v)
+    else
+      table1[k] = v
+
+  table1
+
 table_clone = (t, deep=false) ->
   return nil unless ("table"==type(t) or "userdata"==type(t))
 
@@ -137,8 +158,9 @@ table_clone = (t, deep=false) ->
 
   ret
 
+
 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
-  :json_encodable, :from_json, :to_json, :table_clone,
-  :query_string_encode, :applyDefaults
+  :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
+  :table_pairsByKeys, :query_string_encode, :applyDefaults
 }

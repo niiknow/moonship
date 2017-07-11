@@ -5,7 +5,24 @@ do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, applyDefaults, table_clone
+local table_pairsByKeys, trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, applyDefaults, table_extend, table_clone
+table_pairsByKeys = function(t, f)
+  local a = { }
+  for n in pairs(t) do
+    insert(a, n)
+  end
+  sort(a, f)
+  local i = 0
+  local iter
+  iter = function()
+    i = i + 1
+    if a[i] == nil then
+      return nil
+    end
+    return a[i], t[a[i]]
+  end
+  return iter
+end
 trim = function(str, pattern)
   if pattern == nil then
     pattern = "%s*"
@@ -100,15 +117,15 @@ end
 to_json = function(obj)
   return cjson_safe.encode(json_encodable(obj))
 end
-query_string_encode = function(t, sep, quote, seen)
+query_string_encode = function(t, sep, quote, escape)
   if sep == nil then
     sep = "&"
   end
   if quote == nil then
     quote = ""
   end
-  if seen == nil then
-    seen = { }
+  if escape == nil then
+    escape = url_escape
   end
   local query = { }
   local keys = { }
@@ -128,9 +145,9 @@ query_string_encode = function(t, sep, quote, seen)
     elseif "function" == _exp_0 or "userdata" == _exp_0 or "thread" == _exp_0 then
       _ = nil
     else
-      v = url_escape(tostring(v))
+      v = escape(tostring(v))
     end
-    k = url_escape(tostring(k))
+    k = escape(tostring(k))
     if v ~= "" then
       query[#query + 1] = string.format('%s=%s', k, quote .. v .. quote)
     else
@@ -148,6 +165,16 @@ applyDefaults = function(opts, defOpts)
     end
   end
   return opts
+end
+table_extend = function(table1, table2)
+  for k, v in pairs(table2) do
+    if (type(table1[k]) == 'table' and type(v) == 'table') then
+      table_extend(table1[k], v)
+    else
+      table1[k] = v
+    end
+  end
+  return table1
 end
 table_clone = function(t, deep)
   if deep == nil then
@@ -187,6 +214,8 @@ return {
   from_json = from_json,
   to_json = to_json,
   table_clone = table_clone,
+  table_extend = table_extend,
+  table_pairsByKeys = table_pairsByKeys,
   query_string_encode = query_string_encode,
   applyDefaults = applyDefaults
 }
