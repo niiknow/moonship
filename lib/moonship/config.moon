@@ -2,20 +2,38 @@
 util                  = require "moonship.util"
 log                   = require "moonship.log"
 sandbox               = require "moonship.sandbox"
+remoteresolver        = require "moonship.remoteresolver"
+requestbuilder        = require "moonship.requestbuilder"
 
-aws_region            = os.getenv("AWS_DEFAULT_REGION")
+aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
+azure_storage         = os.getenv("AZURE_STORAGE") or ""
 app_path              = os.getenv("MOONSHIP_APP_PATH")
 
-code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
+code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
-app_env               = os.getenv("MOONSHIP_APP_ENV")
-table_clone           = util.table_clone
+app_env               = os.getenv("MOONSHIP_APP_ENV") or "prd"
 
-remoteresolver        = require "moonship.remoteresolver"
-requestbuilder        = require "moonship.requestbuilder"
+import string_split, table_clone from util
+import insert from table
+
+env_id = (env="prd") ->
+  switch type env
+    when "dev"
+      return 79
+    when "tst"
+      return 77
+    when "uat"
+      return 75
+    when "stg"
+      return 73
+    when "prd"
+      return 71
+
+  -- default to dev
+  return 79
 
 build_requires = (opts) ->
   (modname) ->
@@ -54,14 +72,32 @@ build_requires = (opts) ->
     _G[modname], "unable to resolve `#{modname}`"
 
 class Config
-  new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
-    defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
+  new: (newOpts={}) =>
+    defaultOpts = {
+      :aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path,
+      :app_path, :code_cache_size, :remote_path, :azure_storage, :app_env, plugins: {}
+    }
+
     util.applyDefaults(newOpts, defaultOpts)
+    newOpts.app_env = newOpts.app_env or "prd"
     newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
     req = newOpts.requestbuilder\build()
     newOpts.plugins["request"] = req
     newOpts.plugins["log"] = req\log
+    newOpts.app_env_id = env_id(newOpts.app_env)
+
+    -- parsing azure storage connection string
+    az = string_split(azure_storage or "", ";")
+    azure = {}
+    for _, d in ipairs(az) do
+      firstEq = k\find("=")
+      if (firstEq)
+        k = d\substr(1, firstEq)
+        v = d\substr(firstEq + 1)
+        azure[k] = v
+
+    newOpts["azure"] = azure
 
     @__data = newOpts
 

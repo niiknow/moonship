@@ -5,7 +5,6 @@ log.set_lvl("info")
 
 engine            = require "moonship.engine"
 awsauth           = require "moonship.awsauth"
-azts              = require "moonship.aztablestategy"
 util              = require "moonship.util"
 crypto            = require "moonship.crypto"
 hmacauth          = require "moonship.hmacauth"

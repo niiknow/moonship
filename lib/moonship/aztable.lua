@@ -1,10 +1,15 @@
 local util = require("moonship.util")
 local azureauth = require("moonship.azauth")
+local mydate = require("moonship.date")
+local string_gsub = string.gsub
+local my_max_number = 9007199254740991
 local sharedkeylite
 sharedkeylite = azureauth.sharedkeylite
 local to_json
 to_json = util.to_json
-local item_list, item_create, item_update, item_retrieve, item_delete, table_opts
+local lower
+lower = string.lower
+local item_list, item_create, item_update, item_retrieve, item_delete, table_opts, opts_name, generate_opts, opts_daily, opts_monthly, opts_yearly
 item_list = function(opts, query)
   if opts == nil then
     opts = {
@@ -163,11 +168,123 @@ table_opts = function(self, opts)
     headers = headers
   }
 end
+opts_name = function(opts)
+  if opts == nil then
+    opts = {
+      table_name = table_name,
+      tenant = tenant,
+      env_id = env_id,
+      pk = pk,
+      prefix = prefix
+    }
+  end
+  opts.pk = opts.pk or "1default"
+  opts.tenant = lower(opts.tenant or "a")
+  opts.table = lower(opts.table_name)
+  opts.prefix = tostring(opts.tenant) .. "E" .. tostring(opts.env_id)
+  opts.table_name = tostring(opts.prefix) .. tostring(opts.table)
+end
+generate_opts = function(opts, format, ts)
+  if opts == nil then
+    opts = {
+      table_name = table_name
+    }
+  end
+  if format == nil then
+    format = "%Y%m%d"
+  end
+  if ts == nil then
+    ts = os.time()
+  end
+  local newopts = util.table_clone(opts)
+  newopts.mt_table = newopts.table_name
+  newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
+  return newopts
+end
+opts_daily = function(opts, days, ts)
+  if opts == nil then
+    opts = {
+      table_name = table_name,
+      tenant = tenant,
+      env_id = env_id,
+      pk = pk,
+      prefix = prefix
+    }
+  end
+  if days == nil then
+    days = 1
+  end
+  if ts == nil then
+    ts = os.time()
+  end
+  local rst = { }
+  local multiplier = days and 1 or -1
+  local new_ts = ts
+  for i = 1, days do
+    rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
+    new_ts = mydate.add_day(new_ts, days)
+  end
+  return rst
+end
+opts_monthly = function(opts, months, ts)
+  if opts == nil then
+    opts = {
+      table_name = table_name,
+      tenant = tenant,
+      env_id = env_id,
+      pk = pk,
+      prefix = prefix
+    }
+  end
+  if months == nil then
+    months = 1
+  end
+  if ts == nil then
+    ts = os.time()
+  end
+  local rst = { }
+  local multiplier = days and 1 or -1
+  local new_ts = ts
+  for i = 1, days do
+    rst[#rst + 1] = generate_opts(opts, "%Y%m", new_ts)
+    new_ts = mydate.add_month(new_ts, months)
+  end
+  return rst
+end
+opts_yearly = function(opts, years, ts)
+  if opts == nil then
+    opts = {
+      table_name = table_name,
+      tenant = tenant,
+      env_id = env_id,
+      pk = pk,
+      prefix = prefix
+    }
+  end
+  if years == nil then
+    years = 1
+  end
+  if ts == nil then
+    ts = os.time()
+  end
+  local rst = { }
+  local multiplier = days and 1 or -1
+  local new_ts = ts
+  for i = 1, days do
+    rst[#rst + 1] = generate_opts(opts, "%Y", new_ts)
+    new_ts = mydate.add_year(new_ts, years)
+  end
+  return rst
+end
 return {
   item_create = item_create,
   item_retrieve = item_retrieve,
   item_update = item_update,
   item_delete = item_delete,
   item_list = item_list,
-  table_opts = table_opts
+  table_opts = table_opts,
+  opts_name = opts_name,
+  opts_daily = opts_daily,
+  opts_monthly = opts_monthly,
+  opts_yearly = opts_yearly
 }

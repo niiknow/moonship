@@ -1,17 +1,40 @@
 local util = require("moonship.util")
 local log = require("moonship.log")
 local sandbox = require("moonship.sandbox")
-local aws_region = os.getenv("AWS_DEFAULT_REGION")
+local remoteresolver = require("moonship.remoteresolver")
+local requestbuilder = require("moonship.requestbuilder")
+local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
+local azure_storage = os.getenv("AZURE_STORAGE") or ""
 local app_path = os.getenv("MOONSHIP_APP_PATH")
-local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
+local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
-local app_env = os.getenv("MOONSHIP_APP_ENV")
-local table_clone = util.table_clone
-local remoteresolver = require("moonship.remoteresolver")
-local requestbuilder = require("moonship.requestbuilder")
+local app_env = os.getenv("MOONSHIP_APP_ENV") or "prd"
+local string_split, table_clone
+string_split, table_clone = util.string_split, util.table_clone
+local insert
+insert = table.insert
+local env_id
+env_id = function(env)
+  if env == nil then
+    env = "prd"
+  end
+  local _exp_0 = type(env)
+  if "dev" == _exp_0 then
+    return 79
+  elseif "tst" == _exp_0 then
+    return 77
+  elseif "uat" == _exp_0 then
+    return 75
+  elseif "stg" == _exp_0 then
+    return 73
+  elseif "prd" == _exp_0 then
+    return 71
+  end
+  return 79
+end
 local build_requires
 build_requires = function(opts)
   return function(modname)
@@ -61,11 +84,7 @@ do
   _class_0 = setmetatable({
     __init = function(self, newOpts)
       if newOpts == nil then
-        newOpts = {
-          aws_region = "us-east-1",
-          code_cache_size = 10000,
-          app_env = "prd"
-        }
+        newOpts = { }
       end
       local defaultOpts = {
         aws_region = aws_region,
@@ -75,9 +94,12 @@ do
         app_path = app_path,
         code_cache_size = code_cache_size,
         remote_path = remote_path,
+        azure_storage = azure_storage,
+        app_env = app_env,
         plugins = { }
       }
       util.applyDefaults(newOpts, defaultOpts)
+      newOpts.app_env = newOpts.app_env or "prd"
       newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
       newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
       local req = newOpts.requestbuilder:build()
@@ -89,6 +111,18 @@ do
           return _fn_0(_base_1, ...)
         end
       end
+      newOpts.app_env_id = env_id(newOpts.app_env)
+      local az = string_split(azure_storage or "", ";")
+      local azure = { }
+      for _, d in ipairs(az) do
+        local firstEq = k:find("=")
+        if (firstEq) then
+          local k = d:substr(1, firstEq)
+          local v = d:substr(firstEq + 1)
+          azure[k] = v
+        end
+      end
+      newOpts["azure"] = azure
       self.__data = newOpts
     end,
     __base = _base_0,

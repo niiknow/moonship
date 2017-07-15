@@ -1,45 +1,39 @@
--- implement cache with azure
+-- implement storage with azure
 
-http = require "moonship.http"
-aztm = require "moonship.aztablemagic"
+http    = require "moonship.http"
+azt     = require "moonship.aztable"
 request = require "moonship.plugins.request"
 util    = require "moonship.util"
 
-import aztable, azauth from aztm
 import from_json, to_json from util
 
-get = (k) ->
+class Cache
+  get: (k) =>
 
-  opts = opts_cache_get({
-    table_name: "cache",
-    cache_key: k
-  })
+    opts = azt.item_retrieve({
+      table_name: "storage",
+      rk: k,
+      pk: ''
+    })
 
-  res = http.request(opts)
-  return nil unless res.body
+    res = http.request(opts)
+    return nil, "#{k} not found" unless res.body
 
-  from_json(res.body).value
+    from_json(res.body).v
 
-set = (k, v, ttl=600) ->
-  vt = type v
+  set: (k, v, ttl=600) =>
+    vt = type v
 
-  if (v == "function")
-    v = pcall(v)
+    return nil, "value must be string" unless vt == "string"
 
-  vt = type v
+    opts = azt.item_update({
+      table_name: "storage",
+      cache_key: k
+    }, v, "MERGE")
 
-  return nil unless vt == "string"
+    opts.body = to_json(opts.item)
+    res = http.request(opts)
 
-  opts = opts_cache_set({
-    table_name: "cache",
-    cache_ttl: ttl or 600,
-    cache_key: k,
-    cache_value: v
-  })
+    v
 
-  opts.body = to_json(opts.item)
-  res = http.request(opts)
-
-  v
-
-{ :get, :set }
+Cache
