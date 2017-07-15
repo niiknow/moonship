@@ -8,12 +8,18 @@ do
   local _obj_0 = table
   concat, sort = _obj_0.concat, _obj_0.sort
 end
-local date_utc, sharedkeylite, canonicalizedResource, canonicalizedHeaders, getHeader, stringForTable, stringForBlobOrQueue, sign
+local date_utc, getHeader, sharedkeylite, canonicalizedResource, canonicalizedHeaders, stringForTable, stringForBlobOrQueue, sign
 date_utc = function(date)
   if date == nil then
     date = os.time()
   end
   return os.date("!%a, %d, %b, %Y %H:%M:%S GMT", date)
+end
+getHeader = function(headers, name, additionalHeaders)
+  if additionalHeaders == nil then
+    additionalHeaders = { }
+  end
+  return headers[name] or additionalHeaders[name] or ""
 end
 sharedkeylite = function(opts)
   if opts == nil then
@@ -23,7 +29,8 @@ sharedkeylite = function(opts)
       table_name = table_name
     }
   end
-  opts.date = opts.date or date_utc()
+  opts.time = opts.time or os.time()
+  opts.date = opts.date or date_utc(opts.time)
   opts.sig = hmacauth.sign(base64_decode(opts.account_key), tostring(opts.date) .. "\n/" .. tostring(opts.account_name) .. "/" .. tostring(opts.table_name))
   return opts
 end
@@ -53,18 +60,6 @@ canonicalizedHeaders = function(headers)
     end
   end
   return concat(rst, "\n")
-end
-getHeader = function(headers, name, additionalHeaders)
-  if additionalHeaders == nil then
-    additionalHeaders = { }
-  end
-  if headers[name] then
-    return headers[name]
-  end
-  if additionalHeaders[name] then
-    return additionalHeaders[name]
-  end
-  return ''
 end
 stringForTable = function(opts, additionalHeaders)
   additionalHeaders["DataServiceVersion"] = "3.0;NetFx"
@@ -108,6 +103,7 @@ sign = function(opts, stringGenerator)
     stringGenerator = stringForTable
   end
   opts.time = opts.time or os.time()
+  opts.date = opts.date or date_utc(opts.time)
   opts.parsedUrl = url_parse(opts.url)
   local additionalHeaders = { }
   additionalHeaders["x-ms-version"] = "2016-05-31"

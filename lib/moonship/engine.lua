@@ -26,7 +26,7 @@ do
     engage = function(self, req)
       local opts = self.options:get()
       if req then
-        opts.requestbuilder.set(req)
+        opts.requestbuilder:set(req)
       end
       local rst, err = self.codeCache:get(opts)
       if err then
@@ -50,7 +50,7 @@ do
   _class_0 = setmetatable({
     __init = function(self, opts)
       local options = util.applyDefaults(opts, {
-        requestbuilder = requestbuilder
+        requestbuilder = requestbuilder()
       })
       if (options.useS3) then
         options.aws = {

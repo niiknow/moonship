@@ -9,7 +9,6 @@ lru              = require "lru"
 plpath           = require "path"
 log              = require "moonship.log"
 fs               = require "path.fs"
-requestbuilder   = require "moonship.requestbuilder"
 
 local *
 
@@ -124,7 +123,7 @@ class CodeCacher
       os.remove(valHolder.localFullPath)
 
   get: (aws) =>
-    req = @options.requestbuilder.build()
+    req = @options.requestbuilder\build()
     @options.sandbox_env.request = req
     url = util.path_sanitize("#{req.host}/#{req.path}")
     valHolder = @codeCache\get()

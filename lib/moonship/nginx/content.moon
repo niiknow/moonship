@@ -16,7 +16,7 @@ import table_clone from util
 
 opts = {
   useS3: true,
-  requestbuilder: requestbuilder,
+  requestbuilder: requestbuilder(),
   plugins: {
     awsauth: awsauth,
     azauth: table_clone(azts.azauth),

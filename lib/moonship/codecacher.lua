@@ -7,7 +7,6 @@ local lru = require("lru")
 local plpath = require("path")
 local log = require("moonship.log")
 local fs = require("path.fs")
-local requestbuilder = require("moonship.requestbuilder")
 local mkdirp, myUrlHandler, CodeCacher
 mkdirp = function(p)
   return fs.makedirs(p)
@@ -83,7 +82,7 @@ do
       end
     end,
     get = function(self, aws)
-      local req = self.options.requestbuilder.build()
+      local req = self.options.requestbuilder:build()
       self.options.sandbox_env.request = req
       local url = util.path_sanitize(tostring(req.host) .. "/" .. tostring(req.path))
       local valHolder = self.codeCache:get()

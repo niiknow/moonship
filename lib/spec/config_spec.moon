@@ -21,7 +21,7 @@ describe "moonship.config", ->
   it "config require can perform deep path resolution", ->
     expected = "Bart: Ay, caramba!\nLisa: Do you even know what that means?\nMarge: Lisa, your food is getting cold.\n"
     opts =  {
-      requestbuilder: requestbuilder,
+      requestbuilder: requestbuilder(),
       plugins: {}
     }
     conf = config(opts)

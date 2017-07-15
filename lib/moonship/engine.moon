@@ -8,7 +8,7 @@ requestbuilder = require "moonship.requestbuilder"
 -- :body, :code, :headers, :status, :error
 class Engine
   new: (opts) =>
-    options = util.applyDefaults(opts, {:requestbuilder})
+    options = util.applyDefaults(opts, {requestbuilder: requestbuilder()})
     if (options.useS3)
       options.aws = {
         aws_access_key_id: options.aws_access_key_id,
@@ -30,7 +30,7 @@ class Engine
   engage: (req) =>
     opts = @options\get()
 
-    opts.requestbuilder.set(req) if req
+    opts.requestbuilder\set(req) if req
 
     rst, err = @codeCache\get(opts)
 

@@ -14,7 +14,7 @@ local table_clone
 table_clone = util.table_clone
 local opts = {
   useS3 = true,
-  requestbuilder = requestbuilder,
+  requestbuilder = requestbuilder(),
   plugins = {
     awsauth = awsauth,
     azauth = table_clone(azts.azauth),

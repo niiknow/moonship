@@ -102,15 +102,18 @@
 
 ****0 date_utc = (date=os.time()) -> os.date("!%a, %d, %b, %Y %H:%M:%S GMT", date)
 
+****0 getHeader = (headers, name, additionalHeaders={}) -> headers[name] or additionalHeaders[name] or ""
+
 ****0 sharedkeylite = (opts = { :account_name, :account_key, :table_name }) ->
-****0   opts.date = opts.date or date_utc()
-****0   opts.sig = hmacauth.sign(base64_decode(opts.account_key), "#{opts.date}\n/#{opts.account_name}/#{opts.table_name}")
+****0   opts.time = opts.time or os.time()
+****0   opts.date = opts.date or date_utc(opts.time)
+    1   opts.sig = hmacauth.sign(base64_decode(opts.account_key), "#{opts.date}\n/#{opts.account_name}/#{opts.table_name}")
         opts
 
-    1 canonicalizedResource = (opts) ->
+****0 canonicalizedResource = (opts) ->
 ****0   parsedUrl = opts.parsedUrl
 ****0   query = string_split(opts.query, "&")
-****0   qs = query_string_encode(query, "\n", "", (v) -> v)
+    1   qs = query_string_encode(query, "\n", "", (v) -> v)
 
 ****0   params = {
           "/#{opts.account_name}#{parsedUrl.path}",
@@ -119,7 +122,7 @@
 
 ****0   concat(params, "\n")
 
-    1 canonicalizedHeaders = (headers) ->
+****0 canonicalizedHeaders = (headers) ->
 ****0   rst = {}
 ****0   keys = {}
 
@@ -135,18 +138,13 @@
 ****0   concat(rst, "\n")
 
 
-****0 getHeader = (headers, name, additionalHeaders={}) ->
-****0   return headers[name] if headers[name]
-****0   return additionalHeaders[name] if additionalHeaders[name]
-        ''
-
-****0 stringForTable = (opts, additionalHeaders) ->
+    1 stringForTable = (opts, additionalHeaders) ->
 ****0   additionalHeaders["DataServiceVersion"] = "3.0;NetFx"
 ****0   additionalHeaders["MaxDataServiceVersion"] = "3.0;NetFx"
 
         params = { opts.method,
 ****0     getHeader(opts.headers, "content-md5"),
-    1     getHeader(opts.headers, "content-type"),
+****0     getHeader(opts.headers, "content-type"),
 ****0     getHeader(opts.headers, "x-ms-date", additionalHeaders),
 ****0     getHeader(opts.headers, "content-md5"),
 ****0     getHeader(opts.headers, "content-type"),
@@ -158,7 +156,7 @@
 
 ****0 stringForBlobOrQueue = (req, additionalHeaders) ->
 ****0   headers = {}
-    1   table_extend(headers, opts.headers)
+****0   table_extend(headers, opts.headers)
 ****0   table_extend(headers, additionalHeaders)
 
 ****0   params = {
@@ -170,10 +168,10 @@
 ****0     getHeader(headers, "content-type"),
 ****0     getHeader(headers, "date"),
 ****0     getHeader(headers, "if-modified-since"),
-****0     getHeader(headers, "if-match"),
+    1     getHeader(headers, "if-match"),
 ****0     getHeader(headers, "if-none-match"),
 ****0     getHeader(headers, "if-unmodified-since"),
-    1     getHeader(headers, "range"),
+****0     getHeader(headers, "range"),
 ****0     canonicalizedHeaders(headers),
 ****0     canonicalizedResource(opts)
         }
@@ -182,7 +180,9 @@
 
 ****0 sign = (opts, stringGenerator=stringForTable) ->
 ****0   opts.time = opts.time or os.time()
+****0   opts.date = opts.date or date_utc(opts.time)
 ****0   opts.parsedUrl = url_parse(opts.url)
+
 ****0   additionalHeaders = {}
 ****0   additionalHeaders["x-ms-version"] = "2016-05-31"
 ****0   additionalHeaders["x-ms-date"] = date_utc(opts.time)
@@ -190,7 +190,7 @@
 ****0   stringToSign = stringGenerator(opts, additionalHeaders)
 ****0   sig = hmacauth.sign(base64_decode(opts.account_key), stringToSign)
 ****0   additionalHeaders["Authorization"] = "SharedKey #{opts.account_name}:#{sig}"
-        additionalHeaders
+    1   additionalHeaders
 
 ****0 { :date_utc, :sharedkeylite}
 
@@ -429,8 +429,7 @@
     3 lru              = require "lru"
     3 plpath           = require "path"
     3 log              = require "moonship.log"
-    3 fs               = require "path.fs"
-****0 requestbuilder   = require "moonship.requestbuilder"
+****0 fs               = require "path.fs"
 
     3 local *
 
@@ -545,7 +544,7 @@
     1       os.remove(valHolder.localFullPath)
 
 ****0   get: (aws) =>
-    3     req = @options.requestbuilder.build()
+    3     req = @options.requestbuilder\build()
     6     @options.sandbox_env.request = req
 ****0     url = util.path_sanitize("#{req.host}/#{req.path}")
     3     valHolder = @codeCache\get()
@@ -763,7 +762,7 @@
       -- :body, :code, :headers, :status, :error
     2 class Engine
 ****0   new: (opts) =>
-    1     options = util.applyDefaults(opts, {:requestbuilder})
+    1     options = util.applyDefaults(opts, {requestbuilder: requestbuilder()})
 ****0     if (options.useS3)
 ****0       options.aws = {
 ****0         aws_access_key_id: options.aws_access_key_id,
@@ -785,7 +784,7 @@
 ****0   engage: (req) =>
     2     opts = @options\get()
 
-****0     opts.requestbuilder.set(req) if req
+****0     opts.requestbuilder\set(req) if req
 
 ****0     rst, err = @codeCache\get(opts)
 
@@ -1095,38 +1094,39 @@
       -- build request plugins based on options
     3 sandbox = require "moonship.sandbox"
 
-****0 local *
+      class RequestBuilder
+    3   new: (opts={}) =>
+****0     @req = opts
 
-****0 request = {}
+    3   build: (opts) =>
+****0     req_wrapper = {}
+****0     if ngx
+****0       ngx.req.read_body()
+****0       req_wrapper = {
+****0         body: ngx.req.get_body_data(),
+****0         form: ngx.req.get_post_args(),
+****0         headers: ngx.req.get_headers(),
+****0         host: ngx.var.host,
+****0         method: ngx.req.get_method(),
+****0         path: ngx.var.uri,
+****0         port: ngx.var.server_port,
+****0         query: ngx.req.get_uri_args(),
+****0         querystring: ngx.req.args,
+****0         remote_addr: ngx.var.remote_addr,
+****0         referer: ngx.var.http_referer or "-",
+****0         scheme: ngx.var.scheme,
+****0         server_addr: ngx.var.server_addr,
+****0         user_agent: ""
+            }
+****0       req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
+    3       @req = req_wrapper
 
-****0 build = (opts) ->
-****0   if ngx
-****0     ngx.req.read_body()
-****0     req_wrapper = {
-****0       body: ngx.req.get_body_data(),
-****0       form: ngx.req.get_post_args(),
-****0       headers: ngx.req.get_headers(),
-****0       host: ngx.var.host,
-****0       method: ngx.req.get_method(),
-****0       path: ngx.var.uri,
-****0       port: ngx.var.server_port,
-****0       query: ngx.req.get_uri_args(),
-****0       querystring: ngx.req.args,
-****0       remote_addr: ngx.var.remote_addr,
-****0       referer: ngx.var.http_referer or "-",
-****0       scheme: ngx.var.scheme,
-****0       server_addr: ngx.var.server_addr,
-****0       user_agent: ""
-    3     }
-    3     req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
-****0     return req_wrapper
+****0     @req
 
-    6   request
+    6   set: (req) =>
+****0     @req = req
 
-    3 set = (req) ->
-    3   request = req
-
-****0 { :build, :set }
+    6 RequestBuilder
 
 ==============================================================================
 ./moonship/sandbox.moon
@@ -1541,7 +1541,7 @@
         ret
 
 
-   49 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
+   46 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
    28   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
 ****0   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
 ****0   :table_pairsByKeys, :query_string_encode, :applyDefaults
@@ -1554,10 +1554,10 @@ Summary
 File                           Hits Missed Coverage
 ---------------------------------------------------
 ./moonship/awsauth.moon        37   18     67.27%
-./moonship/azauth.moon         11   59     15.71%
+./moonship/azauth.moon         11   60     15.49%
 ./moonship/aztable.moon        8    74     9.76%
 ./moonship/aztablestategy.moon 5    55     8.33%
-./moonship/codecacher.moon     65   29     69.15%
+./moonship/codecacher.moon     64   29     68.82%
 ./moonship/config.moon         30   11     73.17%
 ./moonship/crypto.moon         22   8      73.33%
 ./moonship/date.moon           4    15     21.05%
@@ -1573,4 +1573,4 @@ File                           Hits Missed Coverage
 ./moonship/url.moon            33   47     41.25%
 ./moonship/util.moon           48   42     53.33%
 ---------------------------------------------------
-Total                          418  481    46.50%
+Total                          417  482    46.38%
