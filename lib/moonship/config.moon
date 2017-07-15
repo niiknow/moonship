@@ -15,6 +15,7 @@ app_env               = os.getenv("MOONSHIP_APP_ENV")
 table_clone           = util.table_clone
 
 remoteresolver        = require "moonship.remoteresolver"
+requestbuilder        = require "moonship.requestbuilder"
 
 build_requires = (opts) ->
   (modname) ->
@@ -56,7 +57,11 @@ class Config
   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
     util.applyDefaults(newOpts, defaultOpts)
+    newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+    req = newOpts.requestbuilder\build()
+    newOpts.plugins["request"] = req
+    newOpts.plugins["log"] = req\log
 
     @__data = newOpts
 

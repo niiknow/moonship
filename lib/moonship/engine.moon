@@ -2,13 +2,12 @@ config         = require "moonship.config"
 codecacher     = require "moonship.codecacher"
 util           = require "moonship.util"
 log            = require "moonship.log"
-requestbuilder = require "moonship.requestbuilder"
 
 -- response with
 -- :body, :code, :headers, :status, :error
 class Engine
   new: (opts) =>
-    options = util.applyDefaults(opts, {requestbuilder: requestbuilder()})
+    options = util.applyDefaults(opts, {})
     if (options.useS3)
       options.aws = {
         aws_access_key_id: options.aws_access_key_id,

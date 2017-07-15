@@ -10,13 +10,11 @@ hmacauth          = require "moonship.hmacauth"
 http              = require "moonship.http"
 logger            = require "moonship.log"
 oauth1            = require "moonship.oauth1"
-requestbuilder    = require "moonship.requestbuilder"
 
 import table_clone from util
 
 opts = {
   useS3: true,
-  requestbuilder: requestbuilder(),
   plugins: {
     awsauth: awsauth,
     azauth: table_clone(azts.azauth),

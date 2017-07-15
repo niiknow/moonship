@@ -9,12 +9,10 @@ local hmacauth = require("moonship.hmacauth")
 local http = require("moonship.http")
 local logger = require("moonship.log")
 local oauth1 = require("moonship.oauth1")
-local requestbuilder = require("moonship.requestbuilder")
 local table_clone
 table_clone = util.table_clone
 local opts = {
   useS3 = true,
-  requestbuilder = requestbuilder(),
   plugins = {
     awsauth = awsauth,
     azauth = table_clone(azts.azauth),

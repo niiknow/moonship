@@ -57,7 +57,7 @@ myUrlHandler = (opts) ->
 class CodeCacher
 
   new: (opts={}) =>
-    defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000, :requestbuilder}
+    defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
     util.applyDefaults(opts, defOpts)
 
     -- should not be lower than 2 minutes

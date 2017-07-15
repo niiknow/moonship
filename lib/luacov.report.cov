@@ -478,7 +478,7 @@
       class CodeCacher
 
     2   new: (opts={}) =>
-****0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000, :requestbuilder}
+****0     defOpts = {app_path: "/app", ttl: 3600, codeHandler: myUrlHandler, code_cache_size: 10000}
     3     util.applyDefaults(opts, defOpts)
 
           -- should not be lower than 2 minutes
@@ -556,18 +556,18 @@
     3       domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
 
             -- expect directory
-****0       fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
+    3       fileBasePath = util.path_sanitize(@options.localBasePath .. "/" .. domainAndPath)
 
             -- must store locally as index.lua
             -- this way, a path can contain other paths
-****0       localFullPath = fileBasePath .. "/index.lua"
+    3       localFullPath = fileBasePath .. "/index.lua"
 
     6       valHolder = {
-    6         url: url,
-    3         localPath: fileBasePath,
-    6         localFullPath: localFullPath,
-    3         lastCheck: os.time(),
-****0         fileMod: lfs.attributes localFullPath, "modification"
+    3         url: url,
+    6         localPath: fileBasePath,
+    3         localFullPath: localFullPath,
+****0         lastCheck: os.time(),
+    3         fileMod: lfs.attributes localFullPath, "modification"
     3       }
 
             -- use aws s3 if available
@@ -577,7 +577,7 @@
             -- load file if it exists
     3       valHolder.fileMod = lfs.attributes valHolder.localFullPath, "modification"
     3       if valHolder.fileMod
-    3         log.debug tostring(valHolder.fileMod)
+****0         log.debug tostring(valHolder.fileMod)
 
     3         valHolder.value = sandbox.loadfile_safe valHolder.localFullPath, @options.sandbox_env
 
@@ -616,9 +616,10 @@
     2 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE")
     2 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
     2 app_env               = os.getenv("MOONSHIP_APP_ENV")
-****0 table_clone           = util.table_clone
+    2 table_clone           = util.table_clone
 
-    4 remoteresolver        = require "moonship.remoteresolver"
+****0 remoteresolver        = require "moonship.remoteresolver"
+    4 requestbuilder        = require "moonship.requestbuilder"
 
 ****0 build_requires = (opts) ->
 ****0   (modname) ->
@@ -660,13 +661,17 @@
     5   new: (newOpts={ aws_region: "us-east-1", code_cache_size: 10000, app_env: "prd" }) =>
     2     defaultOpts = {:aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path, :app_path, :code_cache_size, :remote_path, plugins: {} }
 ****0     util.applyDefaults(newOpts, defaultOpts)
-    2     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+    2     newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
+    4     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+****0     req = newOpts.requestbuilder\build()
+    3     newOpts.plugins["request"] = req
+****0     newOpts.plugins["log"] = req\log
 
 ****0     @__data = newOpts
 
 ****0   get: () => table_clone(@__data, true) -- preserving config through cloning
 
-      Config
+    3 Config
 
 ==============================================================================
 ./moonship/crypto.moon
@@ -756,13 +761,12 @@
     2 codecacher     = require "moonship.codecacher"
     2 util           = require "moonship.util"
     2 log            = require "moonship.log"
-    2 requestbuilder = require "moonship.requestbuilder"
 
       -- response with
       -- :body, :code, :headers, :status, :error
     2 class Engine
 ****0   new: (opts) =>
-    1     options = util.applyDefaults(opts, {requestbuilder: requestbuilder()})
+    1     options = util.applyDefaults(opts, {})
 ****0     if (options.useS3)
 ****0       options.aws = {
 ****0         aws_access_key_id: options.aws_access_key_id,
@@ -1093,12 +1097,13 @@
 ==============================================================================
       -- build request plugins based on options
     3 sandbox = require "moonship.sandbox"
+    3 util    = require "moonship.util"
 
       class RequestBuilder
     3   new: (opts={}) =>
 ****0     @req = opts
 
-    3   build: (opts) =>
+    6   build: (opts) =>
 ****0     req_wrapper = {}
 ****0     if ngx
 ****0       ngx.req.read_body()
@@ -1119,14 +1124,21 @@
 ****0         user_agent: ""
             }
 ****0       req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
-    3       @req = req_wrapper
+    6       @req = req_wrapper
 
+    3     @req.logs = {}
 ****0     @req
 
     6   set: (req) =>
 ****0     @req = req
 
-    6 RequestBuilder
+****0   log: (obj) =>
+****0     if (type obj == "table")
+****0       @req.logs[#@req.logs + 1] = util.to_json(obj)
+          else
+    3       @req.logs[#@req.logs + 1] = tostring(t)
+
+    3 RequestBuilder
 
 ==============================================================================
 ./moonship/sandbox.moon
@@ -1541,8 +1553,8 @@
         ret
 
 
-   46 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
-   28   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
+   44 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
+   26   :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
 ****0   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
 ****0   :table_pairsByKeys, :query_string_encode, :applyDefaults
       }
@@ -1557,20 +1569,20 @@ File                           Hits Missed Coverage
 ./moonship/azauth.moon         11   60     15.49%
 ./moonship/aztable.moon        8    74     9.76%
 ./moonship/aztablestategy.moon 5    55     8.33%
-./moonship/codecacher.moon     64   29     68.82%
-./moonship/config.moon         30   11     73.17%
+./moonship/codecacher.moon     65   28     69.89%
+./moonship/config.moon         34   13     72.34%
 ./moonship/crypto.moon         22   8      73.33%
 ./moonship/date.moon           4    15     21.05%
-./moonship/engine.moon         14   14     50.00%
+./moonship/engine.moon         13   14     48.15%
 ./moonship/hmacauth.moon       5    8      38.46%
 ./moonship/http.moon           11   13     45.83%
 ./moonship/httpsocket.moon     11   8      57.89%
 ./moonship/log.moon            5    12     29.41%
 ./moonship/oauth1.moon         32   8      80.00%
 ./moonship/remoteresolver.moon 28   14     66.67%
-./moonship/requestbuilder.moon 6    22     21.43%
+./moonship/requestbuilder.moon 9    25     26.47%
 ./moonship/sandbox.moon        43   24     64.18%
 ./moonship/url.moon            33   47     41.25%
 ./moonship/util.moon           48   42     53.33%
 ---------------------------------------------------
-Total                          417  482    46.38%
+Total                          424  486    46.59%

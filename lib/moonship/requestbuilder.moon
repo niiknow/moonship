@@ -1,5 +1,6 @@
 -- build request plugins based on options
 sandbox = require "moonship.sandbox"
+util    = require "moonship.util"
 
 class RequestBuilder
   new: (opts={}) =>
@@ -28,9 +29,16 @@ class RequestBuilder
       req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
       @req = req_wrapper
 
+    @req.logs = {}
     @req
 
   set: (req) =>
     @req = req
+
+  log: (obj) =>
+    if (type obj == "table")
+      @req.logs[#@req.logs + 1] = util.to_json(obj)
+    else
+      @req.logs[#@req.logs + 1] = tostring(t)
 
 RequestBuilder

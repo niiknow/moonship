@@ -133,8 +133,7 @@ do
         app_path = "/app",
         ttl = 3600,
         codeHandler = myUrlHandler,
-        code_cache_size = 10000,
-        requestbuilder = requestbuilder
+        code_cache_size = 10000
       }
       util.applyDefaults(opts, defOpts)
       if (opts.ttl < 120) then

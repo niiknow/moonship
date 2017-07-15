@@ -11,6 +11,7 @@ local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local app_env = os.getenv("MOONSHIP_APP_ENV")
 local table_clone = util.table_clone
 local remoteresolver = require("moonship.remoteresolver")
+local requestbuilder = require("moonship.requestbuilder")
 local build_requires
 build_requires = function(opts)
   return function(modname)
@@ -77,7 +78,17 @@ do
         plugins = { }
       }
       util.applyDefaults(newOpts, defaultOpts)
+      newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
       newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+      local req = newOpts.requestbuilder:build()
+      newOpts.plugins["request"] = req
+      do
+        local _base_1 = req
+        local _fn_0 = _base_1.log
+        newOpts.plugins["log"] = function(...)
+          return _fn_0(_base_1, ...)
+        end
+      end
       self.__data = newOpts
     end,
     __base = _base_0,

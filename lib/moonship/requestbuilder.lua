@@ -1,4 +1,5 @@
 local sandbox = require("moonship.sandbox")
+local util = require("moonship.util")
 local RequestBuilder
 do
   local _class_0
@@ -26,10 +27,18 @@ do
         req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
         self.req = req_wrapper
       end
+      self.req.logs = { }
       return self.req
     end,
     set = function(self, req)
       self.req = req
+    end,
+    log = function(self, obj)
+      if (type(obj == "table")) then
+        self.req.logs[#self.req.logs + 1] = util.to_json(obj)
+      else
+        self.req.logs[#self.req.logs + 1] = tostring(t)
+      end
     end
   }
   _base_0.__index = _base_0
