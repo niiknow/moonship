@@ -1,19 +1,21 @@
 local util = require("moonship.util")
 local crypto = require("moonship.crypto")
-local string_slit, base64_encode, base64_decode
-string_slit, base64_encode, base64_decode = util.string_slit, util.base64_encode, util.base64_decode
+local string_slit
+string_slit = util.string_slit
+local base64_encode, base64_decode
+base64_encode, base64_decode = crypto.base64_encode, crypto.base64_decode
 local unpack
 unpack = table.unpack
 local sign, verify, sign_custom, verify_custom
 sign = function(key, data, algo)
   if algo == nil then
-    algo = "sha256"
+    algo = crypto.sha256
   end
   return base64_encode(crypto.hmac(key, str, algo).digest())
 end
 verify = function(key, data, algo)
   if algo == nil then
-    algo = "sha256"
+    algo = crypto.sha256
   end
   return data == sign(key, data, algo)
 end
@@ -34,7 +36,7 @@ sign_custom = function(key, data, ttl, ts, algo)
 end
 verify_custom = function(key, payload, algo)
   if algo == nil then
-    algo = "sha256"
+    algo = crypto.sha256
   end
   local ts, ttl, data = unpack(string_split(payload, ":"))
   if (ts < (os.time() - tonumber(str[2]))) then

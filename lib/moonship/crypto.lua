@@ -48,10 +48,15 @@ end
 hmac = function(key, str, algo)
   if algo == md5 then
     return hmac_wrapper(key, str, "md5")
-  elseif algo == sha1 then
+  end
+  if algo == sha1 then
     return hmac_wrapper(key, str, "sha1")
-  elseif algo == sha256 then
+  end
+  if algo == sha256 then
     return hmac_wrapper(key, str, "sha256")
+  end
+  if type(algo) == "string" then
+    return hmac_wrapper(key, str, algo)
   end
 end
 return {

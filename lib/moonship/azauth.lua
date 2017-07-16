@@ -1,6 +1,7 @@
 local hmacauth = require("moonship.hmacauth")
-local base64_encode = (require("moonship.crypto")).base64_encode
+local crypto = require("moonship.crypto")
 local util = require("moonship.util")
+local log = require("moonship.log")
 local url_parse, string_split, query_string_encode
 url_parse, string_split, query_string_encode = util.url_parse, util.string_split, util.query_string_encode
 local concat, sort
@@ -8,6 +9,8 @@ do
   local _obj_0 = table
   concat, sort = _obj_0.concat, _obj_0.sort
 end
+local base64_decode, base64_encode
+base64_decode, base64_encode = crypto.base64_decode, crypto.base64_encode
 local date_utc, getHeader, sharedkeylite, canonicalizedResource, canonicalizedHeaders, stringForTable, stringForBlobOrQueue, sign
 date_utc = function(date)
   if date == nil then
@@ -31,6 +34,7 @@ sharedkeylite = function(opts)
   end
   opts.time = opts.time or os.time()
   opts.date = opts.date or date_utc(opts.time)
+  log.error(opts)
   opts.sig = hmacauth.sign(base64_decode(opts.account_key), tostring(opts.date) .. "\n/" .. tostring(opts.account_name) .. "/" .. tostring(opts.table_name))
   return opts
 end

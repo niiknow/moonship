@@ -171,3 +171,6 @@ describe "moonship.util", ->
       else
         assert.same input, group[2]
 
+  it "should generate random string", ->
+    actual = util.string_random(5)
+    assert.same 5, string.len(actual)

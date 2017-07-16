@@ -1,13 +1,15 @@
 hmacauth         = require "moonship.hmacauth"
-base64_encode    = (require "moonship.crypto").base64_encode
+crypto           = require "moonship.crypto"
 util             = require "moonship.util"
+log              = require "moonship.log"
 
 import url_parse, string_split, query_string_encode from util
 import concat, sort from table
+import base64_decode, base64_encode from crypto
 
 local *
 
-date_utc = (date=os.time()) -> os.date("!%a, %d, %b, %Y %H:%M:%S GMT", date)
+date_utc = (date=os.time()) -> os.date("!%a, %d %b %Y %H:%M:%S GMT", date)
 
 getHeader = (headers, name, additionalHeaders={}) -> headers[name] or additionalHeaders[name] or ""
 

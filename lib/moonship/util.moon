@@ -7,10 +7,26 @@ url              = require "moonship.url"
 cjson_safe       = require "cjson.safe"
 
 import concat, insert, sort from table
+import char from string
+import random, randomseed from math
+
+charset = {}
+
+-- qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890
+for i = 48,  57 do insert(charset, char(i))
+for i = 65,  90 do insert(charset, char(i))
+for i = 97, 122 do insert(charset, char(i))
 
 -- our utils lib, nothing here should depend on ngx
 -- for ngx stuff, put it inside ngin.lua file
 local *
+
+string_random = (length) ->
+  randomseed(os.time())
+
+  return string_random(length - 1) .. charset[random(1, #charset)] if length > 0
+
+  ""
 
 table_pairsByKeys = (t, f) ->
   a = {}
@@ -158,9 +174,22 @@ table_clone = (t, deep=false) ->
 
   ret
 
+-- parse connection string into table
+string_connection_parse = (str, fieldSep=";", valSep="=") ->
+  fields = string_split(str or "", ";")
+  rst = {}
+  for _, d in ipairs(fields) do
+    firstEq = d\find(valSep)
+    if (firstEq)
+      k = d\sub(1, firstEq - 1)
+      v = d\sub(firstEq + 1)
+      rst[k] = v
+
+  rst
 
 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
-  :trim, :path_sanitize, :slugify, :string_split, :table_sort_keys,
+  :trim, :path_sanitize, :slugify, :table_sort_keys,
   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
-  :table_pairsByKeys, :query_string_encode, :applyDefaults
+  :table_pairsByKeys, :query_string_encode, :applyDefaults,
+  :string_split, :string_connection_parse, :string_random,
 }

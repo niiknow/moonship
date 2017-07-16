@@ -1,6 +1,7 @@
 
 util         = require "moonship.util"
 oauth1       = require "moonship.oauth1"
+log          = require "moonship.log"
 
 string_upper = string.upper
 http_handler = require "moonship.httpsocket"

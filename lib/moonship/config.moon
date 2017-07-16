@@ -8,15 +8,15 @@ requestbuilder        = require "moonship.requestbuilder"
 aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
 azure_storage         = os.getenv("AZURE_STORAGE") or ""
 app_path              = os.getenv("MOONSHIP_APP_PATH")
 
 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
+aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
 app_env               = os.getenv("MOONSHIP_APP_ENV") or "prd"
 
-import string_split, table_clone from util
+import string_split, table_clone, string_connection_parse from util
 import insert from table
 
 env_id = (env="prd") ->
@@ -88,16 +88,7 @@ class Config
     newOpts.app_env_id = env_id(newOpts.app_env)
 
     -- parsing azure storage connection string
-    az = string_split(azure_storage or "", ";")
-    azure = {}
-    for _, d in ipairs(az) do
-      firstEq = k\find("=")
-      if (firstEq)
-        k = d\substr(1, firstEq)
-        v = d\substr(firstEq + 1)
-        azure[k] = v
-
-    newOpts["azure"] = azure
+    newOpts["azure"] = string_connection_parse(azure_storage or "")
 
     @__data = newOpts
 

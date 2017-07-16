@@ -3,16 +3,17 @@
 util = require "moonship.util"
 crypto = require "moonship.crypto"
 
-import string_slit, base64_encode, base64_decode from util
+import string_slit from util
+import base64_encode, base64_decode from crypto
 import unpack from table
 
 local *
-sign = (key, data, algo="sha256") -> base64_encode(crypto.hmac(key, str, algo).digest())
-verify = (key, data, algo="sha256") -> data == sign(key, data, algo)
-sign_custom = (key, data="", ttl=600, ts=os.time(), algo="sha256") -> "#{ts}:#{ttl}:#{data}:" .. sign("#{ts}:#{ttl}:#{data}")
+sign = (key, data, algo=crypto.sha256) -> base64_encode(crypto.hmac(key, data, algo).digest())
+verify = (key, data, algo=crypto.sha256) -> data == sign(key, data, algo)
+sign_custom = (key, data="", ttl=600, ts=os.time(), algo=crypto.sha256) -> "#{ts}:#{ttl}:#{data}:" .. sign("#{ts}:#{ttl}:#{data}")
 
 -- reverse the logic above to hmac verify
-verify_custom = (key, payload, algo="sha256") ->
+verify_custom = (key, payload, algo=crypto.sha256) ->
   ts, ttl, data = unpack string_split(payload, ":")
 
   -- validate expiration

@@ -1,54 +1,54 @@
 util          = require "moonship.util"
 azureauth     = require "moonship.azauth"
 mydate        = require "moonship.date"
+http          = require "moonship.http"
+log           = require "moonship.log"
 string_gsub   = string.gsub
 my_max_number = 9007199254740991  -- from javascript max safe int
 
 import sharedkeylite from azureauth
-import to_json from util
+import to_json, applyDefaults, trim, table_clone from util
 import lower from string
 
 local *
+get_headers = (headers) ->
+  applyDefaults(headers, {
+    ["Accept"]: "application/json;odata=nometadata",
+    ["x-ms-version"]: "2016-05-31"
+  })
 
 -- list items
 item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter, :top, :select }) ->
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  autho = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
   qs = ""
-  qs = "#{qs}&$filter=%{query.filter}" if query.filter
-  qs = "#{qs}&$top=%{query.top}" if query.top
-  qs = "#{qs}&$select=%{query.select}" if query.select
-  full_path = "#{url}?#{qs}"
+  qs = "#{qs}&$filter=#{query.filter}" if query.filter
+  qs = "#{qs}&$top=#{query.top}" if query.top
+  qs = "#{qs}&$select=#{query.select}" if query.select
+  qs = trim(qs, "&")
+  full_path = url
+  full_path = "#{url}?#{qs}" if qs
+  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date})
 
   {
     method: 'GET',
     url: full_path,
-    headers: {
-      ["Authorization"]: autho,
-      ["x-ms-date"]: opts.date,
-      ["Accept"]: "application/json;odata=nometadata",
-      ["x-ms-version"]: "2016-05-31"
-    }
+    headers: headers
   }
 
 -- create an item
 item_create = (opts={ :account_name, :account_key, :table_name }, item) ->
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  autho = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["Content-Type"]: "application/json"})
 
   {
     method: 'POST',
     url: url,
     data: to_json(item),
-    headers: {
-      ["Authorization"]: autho,
-      ["x-ms-date"]: opts.date,
-      ["Accept"]: "application/json;odata=nometadata",
-      ["x-ms-version"]: "2016-05-31",
-      ["Content-Type"]: "application/json"
-    }
+    headers: headers
   }
 
 -- update an item, method can be MERGE to upsert
@@ -57,19 +57,14 @@ item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, item
   opts.table_name = table
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  autho = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["Content-Type"]: "application/json"})
 
   {
     method: method,
     url: url,
     data: to_json(item),
-    headers: {
-      ["Authorization"]: autho,
-      ["x-ms-date"]: opts.date,
-      ["Accept"]: "application/json;odata=nometadata",
-      ["x-ms-version"]: "2016-05-31",
-      ["Content-Type"]: "application/json"
-    }
+    headers: headers
   }
 
 -- retrieve an item
@@ -82,34 +77,22 @@ item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
   opts.table_name = table
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  autho = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["If-Match"]: "*"})
 
   {
     method: "DELETE",
     url: url,
     data: to_json(item),
-    headers: {
-      ["Authorization"]: autho,
-      ["x-ms-date"]: opts.date,
-      ["Accept"]: "application/json;odata=nometadata",
-      ["x-ms-version"]: "2016-05-31",
-      ['If-Match']: "*"
-    }
+    headers: headers
   }
 
 -- get table header to create or delete table
-table_opts = (opts) =>
-  opts.table_name = opts\gsub("^/*", "")
-  auth.sharedkeylite(opts)
+table_opts = (opts) ->
+  sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  autho = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-  headers = {
-    ["Authorization"]: autho,
-    ["x-ms-date"]: opts.date,
-    ["Accept"]: "application/json;odata=nometadata",
-    ["x-ms-version"]: "2016-05-31"
-  }
-
+  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
+  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date })
   headers["Content-Type"] = "application/json" unless (opts.method == "GET" or opts.method == "DELETE")
 
   {
@@ -169,6 +152,28 @@ opts_yearly = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, years=1, ts
 
   rst
 
+create_table = (opts) ->
+  tableName = opts.table_name
+  opts.table_name = "Tables"
+  opts.method = "POST"
+  opts.url = ""
+  opts.headers = nil
+  topts = table_opts(opts)
+  topts.body = to_json({TableName: tableName})
+  http.request(topts)
+
+-- make azure storage request
+request = (opts, createTableIfNotExists=false) ->
+  -- log.error(opts)
+  oldOpts = table_clone(opts)
+  res = http.request(opts)
+
+  if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
+    res = create_table(table_clone(opts))
+    return request(oldOpts) if (res and res.code == 201)
+
+  res
+
 { :item_create, :item_retrieve, :item_update, :item_delete, :item_list, :table_opts
-  :opts_name, :opts_daily, :opts_monthly, :opts_yearly
+  :opts_name, :opts_daily, :opts_monthly, :opts_yearly, :request
 }

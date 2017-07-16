@@ -6,14 +6,14 @@ local requestbuilder = require("moonship.requestbuilder")
 local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local azure_storage = os.getenv("AZURE_STORAGE") or ""
 local app_path = os.getenv("MOONSHIP_APP_PATH")
 local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
+local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local app_env = os.getenv("MOONSHIP_APP_ENV") or "prd"
-local string_split, table_clone
-string_split, table_clone = util.string_split, util.table_clone
+local string_split, table_clone, string_connection_parse
+string_split, table_clone, string_connection_parse = util.string_split, util.table_clone, util.string_connection_parse
 local insert
 insert = table.insert
 local env_id
@@ -112,17 +112,7 @@ do
         end
       end
       newOpts.app_env_id = env_id(newOpts.app_env)
-      local az = string_split(azure_storage or "", ";")
-      local azure = { }
-      for _, d in ipairs(az) do
-        local firstEq = k:find("=")
-        if (firstEq) then
-          local k = d:substr(1, firstEq)
-          local v = d:substr(firstEq + 1)
-          azure[k] = v
-        end
-      end
-      newOpts["azure"] = azure
+      newOpts["azure"] = string_connection_parse(azure_storage or "")
       self.__data = newOpts
     end,
     __base = _base_0,

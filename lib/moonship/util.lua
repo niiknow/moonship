@@ -5,7 +5,31 @@ do
   local _obj_0 = table
   concat, insert, sort = _obj_0.concat, _obj_0.insert, _obj_0.sort
 end
-local table_pairsByKeys, trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, applyDefaults, table_extend, table_clone
+local char
+char = string.char
+local random, randomseed
+do
+  local _obj_0 = math
+  random, randomseed = _obj_0.random, _obj_0.randomseed
+end
+local charset = { }
+for i = 48, 57 do
+  insert(charset, char(i))
+end
+for i = 65, 90 do
+  insert(charset, char(i))
+end
+for i = 97, 122 do
+  insert(charset, char(i))
+end
+local string_random, table_pairsByKeys, trim, path_sanitize, url_unescape, url_escape, url_parse, url_default_port, url_build, slugify, string_split, json_encodable, from_json, to_json, query_string_encode, applyDefaults, table_extend, table_clone, string_connection_parse
+string_random = function(length)
+  randomseed(os.time())
+  if length > 0 then
+    return string_random(length - 1) .. charset[random(1, #charset)]
+  end
+  return ""
+end
 table_pairsByKeys = function(t, f)
   local a = { }
   for n in pairs(t) do
@@ -199,6 +223,25 @@ table_clone = function(t, deep)
   end
   return ret
 end
+string_connection_parse = function(str, fieldSep, valSep)
+  if fieldSep == nil then
+    fieldSep = ";"
+  end
+  if valSep == nil then
+    valSep = "="
+  end
+  local fields = string_split(str or "", ";")
+  local rst = { }
+  for _, d in ipairs(fields) do
+    local firstEq = d:find(valSep)
+    if (firstEq) then
+      local k = d:sub(1, firstEq - 1)
+      local v = d:sub(firstEq + 1)
+      rst[k] = v
+    end
+  end
+  return rst
+end
 return {
   url_escape = url_escape,
   url_unescape = url_unescape,
@@ -208,7 +251,6 @@ return {
   trim = trim,
   path_sanitize = path_sanitize,
   slugify = slugify,
-  string_split = string_split,
   table_sort_keys = table_sort_keys,
   json_encodable = json_encodable,
   from_json = from_json,
@@ -217,5 +259,8 @@ return {
   table_extend = table_extend,
   table_pairsByKeys = table_pairsByKeys,
   query_string_encode = query_string_encode,
-  applyDefaults = applyDefaults
+  applyDefaults = applyDefaults,
+  string_split = string_split,
+  string_connection_parse = string_connection_parse,
+  string_random = string_random
 }
