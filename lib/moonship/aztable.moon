@@ -22,7 +22,7 @@ opts_name = (opts={ :table_name, :tenant, :pk, :prefix }) ->
 
   if (opts.tenant)
     opts.tenant = string.lower(opts.tenant)
-    opts.prefix = "#{opts.tenant}E#{conf.app_env_id}"
+    opts.prefix = "#{opts.tenant}#{conf.app_env}"
 
     -- only set if has not set
     if (opts.table == nil)
@@ -151,11 +151,16 @@ create_table = (opts) ->
   http.request(topts)
 
 -- make azure storage request
-request = (opts, createTableIfNotExists=false) ->
+request = (opts, createTableIfNotExists=false, retry=2) ->
   --log.error(opts)
   oldOpts = table_clone(opts)
   res = http.request(opts)
   --log.error(res)
+
+  -- exponential retry
+  if (retry < 10 and res and res.code >= 500 and res.body and res.body\find("retry"))
+    ngx.sleep(retry)
+    res = request(oldOpts, createTableIfNotExists, retry * 2)
 
   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
     -- log.error res

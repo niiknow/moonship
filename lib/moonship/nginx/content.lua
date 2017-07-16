@@ -8,6 +8,8 @@ local crypto = require("moonship.crypto")
 local hmacauth = require("moonship.hmacauth")
 local http = require("moonship.http")
 local oauth1 = require("moonship.oauth1")
+local asynclogger = require("moonship.asynclogger")
+local alog = asynclogger()
 local table_clone
 table_clone = util.table_clone
 local opts = {
@@ -23,18 +25,19 @@ local opts = {
   }
 }
 local ngin = engine(opts)
-local rst = ngin:engage()
-if rst then
-  ngx.status = rst.code
-  if (rst.headers) then
-    for k, v in ipairs(rst.headers) do
-      ngx.header[k] = v
-    end
+local rst = ngin:engage() or {
+  code = 500,
+  req = { }
+}
+rst.req["end"] = os.time()
+alog.log(rst)
+ngx.status = rst.code
+if (rst.headers) then
+  for k, v in pairs(rst.headers) do
+    ngx.header[k] = v
   end
-  if (rst.body) then
-    ngx.say(rst.body)
-  end
-  return ngx.exit(rst.code)
 end
-ngx.status = 500
-return ngx.exit(500)
+if (rst.body) then
+  ngx.say(rst.body)
+end
+return ngx.exit(rst.code)

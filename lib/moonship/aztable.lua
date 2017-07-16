@@ -25,7 +25,7 @@ opts_name = function(opts)
   opts.account_name = conf.azure.AccountName
   if (opts.tenant) then
     opts.tenant = string.lower(opts.tenant)
-    opts.prefix = tostring(opts.tenant) .. "E" .. tostring(conf.app_env_id)
+    opts.prefix = tostring(opts.tenant) .. tostring(conf.app_env)
     if (opts.table == nil) then
       opts.table = string.lower(opts.table_name)
       opts.table_name = tostring(opts.prefix) .. tostring(opts.table)
@@ -265,12 +265,19 @@ create_table = function(opts)
   })
   return http.request(topts)
 end
-request = function(opts, createTableIfNotExists)
+request = function(opts, createTableIfNotExists, retry)
   if createTableIfNotExists == nil then
     createTableIfNotExists = false
   end
+  if retry == nil then
+    retry = 2
+  end
   local oldOpts = table_clone(opts)
   local res = http.request(opts)
+  if (retry < 10 and res and res.code >= 500 and res.body and res.body:find("retry")) then
+    ngx.sleep(retry)
+    res = request(oldOpts, createTableIfNotExists, retry * 2)
+  end
   if (createTableIfNotExists and res and res.body and res.body:find("TableNotFound")) then
     res = create_table(table_clone(opts))
     if (res and res.code == 201) then

@@ -11,30 +11,13 @@ local app_path = os.getenv("MOONSHIP_APP_PATH")
 local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
 local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
-local app_env = os.getenv("MOONSHIP_APP_ENV") or "prd"
+local app_env = os.getenv("MOONSHIP_APP_ENV") or "PRD"
 local string_split, table_clone, string_connection_parse
 string_split, table_clone, string_connection_parse = util.string_split, util.table_clone, util.string_connection_parse
 local insert
 insert = table.insert
-local env_id
-env_id = function(env)
-  if env == nil then
-    env = "prd"
-  end
-  local _exp_0 = type(env)
-  if "dev" == _exp_0 then
-    return 79
-  elseif "tst" == _exp_0 then
-    return 77
-  elseif "uat" == _exp_0 then
-    return 75
-  elseif "stg" == _exp_0 then
-    return 73
-  elseif "prd" == _exp_0 then
-    return 71
-  end
-  return 79
-end
+local upper
+upper = string.upper
 local build_requires
 build_requires = function(opts)
   return function(modname)
@@ -99,7 +82,7 @@ do
         plugins = { }
       }
       util.applyDefaults(newOpts, defaultOpts)
-      newOpts.app_env = newOpts.app_env or "prd"
+      newOpts.app_env = upper(newOpts.app_env or "PRD")
       newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
       newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
       local req = newOpts.requestbuilder:build()
@@ -111,7 +94,6 @@ do
           return _fn_0(_base_1, ...)
         end
       end
-      newOpts.app_env_id = env_id(newOpts.app_env)
       newOpts["azure"] = string_connection_parse(azure_storage or "")
       self.__data = newOpts
     end,

@@ -32,6 +32,7 @@ class Engine
 
     opts.plugins["request"] = req if req
     req = opts.plugins["request"]
+    req.start = os.time()
 
     -- create storage and cache if not exists
     unless opts.plugins["storage"]

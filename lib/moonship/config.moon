@@ -14,26 +14,11 @@ app_path              = os.getenv("MOONSHIP_APP_PATH")
 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
-app_env               = os.getenv("MOONSHIP_APP_ENV") or "prd"
+app_env               = os.getenv("MOONSHIP_APP_ENV") or "PRD"
 
 import string_split, table_clone, string_connection_parse from util
 import insert from table
-
-env_id = (env="prd") ->
-  switch type env
-    when "dev"
-      return 79
-    when "tst"
-      return 77
-    when "uat"
-      return 75
-    when "stg"
-      return 73
-    when "prd"
-      return 71
-
-  -- default to dev
-  return 79
+import upper from string
 
 build_requires = (opts) ->
   (modname) ->
@@ -79,13 +64,12 @@ class Config
     }
 
     util.applyDefaults(newOpts, defaultOpts)
-    newOpts.app_env = newOpts.app_env or "prd"
+    newOpts.app_env = upper(newOpts.app_env or "PRD")
     newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
     req = newOpts.requestbuilder\build()
     newOpts.plugins["request"] = req
     newOpts.plugins["log"] = req\log
-    newOpts.app_env_id = env_id(newOpts.app_env)
 
     -- parsing azure storage connection string
     newOpts["azure"] = string_connection_parse(azure_storage or "")

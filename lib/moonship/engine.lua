@@ -29,6 +29,7 @@ do
         opts.plugins["request"] = req
       end
       req = opts.plugins["request"]
+      req.start = os.time()
       if not (opts.plugins["storage"]) then
         opts.plugins["storage"] = Storage(opts, "storage")
       end

@@ -9,6 +9,8 @@ crypto            = require "moonship.crypto"
 hmacauth          = require "moonship.hmacauth"
 http              = require "moonship.http"
 oauth1            = require "moonship.oauth1"
+asynclogger       = require "moonship.asynclogger"
+alog = asynclogger()
 
 import table_clone from util
 
@@ -26,21 +28,22 @@ opts = {
 }
 ngin = engine opts
 
-rst = ngin\engage()
+rst = ngin\engage() or { code: 500, req: {} }
 
-if rst
-  ngx.status = rst.code
+rst.req.end = os.time()
+alog.log(rst)
 
-  -- send headers
-  if (rst.headers)
-    for k, v in ipairs rst.headers do
-      ngx.header[k] = v
+-- send status
+ngx.status = rst.code
 
-  ngx.say rst.body if (rst.body)
+-- send headers
+if (rst.headers)
+  for k, v in pairs rst.headers do
+    ngx.header[k] = v
 
-  -- log request
+-- send body
+ngx.say rst.body if (rst.body)
 
-  return ngx.exit(rst.code)
+-- make clean exit
+ngx.exit(rst.code)
 
-ngx.status = 500
-ngx.exit(500)
