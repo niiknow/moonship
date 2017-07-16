@@ -11,17 +11,47 @@ import to_json, applyDefaults, trim, table_clone from util
 import lower from string
 
 local *
-get_headers = (headers) ->
-  applyDefaults(headers, {
+
+-- generate multitenant opts
+opts_name = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }) ->
+  if (opts.tenant)
+    opts.tenant = lower(opts.tenant)
+    opts.table = lower(opts.table_name)
+    opts.prefix = "#{opts.tenant}E#{opts.env_id}"
+    opts.table_name = "#{opts.prefix}#{opts.table}"
+
+item_headers = (opts, method="GET") ->
+  opts_name(opts)
+  sharedkeylite(opts)
+  hdrs = {
+    ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
+    ["x-ms-date"]: opts.date,
     ["Accept"]: "application/json;odata=nometadata",
     ["x-ms-version"]: "2016-05-31"
-  })
+  }
+
+  hdrs["Content-Type"] = "application/json" if method == "PUT" or method == "POST" or method == "MERGE"
+  hdrs["If-Match"] = "*" if (method == "DELETE")
+
+  hdrs
+
+-- get table header to create or delete table
+table_opts = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="GET") ->
+  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+  headers = item_headers(opts, method)
+
+  -- remove item headers
+  headers["If-Match"] = nil if method == "DELETE"
+
+  {
+    method: method,
+    url: url,
+    headers: headers
+  }
 
 -- list items
 item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter, :top, :select }) ->
-  sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
   qs = ""
   qs = "#{qs}&$filter=#{query.filter}" if query.filter
   qs = "#{qs}&$top=#{query.top}" if query.top
@@ -29,7 +59,7 @@ item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter,
   qs = trim(qs, "&")
   full_path = url
   full_path = "#{url}?#{qs}" if qs
-  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date})
+  headers = item_headers(opts, "GET")
 
   {
     method: 'GET',
@@ -39,13 +69,11 @@ item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter,
 
 -- create an item
 item_create = (opts={ :account_name, :account_key, :table_name }) ->
-  sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["Content-Type"]: "application/json"})
+  headers = item_headers(opts, "POST")
 
   {
-    method: 'POST',
+    method: "POST",
     url: url,
     headers: headers
   }
@@ -54,59 +82,14 @@ item_create = (opts={ :account_name, :account_key, :table_name }) ->
 item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="PUT") ->
   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
   opts.table_name = table
-  sharedkeylite(opts)
-  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["Content-Type"]: "application/json"})
-
-  {
-    method: method,
-    url: url,
-    headers: headers
-  }
+  table_opts(opts, method)
 
 -- retrieve an item
 item_retrieve = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
 
 -- delete an item
-item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
-  table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
-  opts.table_name = table
-  sharedkeylite(opts)
-  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["If-Match"]: "*"})
-
-  {
-    method: "DELETE",
-    url: url,
-    headers: headers
-  }
-
--- get table header to create or delete table
-table_opts = (opts) ->
-  sharedkeylite(opts)
-  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-  Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-  headers = get_headers({:Authorization, ["x-ms-date"]: opts.date })
-  headers["Content-Type"] = "application/json" unless (opts.method == "GET" or opts.method == "DELETE")
-
-  {
-    method: opts.method,
-    url: url,
-    headers: headers
-  }
-
--- generate multitenant opts
-opts_name = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }) ->
-  opts.pk = opts.pk or "1default"
-  opts.tenant = lower(opts.tenant or "a")
-  opts.table = lower(opts.table_name)
-  opts.prefix = "#{opts.tenant}E#{opts.env_id}"
-
-  -- strip invalid chars
-  opts.table_name = "#{opts.prefix}#{opts.table}"
+item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) -> item_update(opts, "DELETE")
 
 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
   newopts = util.table_clone(opts)
@@ -152,10 +135,9 @@ opts_yearly = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, years=1, ts
 create_table = (opts) ->
   tableName = opts.table_name
   opts.table_name = "Tables"
-  opts.method = "POST"
   opts.url = ""
   opts.headers = nil
-  topts = table_opts(opts)
+  topts = table_opts(opts, "POST")
   topts.body = to_json({TableName: tableName})
   http.request(topts)
 
@@ -164,8 +146,10 @@ request = (opts, createTableIfNotExists=false) ->
   -- log.error(opts)
   oldOpts = table_clone(opts)
   res = http.request(opts)
+  -- log.error(res)
 
   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
+    -- log.error res
     res = create_table(table_clone(opts))
     return request(oldOpts) if (res and res.code == 201)
 

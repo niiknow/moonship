@@ -82,7 +82,7 @@ do
       end
     end,
     get = function(self, aws)
-      local req = self.options.requestbuilder:build()
+      local req = self.options.plugins["request"]
       self.options.sandbox_env.request = req
       local url = util.path_sanitize(tostring(req.host) .. "/" .. tostring(req.path))
       local valHolder = self.codeCache:get()

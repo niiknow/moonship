@@ -25,11 +25,13 @@ do
     engage = function(self, req)
       local opts = self.options:get()
       if req then
-        opts.requestbuilder:set(req)
+        opts.plugins["request"] = req
       end
+      req = opts.plugins["request"]
       local rst, err = self.codeCache:get(opts)
       if err then
         return {
+          req = req,
           error = err,
           code = 500,
           status = "500 Engine.engage error",
@@ -38,11 +40,14 @@ do
       end
       if not (rst) then
         return {
+          req = req,
           code = 404,
           headers = { }
         }
       end
-      return self:handleResponse(rst)
+      self:handleResponse(rst)
+      rst.req = req
+      return rst
     end
   }
   _base_0.__index = _base_0

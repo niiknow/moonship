@@ -123,7 +123,7 @@ class CodeCacher
       os.remove(valHolder.localFullPath)
 
   get: (aws) =>
-    req = @options.requestbuilder\build()
+    req = @options.plugins["request"]
     @options.sandbox_env.request = req
     url = util.path_sanitize("#{req.host}/#{req.path}")
     valHolder = @codeCache\get()

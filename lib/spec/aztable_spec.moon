@@ -24,8 +24,7 @@ describe "moonship.aztable", ->
       -- delete table
       assert.same 200, res.code
       newOpts.table_name = "Tables('#{opts.table_name}')"
-      newOpts.method = "DELETE"
-      newOpts = aztable.table_opts(newOpts)
+      newOpts = aztable.table_opts(newOpts, "DELETE")
       res = aztable.request(newOpts)
       -- print to_json(res)
       assert.same 204, res.code

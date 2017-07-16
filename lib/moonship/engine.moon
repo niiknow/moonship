@@ -29,13 +29,15 @@ class Engine
   engage: (req) =>
     opts = @options\get()
 
-    opts.requestbuilder\set(req) if req
-
+    opts.plugins["request"] = req if req
+    req = opts.plugins["request"]
     rst, err = @codeCache\get(opts)
 
-    return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
-    return { code: 404, headers: {}  } unless rst
+    return { :req, error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
+    return { :req, code: 404, headers: {}  } unless rst
 
     @handleResponse(rst)
+    rst.req = req
+    rst
 
 Engine

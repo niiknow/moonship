@@ -11,12 +11,67 @@ local to_json, applyDefaults, trim, table_clone
 to_json, applyDefaults, trim, table_clone = util.to_json, util.applyDefaults, util.trim, util.table_clone
 local lower
 lower = string.lower
-local get_headers, item_list, item_create, item_update, item_retrieve, item_delete, table_opts, opts_name, generate_opts, opts_daily, opts_monthly, opts_yearly, create_table, request
-get_headers = function(headers)
-  return applyDefaults(headers, {
+local opts_name, item_headers, table_opts, item_list, item_create, item_update, item_retrieve, item_delete, generate_opts, opts_daily, opts_monthly, opts_yearly, create_table, request
+opts_name = function(opts)
+  if opts == nil then
+    opts = {
+      table_name = table_name,
+      tenant = tenant,
+      env_id = env_id,
+      pk = pk,
+      prefix = prefix
+    }
+  end
+  if (opts.tenant) then
+    opts.tenant = lower(opts.tenant)
+    opts.table = lower(opts.table_name)
+    opts.prefix = tostring(opts.tenant) .. "E" .. tostring(opts.env_id)
+    opts.table_name = tostring(opts.prefix) .. tostring(opts.table)
+  end
+end
+item_headers = function(opts, method)
+  if method == nil then
+    method = "GET"
+  end
+  opts_name(opts)
+  sharedkeylite(opts)
+  local hdrs = {
+    ["Authorization"] = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig),
+    ["x-ms-date"] = opts.date,
     ["Accept"] = "application/json;odata=nometadata",
     ["x-ms-version"] = "2016-05-31"
-  })
+  }
+  if method == "PUT" or method == "POST" or method == "MERGE" then
+    hdrs["Content-Type"] = "application/json"
+  end
+  if (method == "DELETE") then
+    hdrs["If-Match"] = "*"
+  end
+  return hdrs
+end
+table_opts = function(opts, method)
+  if opts == nil then
+    opts = {
+      account_name = account_name,
+      account_key = account_key,
+      table_name = table_name,
+      pk = pk,
+      rk = rk
+    }
+  end
+  if method == nil then
+    method = "GET"
+  end
+  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
+  local headers = item_headers(opts, method)
+  if method == "DELETE" then
+    headers["If-Match"] = nil
+  end
+  return {
+    method = method,
+    url = url,
+    headers = headers
+  }
 end
 item_list = function(opts, query)
   if opts == nil then
@@ -33,9 +88,7 @@ item_list = function(opts, query)
       select = select
     }
   end
-  sharedkeylite(opts)
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
-  local Authorization = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
   local qs = ""
   if query.filter then
     qs = tostring(qs) .. "&$filter=" .. tostring(query.filter)
@@ -51,10 +104,7 @@ item_list = function(opts, query)
   if qs then
     full_path = tostring(url) .. "?" .. tostring(qs)
   end
-  local headers = get_headers({
-    Authorization = Authorization,
-    ["x-ms-date"] = opts.date
-  })
+  local headers = item_headers(opts, "GET")
   return {
     method = 'GET',
     url = full_path,
@@ -69,16 +119,10 @@ item_create = function(opts)
       table_name = table_name
     }
   end
-  sharedkeylite(opts)
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
-  local Authorization = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
-  local headers = get_headers({
-    Authorization = Authorization,
-    ["x-ms-date"] = opts.date,
-    ["Content-Type"] = "application/json"
-  })
+  local headers = item_headers(opts, "POST")
   return {
-    method = 'POST',
+    method = "POST",
     url = url,
     headers = headers
   }
@@ -98,19 +142,7 @@ item_update = function(opts, method)
   end
   local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(opts.pk) .. "',RowKey='" .. tostring(opts.rk) .. "')"
   opts.table_name = table
-  sharedkeylite(opts)
-  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
-  local Authorization = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
-  local headers = get_headers({
-    Authorization = Authorization,
-    ["x-ms-date"] = opts.date,
-    ["Content-Type"] = "application/json"
-  })
-  return {
-    method = method,
-    url = url,
-    headers = headers
-  }
+  return table_opts(opts, method)
 end
 item_retrieve = function(opts)
   if opts == nil then
@@ -137,54 +169,7 @@ item_delete = function(opts)
       rk = rk
     }
   end
-  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(opts.pk) .. "',RowKey='" .. tostring(opts.rk) .. "')"
-  opts.table_name = table
-  sharedkeylite(opts)
-  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
-  local Authorization = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
-  local headers = get_headers({
-    Authorization = Authorization,
-    ["x-ms-date"] = opts.date,
-    ["If-Match"] = "*"
-  })
-  return {
-    method = "DELETE",
-    url = url,
-    headers = headers
-  }
-end
-table_opts = function(opts)
-  sharedkeylite(opts)
-  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
-  local Authorization = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
-  local headers = get_headers({
-    Authorization = Authorization,
-    ["x-ms-date"] = opts.date
-  })
-  if not ((opts.method == "GET" or opts.method == "DELETE")) then
-    headers["Content-Type"] = "application/json"
-  end
-  return {
-    method = opts.method,
-    url = url,
-    headers = headers
-  }
-end
-opts_name = function(opts)
-  if opts == nil then
-    opts = {
-      table_name = table_name,
-      tenant = tenant,
-      env_id = env_id,
-      pk = pk,
-      prefix = prefix
-    }
-  end
-  opts.pk = opts.pk or "1default"
-  opts.tenant = lower(opts.tenant or "a")
-  opts.table = lower(opts.table_name)
-  opts.prefix = tostring(opts.tenant) .. "E" .. tostring(opts.env_id)
-  opts.table_name = tostring(opts.prefix) .. tostring(opts.table)
+  return item_update(opts, "DELETE")
 end
 generate_opts = function(opts, format, ts)
   if opts == nil then
@@ -281,10 +266,9 @@ end
 create_table = function(opts)
   local tableName = opts.table_name
   opts.table_name = "Tables"
-  opts.method = "POST"
   opts.url = ""
   opts.headers = nil
-  local topts = table_opts(opts)
+  local topts = table_opts(opts, "POST")
   topts.body = to_json({
     TableName = tableName
   })

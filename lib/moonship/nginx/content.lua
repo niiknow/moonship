@@ -25,7 +25,6 @@ local opts = {
 local ngin = engine(opts)
 local rst = ngin:engage()
 if rst then
-  log.debug("hi")
   ngx.status = rst.code
   if (rst.headers) then
     for k, v in ipairs(rst.headers) do
@@ -37,3 +36,5 @@ if rst then
   end
   return ngx.exit(rst.code)
 end
+ngx.status = 500
+return ngx.exit(500)

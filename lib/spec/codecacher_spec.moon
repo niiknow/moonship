@@ -20,13 +20,10 @@ describe "moonship.codecacher", ->
     opts = {
       app_path: plpath.abs("./t"),
       remote_path: "https://raw.githubusercontent.com/niiknow/moonship/master/remote",
-      requestbuilder: require("moonship.requestbuilder")(),
-      sandbox_env: {}
+      sandbox_env: {},
+      plugins: {request: { host: "localhost", path: "/hello" }}
     }
-    opts.requestbuilder\set({
-      host: "localhost",
-      path: "/hello"
-    })
+
     cc = codecacher.CodeCacher(opts)
     res = cc\get()
 

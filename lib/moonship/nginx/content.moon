@@ -29,7 +29,6 @@ ngin = engine opts
 rst = ngin\engage()
 
 if rst
-  log.debug "hi"
   ngx.status = rst.code
 
   -- send headers
@@ -41,4 +40,7 @@ if rst
 
   -- log request
 
-  ngx.exit(rst.code)
+  return ngx.exit(rst.code)
+
+ngx.status = 500
+ngx.exit(500)

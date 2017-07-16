@@ -212,121 +212,104 @@
     3 import lower from string
 
     3 local *
-    3 get_headers = (headers) ->
-****0   applyDefaults(headers, {
-    3     ["Accept"]: "application/json;odata=nometadata",
+
+      -- generate multitenant opts
+    3 opts_name = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }) ->
+****0   if (opts.tenant)
+****0     opts.tenant = lower(opts.tenant)
+****0     opts.table = lower(opts.table_name)
+****0     opts.prefix = "#{opts.tenant}E#{opts.env_id}"
+****0     opts.table_name = "#{opts.prefix}#{opts.table}"
+
+****0 item_headers = (opts, method="GET") ->
+****0   opts_name(opts)
+    3   sharedkeylite(opts)
+****0   hdrs = {
+****0     ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
+****0     ["x-ms-date"]: opts.date,
+****0     ["Accept"]: "application/json;odata=nometadata",
 ****0     ["x-ms-version"]: "2016-05-31"
-        })
+    6   }
+
+    3   hdrs["Content-Type"] = "application/json" if method == "PUT" or method == "POST" or method == "MERGE"
+****0   hdrs["If-Match"] = "*" if (method == "DELETE")
+
+    3   hdrs
+
+      -- get table header to create or delete table
+    3 table_opts = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="GET") ->
+    3   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+****0   headers = item_headers(opts, method)
+
+        -- remove item headers
+    3   headers["If-Match"] = nil if method == "DELETE"
+
+        {
+    3     method: method,
+    1     url: url,
+****0     headers: headers
+    3   }
 
       -- list items
-****0 item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter, :top, :select }) ->
-    1   sharedkeylite(opts)
+    2 item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter, :top, :select }) ->
 ****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-****0   Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
 ****0   qs = ""
 ****0   qs = "#{qs}&$filter=#{query.filter}" if query.filter
 ****0   qs = "#{qs}&$top=#{query.top}" if query.top
 ****0   qs = "#{qs}&$select=#{query.select}" if query.select
-    1   qs = trim(qs, "&")
-    1   full_path = url
-    1   full_path = "#{url}?#{qs}" if qs
-    1   headers = get_headers({:Authorization, ["x-ms-date"]: opts.date})
+****0   qs = trim(qs, "&")
+****0   full_path = url
+****0   full_path = "#{url}?#{qs}" if qs
+    2   headers = item_headers(opts, "GET")
 
-    1   {
-****0     method: 'GET',
-    1     url: full_path,
-    1     headers: headers
+        {
+    2     method: 'GET',
+    2     url: full_path,
+    2     headers: headers
     1   }
 
       -- create an item
-****0 item_create = (opts={ :account_name, :account_key, :table_name }) ->
-****0   sharedkeylite(opts)
-    1   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-****0   Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-****0   headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["Content-Type"]: "application/json"})
+    2 item_create = (opts={ :account_name, :account_key, :table_name }) ->
+    2   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+    2   headers = item_headers(opts, "POST")
 
-    1   {
-****0     method: 'POST',
-    2     url: url,
-    1     headers: headers
-    1   }
+    3   {
+****0     method: "POST",
+    1     url: url,
+****0     headers: headers
+        }
 
       -- update an item, method can be MERGE to upsert
-    2 item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="PUT") ->
-    1   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
+****0 item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="PUT") ->
+****0   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
     1   opts.table_name = table
-****0   sharedkeylite(opts)
-    1   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-****0   Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-    1   headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["Content-Type"]: "application/json"})
-
-    1   {
-    3     method: method,
-****0     url: url,
-****0     headers: headers
-        }
+    1   table_opts(opts, method)
 
       -- retrieve an item
-****0 item_retrieve = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
-****0   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
+    1 item_retrieve = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
+    1   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
 
       -- delete an item
-****0 item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
-****0   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
-****0   opts.table_name = table
-****0   sharedkeylite(opts)
-****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-****0   Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-****0   headers = get_headers({:Authorization, ["x-ms-date"]: opts.date, ["If-Match"]: "*"})
-
-        {
-****0     method: "DELETE",
-****0     url: url,
-****0     headers: headers
-    3   }
-
-      -- get table header to create or delete table
-****0 table_opts = (opts) ->
-****0   sharedkeylite(opts)
-****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-****0   Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
-****0   headers = get_headers({:Authorization, ["x-ms-date"]: opts.date })
-****0   headers["Content-Type"] = "application/json" unless (opts.method == "GET" or opts.method == "DELETE")
-
-        {
-****0     method: opts.method,
-****0     url: url,
-****0     headers: headers
-        }
-
-      -- generate multitenant opts
-****0 opts_name = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }) ->
-****0   opts.pk = opts.pk or "1default"
-****0   opts.tenant = lower(opts.tenant or "a")
-****0   opts.table = lower(opts.table_name)
-****0   opts.prefix = "#{opts.tenant}E#{opts.env_id}"
-
-        -- strip invalid chars
-****0   opts.table_name = "#{opts.prefix}#{opts.table}"
+    1 item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) -> item_update(opts, "DELETE")
 
 ****0 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
 ****0   newopts = util.table_clone(opts)
-****0   newopts.mt_table = newopts.table_name
+    1   newopts.mt_table = newopts.table_name
 
         -- trim ending number and replace with dt
-****0   newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
-        newopts
+    1   newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
+    1   newopts
 
       -- generate array of daily opts
-****0 opts_daily = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, days=1, ts=os.time()) ->
-****0   rst = {}
+    1 opts_daily = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, days=1, ts=os.time()) ->
+    1   rst = {}
 ****0   multiplier = days and 1 or -1
 ****0   new_ts = ts
-****0   for i = 1, days
-****0     rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
+    1   for i = 1, days
+    1     rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
 ****0     new_ts = mydate.add_day(new_ts, days)
 
-        rst
+    1   rst
 
       -- generate array of monthly opts
 ****0 opts_monthly = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, months=1, ts=os.time()) ->
@@ -344,7 +327,7 @@
 ****0   rst = {}
 ****0   multiplier = days and 1 or -1
 ****0   new_ts = ts
-****0   for i = 1, days
+    3   for i = 1, days
 ****0     rst[#rst + 1] = generate_opts(opts, "%Y", new_ts)
 ****0     new_ts = mydate.add_year(new_ts, years)
 
@@ -353,24 +336,25 @@
 ****0 create_table = (opts) ->
 ****0   tableName = opts.table_name
 ****0   opts.table_name = "Tables"
-    3   opts.method = "POST"
 ****0   opts.url = ""
-    2   opts.headers = nil
-    2   topts = table_opts(opts)
-    2   topts.body = to_json({TableName: tableName})
-    4   http.request(topts)
+****0   opts.headers = nil
+****0   topts = table_opts(opts, "POST")
+****0   topts.body = to_json({TableName: tableName})
+****0   http.request(topts)
 
       -- make azure storage request
 ****0 request = (opts, createTableIfNotExists=false) ->
         -- log.error(opts)
-    1   oldOpts = table_clone(opts)
+****0   oldOpts = table_clone(opts)
 ****0   res = http.request(opts)
+        -- log.error(res)
 
-    2   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
-    2     res = create_table(table_clone(opts))
-    2     return request(oldOpts) if (res and res.code == 201)
+****0   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
+          -- log.error res
+****0     res = create_table(table_clone(opts))
+****0     return request(oldOpts) if (res and res.code == 201)
 
-    3   res
+        res
 
 ****0 { :item_create, :item_retrieve, :item_update, :item_delete, :item_list, :table_opts
 ****0   :opts_name, :opts_daily, :opts_monthly, :opts_yearly, :request
@@ -504,7 +488,7 @@
     1       os.remove(valHolder.localFullPath)
 
 ****0   get: (aws) =>
-    3     req = @options.requestbuilder\build()
+    3     req = @options.plugins["request"]
     6     @options.sandbox_env.request = req
 ****0     url = util.path_sanitize("#{req.host}/#{req.path}")
     3     valHolder = @codeCache\get()
@@ -784,16 +768,18 @@
 ****0   engage: (req) =>
     2     opts = @options\get()
 
-****0     opts.requestbuilder\set(req) if req
-
+    2     opts.plugins["request"] = req if req
+****0     req = opts.plugins["request"]
 ****0     rst, err = @codeCache\get(opts)
 
-****0     return { error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
-****0     return { code: 404, headers: {}  } unless rst
+****0     return { :req, error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
+****0     return { :req, code: 404, headers: {}  } unless rst
 
-    2     @handleResponse(rst)
+****0     @handleResponse(rst)
+****0     rst.req = req
+    2     rst
 
-      Engine
+    1 Engine
 
 ==============================================================================
 ./moonship/hmacauth.moon
@@ -1027,14 +1013,22 @@
     2   azure = {}
 ****0   req = {}
 ****0   table_name = "storage"
+****0   cache = {set: () -> , get: () -> }
 ****0   new: (opts, tableName="storage") =>
 ****0     req = opts.plugins.request
 ****0     azure = opts.azure
 ****0     table_name = tableName
+****0     if ngx
+****0       cache = ngx.shared["moonship#{tableName}"]
 
 ****0   get: (k) =>
+          -- check 1st lvl cache
+****0     realKey = "#{req.host}#{k}"
+****0     val = cache\get(realKey)
+****0     return val if val
 
 ****0     opts = azt.item_retrieve({
+****0       tenant: "a",
 ****0       table_name: table_name,
 ****0       account_key: azure.AccountKey,
 ****0       account_name: azure.AccountName,
@@ -1042,12 +1036,12 @@
 ****0       pk: req.host
           })
 
-****0     res = azt.request(opts, true)
+    2     res = azt.request(opts, true)
 ****0     return nil, "#{k} not found" unless res.body
 
 ****0     rst = from_json(res.body)
 ****0     if (table_name\find("cache"))
-****0       return nil, "#{k} not found" if (rst.ttlx <= os.time())
+****0       return nil, "#{k} not found" if (rst.ttlx < os.time())
 
           rst.v
 
@@ -1057,6 +1051,7 @@
 ****0     return nil, "value must be string" unless vt == "string"
 
 ****0     opts = azt.item_update({
+****0       tenant: "a",
 ****0       table_name: table_name,
 ****0       account_key: azure.AccountKey,
 ****0       account_name: azure.AccountName,
@@ -1065,14 +1060,19 @@
 ****0     }, "MERGE")
 ****0     ttlx = os.time() + ttl
 
-****0     opts.body = to_json({:v, :ttlx, RowKey: opts.rk, PartitionKey: opts.pk})
+****0     opts.body = to_json({:v, :ttlx, :ttl, RowKey: opts.rk, PartitionKey: opts.pk})
 ****0     res = azt.request(opts, true)
 
+****0     realKey = "#{req.host}#{k}"
+
+          -- short 2 seconds prevent trigger of backend ddos filter
+****0     cache\set(realKey, v, 2)
+
           -- return response
-    2     res
+          res
 
 
-    4 Storage
+      Storage
 
 ==============================================================================
 ./moonship/remoteresolver.moon
@@ -1156,14 +1156,14 @@
 ./moonship/requestbuilder.moon
 ==============================================================================
       -- build request plugins based on options
-    3 sandbox = require "moonship.sandbox"
-    3 util    = require "moonship.util"
+    2 sandbox = require "moonship.sandbox"
+    2 util    = require "moonship.util"
 
       class RequestBuilder
-    3   new: (opts={}) =>
+    2   new: (opts={}) =>
 ****0     @req = opts
 
-    6   build: (opts) =>
+    3   build: (opts) =>
 ****0     req_wrapper = {}
 ****0     if ngx
 ****0       ngx.req.read_body()
@@ -1184,21 +1184,21 @@
 ****0         user_agent: ""
             }
 ****0       req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
-    6       @req = req_wrapper
+    3       @req = req_wrapper
 
-    3     @req.logs = {}
+    2     @req.logs = {}
 ****0     @req
 
-    6   set: (req) =>
+    2   set: (req) =>
 ****0     @req = req
 
 ****0   log: (obj) =>
 ****0     if (type obj == "table")
 ****0       @req.logs[#@req.logs + 1] = util.to_json(obj)
           else
-    3       @req.logs[#@req.logs + 1] = tostring(t)
+    2       @req.logs[#@req.logs + 1] = tostring(t)
 
-    3 RequestBuilder
+    2 RequestBuilder
 
 ==============================================================================
 ./moonship/sandbox.moon
@@ -1264,7 +1264,7 @@
     4     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
 ****0     if t_name
    14       tbl = env[t_name]
-    1       env_t = src_env[t_name]
+****0       env_t = src_env[t_name]
 ****0       if tbl == nil and env_t
    14         tbl = {}
     6         env[t_name] = tbl
@@ -1633,14 +1633,14 @@
     6   for _, d in ipairs(fields) do
    10     firstEq = d\find(valSep)
 ****0     if (firstEq)
-   75       k = d\sub(1, firstEq - 1)
-  124       v = d\sub(firstEq + 1)
-   62       rst[k] = v
+   66       k = d\sub(1, firstEq - 1)
+  112       v = d\sub(firstEq + 1)
+   56       rst[k] = v
 
         rst
 
 ****0 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
-   13   :trim, :path_sanitize, :slugify, :table_sort_keys,
+   10   :trim, :path_sanitize, :slugify, :table_sort_keys,
    10   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
 ****0   :table_pairsByKeys, :query_string_encode, :applyDefaults,
 ****0   :string_split, :string_connection_parse, :string_random,
@@ -1654,22 +1654,22 @@ File                            Hits Missed Coverage
 ----------------------------------------------------
 ./moonship/awsauth.moon         37   18     67.27%
 ./moonship/azauth.moon          19   55     25.68%
-./moonship/aztable.moon         45   79     36.29%
+./moonship/aztable.moon         47   61     43.52%
 ./moonship/codecacher.moon      65   28     69.89%
 ./moonship/config.moon          52   22     70.27%
 ./moonship/crypto.moon          21   7      75.00%
 ./moonship/date.moon            4    15     21.05%
-./moonship/engine.moon          13   14     48.15%
+./moonship/engine.moon          15   16     48.39%
 ./moonship/hmacauth.moon        7    7      50.00%
 ./moonship/http.moon            15   10     60.00%
 ./moonship/httpsocket.moon      11   8      57.89%
 ./moonship/log.moon             5    12     29.41%
 ./moonship/oauth1.moon          32   8      80.00%
-./moonship/plugins/storage.moon 6    32     15.79%
+./moonship/plugins/storage.moon 5    41     10.87%
 ./moonship/remoteresolver.moon  28   14     66.67%
 ./moonship/requestbuilder.moon  9    25     26.47%
-./moonship/sandbox.moon         43   24     64.18%
+./moonship/sandbox.moon         42   25     62.69%
 ./moonship/url.moon             33   47     41.25%
 ./moonship/util.moon            70   42     62.50%
 ----------------------------------------------------
-Total                           515  467    52.44%
+Total                           517  461    52.86%

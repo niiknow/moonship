@@ -6,10 +6,16 @@ from_json, to_json = util.from_json, util.to_json
 local Storage
 do
   local _class_0
-  local azure, req, table_name
+  local azure, req, table_name, cache
   local _base_0 = {
     get = function(self, k)
+      local realKey = tostring(req.host) .. tostring(k)
+      local val = cache:get(realKey)
+      if val then
+        return val
+      end
       local opts = azt.item_retrieve({
+        tenant = "a",
         table_name = table_name,
         account_key = azure.AccountKey,
         account_name = azure.AccountName,
@@ -22,7 +28,7 @@ do
       end
       local rst = from_json(res.body)
       if (table_name:find("cache")) then
-        if (rst.ttlx <= os.time()) then
+        if (rst.ttlx < os.time()) then
           return nil, tostring(k) .. " not found"
         end
       end
@@ -37,6 +43,7 @@ do
         return nil, "value must be string"
       end
       local opts = azt.item_update({
+        tenant = "a",
         table_name = table_name,
         account_key = azure.AccountKey,
         account_name = azure.AccountName,
@@ -47,10 +54,13 @@ do
       opts.body = to_json({
         v = v,
         ttlx = ttlx,
+        ttl = ttl,
         RowKey = opts.rk,
         PartitionKey = opts.pk
       })
       local res = azt.request(opts, true)
+      local realKey = tostring(req.host) .. tostring(k)
+      cache:set(realKey, v, 2)
       return res
     end
   }
@@ -63,6 +73,9 @@ do
       req = opts.plugins.request
       azure = opts.azure
       table_name = tableName
+      if ngx then
+        cache = ngx.shared["moonship" .. tostring(tableName)]
+      end
     end,
     __base = _base_0,
     __name = "Storage"
@@ -79,6 +92,10 @@ do
   azure = { }
   req = { }
   table_name = "storage"
+  cache = {
+    set = function() end,
+    get = function() end
+  }
   Storage = _class_0
 end
 return Storage
