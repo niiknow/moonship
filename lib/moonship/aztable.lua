@@ -71,7 +71,10 @@ table_opts = function(opts, method)
   return {
     method = method,
     url = url,
-    headers = headers
+    headers = headers,
+    table_name = opts.table_name,
+    account_key = opts.account_key,
+    account_name = opts.account_name
   }
 end
 item_list = function(opts, query)
@@ -107,7 +110,10 @@ item_list = function(opts, query)
   return {
     method = 'GET',
     url = full_path,
-    headers = headers
+    headers = headers,
+    table_name = opts.table_name,
+    account_key = opts.account_key,
+    account_name = opts.account_name
   }
 end
 item_create = function(opts)
@@ -121,7 +127,10 @@ item_create = function(opts)
   return {
     method = "POST",
     url = url,
-    headers = headers
+    headers = headers,
+    table_name = opts.table_name,
+    account_key = opts.account_key,
+    account_name = opts.account_name
   }
 end
 item_update = function(opts, method)
@@ -135,9 +144,19 @@ item_update = function(opts, method)
   if method == nil then
     method = "PUT"
   end
+  opts_name(opts)
   local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(opts.pk) .. "',RowKey='" .. tostring(opts.rk) .. "')"
   opts.table_name = table
-  return table_opts(opts, method)
+  local headers = item_headers(opts, method)
+  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
+  return {
+    method = method,
+    url = url,
+    headers = headers,
+    table_name = opts.table_name,
+    account_key = opts.account_key,
+    account_name = opts.account_name
+  }
 end
 item_retrieve = function(opts)
   if opts == nil then
@@ -276,10 +295,13 @@ request = function(opts, createTableIfNotExists, retry)
   local res = http.request(opts)
   if (retry < 10 and res and res.code >= 500 and res.body and res.body:find("retry")) then
     ngx.sleep(retry)
-    res = request(oldOpts, createTableIfNotExists, retry * 2)
+    local oopts = table_clone(oldOpts)
+    res = request(oopts, createTableIfNotExists, retry * 2)
   end
   if (createTableIfNotExists and res and res.body and res.body:find("TableNotFound")) then
-    res = create_table(table_clone(opts))
+    local topts = table_clone(oldOpts)
+    topts.body = nil
+    res = create_table(topts)
     if (res and res.code == 201) then
       return request(oldOpts)
     end

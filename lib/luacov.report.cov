@@ -1,4 +1,74 @@
 ==============================================================================
+./moonship/asynclogger.moon
+==============================================================================
+      -- implement async or bulk logging
+
+    1 http    = require "moonship.http"
+    1 azt     = require "moonship.aztable"
+    1 util    = require "moonship.util"
+    1 log     = require "moonship.log"
+
+    1 import from_json, to_json from util
+
+****0 local *
+
+      -- number of items when flush
+        -- currently set to 1 until we get azure bulk to work
+    1 BUFFER_COUNT = 1
+
+      -- time between flush
+        -- currently set to very low until we get azure bulk to work
+    1 FLUSH_INTERVAL = 0.01
+
+    1 dolog = (v) =>
+    1   req = v.req
+    1   logs = req.logs
+    1   v.req = nil
+    2   req.logs= nil
+
+        -- replace illegal forward slash char
+    1   rk = "#{req.host} #{req.path}"\gsub("/", "$")
+    1   time = os.time()
+    1   btime = os.date("%Y%m%d%H%m%S",time)
+    1   rtime = 99999999999999 - btime
+    1   btime = os.date("%Y-%m-%d %H:%m:%S", time)
+    1   rand = math.random(10, 1000)
+    1   pk = "#{rtime}_#{btime} #{rand}"
+    1   btime = os.date("%Y%m", time)
+    1   table_name = "log#{btime}"
+
+    1   opts = azt.item_create({
+    2     tenant: "a",
+    2     table_name: table_name,
+    2     rk: rk,
+    1     pk: pk
+    1   }, "MERGE")
+
+    1   v.req = nil
+    1   v.RowKey = rk
+    1   v.PartitionKey = pk
+****0   v.host = req.host
+****0   v.path = req.path
+****0   v.start = req.start
+****0   v.end = req.end
+****0   v.time = v.end - v.start
+    1   v.req = to_json(req)
+****0   v.logs = to_json(logs)
+
+    2   opts.body = to_json(v)
+        -- log.error opts
+    1   azt.request(opts, true)
+
+    1 class AsyncLogger
+    1   dolog: dolog
+****0   log: (rsp) =>
+    1     if (ngx)
+    1       delay = math.random(10, 100)
+    1       ok, err = ngx.timer.at(delay / 1000, dolog, self, rsp)
+
+    1 AsyncLogger
+
+==============================================================================
 ./moonship/awsauth.moon
 ==============================================================================
       -- derived from https://github.com/paragasu/lua-resty-aws-auth
@@ -91,26 +161,26 @@
 ==============================================================================
 ./moonship/azauth.moon
 ==============================================================================
-    3 hmacauth         = require "moonship.hmacauth"
-    3 crypto           = require "moonship.crypto"
-    3 util             = require "moonship.util"
-    3 log              = require "moonship.log"
+    4 hmacauth         = require "moonship.hmacauth"
+    4 crypto           = require "moonship.crypto"
+    4 util             = require "moonship.util"
+    4 log              = require "moonship.log"
 
-    3 import url_parse, string_split, query_string_encode from util
-    3 import concat, sort from table
+    4 import url_parse, string_split, query_string_encode from util
+    4 import concat, sort from table
 ****0 import base64_decode, base64_encode from crypto
 
-    3 local *
+    4 local *
 
-    3 date_utc = (date=os.time()) -> os.date("!%a, %d %b %Y %H:%M:%S GMT", date)
+    4 date_utc = (date=os.time()) -> os.date("!%a, %d %b %Y %H:%M:%S GMT", date)
 
-    3 getHeader = (headers, name, additionalHeaders={}) -> headers[name] or additionalHeaders[name] or ""
+    4 getHeader = (headers, name, additionalHeaders={}) -> headers[name] or additionalHeaders[name] or ""
 
-    3 sharedkeylite = (opts = { :account_name, :account_key, :table_name }) ->
+    4 sharedkeylite = (opts = { :account_name, :account_key, :table_name }) ->
 ****0   opts.time = opts.time or os.time()
 ****0   opts.date = opts.date or date_utc(opts.time)
-    3   opts.sig = hmacauth.sign(base64_decode(opts.account_key), "#{opts.date}\n/#{opts.account_name}/#{opts.table_name}")
-    3   opts
+    4   opts.sig = hmacauth.sign(base64_decode(opts.account_key), "#{opts.date}\n/#{opts.account_name}/#{opts.table_name}")
+    4   opts
 
 ****0 canonicalizedResource = (opts) ->
 ****0   parsedUrl = opts.parsedUrl
@@ -118,18 +188,18 @@
 ****0   qs = query_string_encode(query, "\n", "", (v) -> v)
 
 ****0   params = {
-    3     "/#{opts.account_name}#{parsedUrl.path}",
+    4     "/#{opts.account_name}#{parsedUrl.path}",
           qs
         }
 
 ****0   concat(params, "\n")
 
 ****0 canonicalizedHeaders = (headers) ->
-    3   rst = {}
-    6   keys = {}
+    4   rst = {}
+    8   keys = {}
 
         -- sort
-    3   for k in pairs(headers) do keys[#keys+1] = tostring(k)
+    4   for k in pairs(headers) do keys[#keys+1] = tostring(k)
 ****0   sort(keys)
 
 ****0   for _, k in ipairs(keys) do
@@ -141,7 +211,7 @@
 
 
 ****0 stringForTable = (opts, additionalHeaders) ->
-    3   additionalHeaders["DataServiceVersion"] = "3.0;NetFx"
+    4   additionalHeaders["DataServiceVersion"] = "3.0;NetFx"
 ****0   additionalHeaders["MaxDataServiceVersion"] = "3.0;NetFx"
 
         params = { opts.method,
@@ -156,7 +226,7 @@
 ****0   concat(params, "\n")
 
 
-    3 stringForBlobOrQueue = (req, additionalHeaders) ->
+    4 stringForBlobOrQueue = (req, additionalHeaders) ->
 ****0   headers = {}
 ****0   table_extend(headers, opts.headers)
 ****0   table_extend(headers, additionalHeaders)
@@ -171,7 +241,7 @@
 ****0     getHeader(headers, "date"),
 ****0     getHeader(headers, "if-modified-since"),
 ****0     getHeader(headers, "if-match"),
-    3     getHeader(headers, "if-none-match"),
+    4     getHeader(headers, "if-none-match"),
 ****0     getHeader(headers, "if-unmodified-since"),
 ****0     getHeader(headers, "range"),
 ****0     canonicalizedHeaders(headers),
@@ -199,22 +269,22 @@
 ==============================================================================
 ./moonship/aztable.moon
 ==============================================================================
-    3 util          = require "moonship.util"
-    3 azureauth     = require "moonship.azauth"
-    3 mydate        = require "moonship.date"
-    3 http          = require "moonship.http"
-    3 log           = require "moonship.log"
-    3 string_gsub   = string.gsub
-    3 config        = require "moonship.config"
+    4 util          = require "moonship.util"
+    4 azureauth     = require "moonship.azauth"
+    4 mydate        = require "moonship.date"
+    4 http          = require "moonship.http"
+    4 log           = require "moonship.log"
+    4 string_gsub   = string.gsub
+    4 config        = require "moonship.config"
 
-    3 my_max_number = 9007199254740991  -- from javascript max safe int
+    4 my_max_number = 9007199254740991  -- from javascript max safe int
 
-    3 import sharedkeylite from azureauth
-    3 import to_json, applyDefaults, trim, table_clone from util
+    4 import sharedkeylite from azureauth
+    4 import to_json, applyDefaults, trim, table_clone from util
 
-    3 conf = config()\get()
+    4 conf = config()\get()
 
-    3 local *
+    4 local *
 
       -- generate multitenant opts
 ****0 opts_name = (opts={ :table_name, :tenant, :pk, :prefix }) ->
@@ -222,98 +292,118 @@
 ****0   opts.account_name = conf.azure.AccountName
 
 ****0   if (opts.tenant)
-    3     opts.tenant = string.lower(opts.tenant)
-    3     opts.prefix = "#{opts.tenant}#{conf.app_env}"
+    4     opts.tenant = string.lower(opts.tenant)
+    4     opts.prefix = "#{opts.tenant}#{conf.app_env}"
 
           -- only set if has not set
-****0     if (opts.table == nil)
-****0       opts.table = string.lower(opts.table_name)
-****0       opts.table_name = "#{opts.prefix}#{opts.table}"
+    1     if (opts.table == nil)
+    1       opts.table = string.lower(opts.table_name)
+    2       opts.table_name = "#{opts.prefix}#{opts.table}"
 
 ****0 item_headers = (opts, method="GET") ->
 ****0   opts_name(opts)
-    6   sharedkeylite(opts)
+    8   sharedkeylite(opts)
 ****0   hdrs = {
-    3     ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
+    4     ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
 ****0     ["x-ms-date"]: opts.date,
 ****0     ["Accept"]: "application/json;odata=nometadata",
-    3     ["x-ms-version"]: "2016-05-31"
-    3   }
+    4     ["x-ms-version"]: "2016-05-31"
+    4   }
 
-    3   hdrs["Content-Type"] = "application/json" if method == "PUT" or method == "POST" or method == "MERGE"
-    3   hdrs["If-Match"] = "*" if (method == "DELETE")
+    4   hdrs["Content-Type"] = "application/json" if method == "PUT" or method == "POST" or method == "MERGE"
+    4   hdrs["If-Match"] = "*" if (method == "DELETE")
 
         hdrs
 
       -- get table header to create or delete table
-    1 table_opts = (opts={ :table_name, :pk, :rk }, method="GET") ->
+    2 table_opts = (opts={ :table_name, :pk, :rk }, method="GET") ->
 ****0   headers = item_headers(opts, method)
-    3   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+    4   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
 
         -- remove item headers
-    3   headers["If-Match"] = nil if method == "DELETE"
+    4   headers["If-Match"] = nil if method == "DELETE"
 
         {
     2     method: method,
 ****0     url: url,
-****0     headers: headers
+****0     headers: headers,
+****0     table_name: opts.table_name,
+****0     account_key: opts.account_key,
+****0     account_name: opts.account_name
         }
 
       -- list items
 ****0 item_list = (opts={ :table_name }, query={ :filter, :top, :select }) ->
     2   headers = item_headers(opts, "GET")
-****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-****0   qs = ""
-    2   qs = "#{qs}&$filter=#{query.filter}" if query.filter
-    2   qs = "#{qs}&$top=#{query.top}" if query.top
+    2   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+    2   qs = ""
+    1   qs = "#{qs}&$filter=#{query.filter}" if query.filter
+****0   qs = "#{qs}&$top=#{query.top}" if query.top
     2   qs = "#{qs}&$select=#{query.select}" if query.select
-    1   qs = trim(qs, "&")
-****0   full_path = url
+    2   qs = trim(qs, "&")
+    2   full_path = url
     2   full_path = "#{url}?#{qs}" if qs
 
     2   {
     2     method: 'GET',
     2     url: full_path,
-    3     headers: headers
+    4     headers: headers,
+****0     table_name: opts.table_name,
+    1     account_key: opts.account_key,
+****0     account_name: opts.account_name
         }
 
       -- create an item
-****0 item_create = (opts={ :table_name }) ->
-****0   headers = item_headers(opts, "POST")
-****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+    1 item_create = (opts={ :table_name }) ->
+    1   headers = item_headers(opts, "POST")
+    1   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
 
     1   {
     1     method: "POST",
-    1     url: url,
-    1     headers: headers
-    1   }
+****0     url: url,
+    1     headers: headers,
+    1     table_name: opts.table_name,
+    1     account_key: opts.account_key,
+    1     account_name: opts.account_name
+        }
 
       -- update an item, method can be MERGE to upsert
-    1 item_update = (opts={ :table_name, :pk, :rk }, method="PUT") ->
+****0 item_update = (opts={ :table_name, :pk, :rk }, method="PUT") ->
+****0   opts_name(opts)
     1   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
     1   opts.table_name = table
-****0   table_opts(opts, method)
+****0   headers = item_headers(opts, method)
+    2   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+
+    1   {
+****0     method: method,
+****0     url: url,
+    1     headers: headers,
+****0     table_name: opts.table_name,
+    1     account_key: opts.account_key,
+    1     account_name: opts.account_name
+    1   }
 
       -- retrieve an item
-****0 item_retrieve = (opts={ :table_name, :pk, :rk }) ->
-****0   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
+    1 item_retrieve = (opts={ :table_name, :pk, :rk }) ->
+    4   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
 
       -- delete an item
 ****0 item_delete = (opts={ :table_name, :pk, :rk }) -> item_update(opts, "DELETE")
 
-    1 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
-    1   newopts = util.table_clone(opts)
-****0   newopts.mt_table = newopts.table_name
+****0 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
+****0   newopts = util.table_clone(opts)
+    1   newopts.mt_table = newopts.table_name
 
         -- trim ending number and replace with dt
 ****0   newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
     1   newopts
 
       -- generate array of daily opts
-    3 opts_daily = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, days=1, ts=os.time()) ->
-****0   rst = {}
-****0   multiplier = days and 1 or -1
-****0   new_ts = ts
+    1 opts_daily = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, days=1, ts=os.time()) ->
+    1   rst = {}
+    1   multiplier = days and 1 or -1
+    4   new_ts = ts
 ****0   for i = 1, days
 ****0     rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
 ****0     new_ts = mydate.add_day(new_ts, days)
@@ -324,7 +414,7 @@
 ****0 opts_monthly = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, months=1, ts=os.time()) ->
 ****0   rst = {}
 ****0   multiplier = days and 1 or -1
-    3   new_ts = ts
+****0   new_ts = ts
 ****0   for i = 1, days
 ****0     rst[#rst + 1] = generate_opts(opts, "%Y%m", new_ts)
 ****0     new_ts = mydate.add_month(new_ts, months)
@@ -338,34 +428,39 @@
 ****0   new_ts = ts
 ****0   for i = 1, days
 ****0     rst[#rst + 1] = generate_opts(opts, "%Y", new_ts)
-****0     new_ts = mydate.add_year(new_ts, years)
+    4     new_ts = mydate.add_year(new_ts, years)
 
         rst
 
 ****0 create_table = (opts) ->
+        -- log.error opts.table_name
 ****0   tableName = opts.table_name
 ****0   opts.table_name = "Tables"
 ****0   opts.url = ""
 ****0   opts.headers = nil
 ****0   topts = table_opts(opts, "POST")
 ****0   topts.body = to_json({TableName: tableName})
-****0   http.request(topts)
+        -- log.error topts
+    4   http.request(topts)
 
       -- make azure storage request
-    3 request = (opts, createTableIfNotExists=false, retry=2) ->
+****0 request = (opts, createTableIfNotExists=false, retry=2) ->
         --log.error(opts)
 ****0   oldOpts = table_clone(opts)
 ****0   res = http.request(opts)
         --log.error(res)
 
         -- exponential retry
-****0   if (retry < 10 and res and res.code >= 500 and res.body and res.body\find("retry"))
+    4   if (retry < 10 and res and res.code >= 500 and res.body and res.body\find("retry"))
 ****0     ngx.sleep(retry)
-****0     res = request(oldOpts, createTableIfNotExists, retry * 2)
+****0     oopts = table_clone(oldOpts)
+****0     res = request(oopts, createTableIfNotExists, retry * 2)
 
 ****0   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
           -- log.error res
-****0     res = create_table(table_clone(opts))
+****0     topts = table_clone(oldOpts)
+****0     topts.body = nil
+****0     res = create_table(topts)
 ****0     return request(oldOpts) if (res and res.code == 201)
 
         res
@@ -561,26 +656,26 @@
 ./moonship/config.moon
 ==============================================================================
 
-    3 util                  = require "moonship.util"
-    3 log                   = require "moonship.log"
-    3 sandbox               = require "moonship.sandbox"
-    3 remoteresolver        = require "moonship.remoteresolver"
-    3 requestbuilder        = require "moonship.requestbuilder"
+    4 util                  = require "moonship.util"
+    4 log                   = require "moonship.log"
+    4 sandbox               = require "moonship.sandbox"
+    4 remoteresolver        = require "moonship.remoteresolver"
+    4 requestbuilder        = require "moonship.requestbuilder"
 
-    3 aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
-    3 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
-    3 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-    3 azure_storage         = os.getenv("AZURE_STORAGE") or ""
-    3 app_path              = os.getenv("MOONSHIP_APP_PATH")
+    4 aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
+    4 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
+    4 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    4 azure_storage         = os.getenv("AZURE_STORAGE") or ""
+    4 app_path              = os.getenv("MOONSHIP_APP_PATH")
 
-    3 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
-    3 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
-    3 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
-    3 app_env               = os.getenv("MOONSHIP_APP_ENV") or "PRD"
+    4 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
+    4 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
+    4 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
+    4 app_env               = os.getenv("MOONSHIP_APP_ENV") or "PRD"
 
-    3 import string_split, table_clone, string_connection_parse from util
-    3 import insert from table
-    3 import upper from string
+    4 import string_split, table_clone, string_connection_parse from util
+    4 import insert from table
+    4 import upper from string
 
 ****0 build_requires = (opts) ->
     4   (modname) ->
@@ -616,43 +711,43 @@
 
 ****0       nil, "error loading `#{modname}` with code: #{rsp.code }"
 
-    3     _G[modname], "unable to resolve `#{modname}`"
+    4     _G[modname], "unable to resolve `#{modname}`"
 
       class Config
 ****0   new: (newOpts={}) =>
-    3     defaultOpts = {
+    4     defaultOpts = {
 ****0       :aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path,
-    8       :app_path, :code_cache_size, :remote_path, :azure_storage, :app_env, plugins: {}
-    3     }
+    9       :app_path, :code_cache_size, :remote_path, :azure_storage, :app_env, plugins: {}
+    4     }
 
-    3     util.applyDefaults(newOpts, defaultOpts)
-    6     newOpts.app_env = upper(newOpts.app_env or "PRD")
+    4     util.applyDefaults(newOpts, defaultOpts)
+    8     newOpts.app_env = upper(newOpts.app_env or "PRD")
 ****0     newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
-    6     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
-    3     req = newOpts.requestbuilder\build()
+    7     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+    4     req = newOpts.requestbuilder\build()
 ****0     newOpts.plugins["request"] = req
-    6     newOpts.plugins["log"] = req\log
+    7     newOpts.plugins["log"] = req\log
 
           -- parsing azure storage connection string
-    6     newOpts["azure"] = string_connection_parse(azure_storage or "")
+    7     newOpts["azure"] = string_connection_parse(azure_storage or "")
 
-    6     @__data = newOpts
+    7     @__data = newOpts
 
-    6   get: () => table_clone(@__data, true) -- preserving config through cloning
+    7   get: () => table_clone(@__data, true) -- preserving config through cloning
 
-    6 Config
+    7 Config
 
 ==============================================================================
 ./moonship/crypto.moon
 ==============================================================================
-    9 crypto        = require "crypto"
-    9 crypto_hmac   = require "crypto.hmac"
-    9 mybcrypt      = require "bcrypt"
-    9 basexx        = require "basexx"
+   10 crypto        = require "crypto"
+   10 crypto_hmac   = require "crypto.hmac"
+   10 mybcrypt      = require "bcrypt"
+   10 basexx        = require "basexx"
 
-    9 { :to_base64, :from_base64 } = basexx
+   10 { :to_base64, :from_base64 } = basexx
 
-    9 local *
+   10 local *
 
 ****0 base64_encode = ngx and ngx.encode_base64 or to_base64
 
@@ -665,21 +760,21 @@
    13   }
 
 ****0 hmac_wrapper = (key, str, algo) ->
-   20   {
+   21   {
 ****0     digest: () -> crypto_hmac.digest(algo, str, key, true)
-   15     hex: () -> crypto_hmac.digest(algo, str, key, false)
-   20   }
+   16     hex: () -> crypto_hmac.digest(algo, str, key, false)
+   21   }
 
     5 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
-   20 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
-   20 md5 = (str) -> crypto_wrapper("md5", str)
-    9 sha1 = (str) -> crypto_wrapper("sha1", str)
+   21 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
+   21 md5 = (str) -> crypto_wrapper("md5", str)
+   10 sha1 = (str) -> crypto_wrapper("sha1", str)
 ****0 sha256 = (str) -> crypto_wrapper("sha256", str)
     1 hmac = (key, str, algo) ->
 
 ****0   return hmac_wrapper(key, str, "md5") if algo == md5
     1   return hmac_wrapper(key, str, "sha1") if algo == sha1
-    9   return hmac_wrapper(key, str, "sha256") if algo == sha256
+   10   return hmac_wrapper(key, str, "sha256") if algo == sha256
 
     1   return hmac_wrapper(key, str, algo) if type(algo) == "string"
 
@@ -690,7 +785,7 @@
 ==============================================================================
       -- allow for month calculation
 
-    3 seconds_in_a_day = 86400
+    4 seconds_in_a_day = 86400
 ****0 seconds_in_a_month = 31 * seconds_in_a_day
 
       -- easiest thing is to add year
@@ -707,9 +802,9 @@
       -- this function will result in first day of next/previous month
 ****0 add_one_month: (ts=os.time(), add=false) ->
 ****0   multiple = add and 1 or -1
-    3   old_dt = os.date("*t", ts)
+    4   old_dt = os.date("*t", ts)
 ****0   new_ts = os.time { year: old_dt.year, month: old_dt.month, day: 1 }
-    3   new_ts = new_ts + multiple * seconds_in_a_month
+    4   new_ts = new_ts + multiple * seconds_in_a_month
 
       -- loop and add one month at a time
 ****0 add_month: (ts=os.time(), months=1) ->
@@ -719,7 +814,7 @@
 ****0   for i = 1, math.abs(months)
 ****0     new_ts = add_one_month(new_ts, (months > 0))
 
-    3   new_ts
+    4   new_ts
 
 ****0 { :add_day, :add_month, :add_year }
 
@@ -758,8 +853,9 @@
 ****0   engage: (req) =>
     2     opts = @options\get()
 
-    4     opts.plugins["request"] = req if req
-****0     req = opts.plugins["request"]
+    2     opts.plugins["request"] = req if req
+    4     req = opts.plugins["request"]
+****0     req.start = os.time()
 
           -- create storage and cache if not exists
 ****0     unless opts.plugins["storage"]
@@ -784,16 +880,16 @@
 ==============================================================================
       -- hmac auth
 
-    3 util = require "moonship.util"
-    3 crypto = require "moonship.crypto"
+    4 util = require "moonship.util"
+    4 crypto = require "moonship.crypto"
 
-    3 import string_slit from util
-    3 import base64_encode, base64_decode from crypto
-    3 import unpack from table
+    4 import string_slit from util
+    4 import base64_encode, base64_decode from crypto
+    4 import unpack from table
 
 ****0 local *
-    3 sign = (key, data, algo=crypto.sha256) -> base64_encode(crypto.hmac(key, data, algo).digest())
-    3 verify = (key, data, algo=crypto.sha256) -> data == sign(key, data, algo)
+    4 sign = (key, data, algo=crypto.sha256) -> base64_encode(crypto.hmac(key, data, algo).digest())
+    4 verify = (key, data, algo=crypto.sha256) -> data == sign(key, data, algo)
 ****0 sign_custom = (key, data="", ttl=600, ts=os.time(), algo=crypto.sha256) -> "#{ts}:#{ttl}:#{data}:" .. sign("#{ts}:#{ttl}:#{data}")
 
       -- reverse the logic above to hmac verify
@@ -812,18 +908,18 @@
 ./moonship/http.moon
 ==============================================================================
 
-    7 util         = require "moonship.util"
-    7 oauth1       = require "moonship.oauth1"
-    7 log          = require "moonship.log"
+    8 util         = require "moonship.util"
+    8 oauth1       = require "moonship.oauth1"
+    8 log          = require "moonship.log"
 
-    7 string_upper = string.upper
+    8 string_upper = string.upper
 ****0 http_handler = require "moonship.httpsocket"
 ****0 http_handler = require "moonship.nginx.http" if ngx
 
-    7 import concat from table
-    7 import query_string_encode from util
+    8 import concat from table
+    8 import query_string_encode from util
 
-    7 string_upper = string.upper
+    8 string_upper = string.upper
 
       --{
       --  body = <response body>,
@@ -832,22 +928,22 @@
       --  status = <the http status message>,
       --  err = <nil or error message>
       -- }
-   14 local *
+   15 local *
 ****0 request = (opts) ->
 
 ****0   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
 ****0   return { code: 0, err: "url is required" } unless opts.url
 
-   14   opts["method"] = string_upper(opts["method"] or 'GET')
+   15   opts["method"] = string_upper(opts["method"] or 'GET')
 ****0   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
-   14   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
+   15   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
         -- auto add content length
-   14   body = opts["body"]
-    1   if body
-    1     body = (type(body) == "table") and query_string_encode(body) or body
-    1     opts.body = body
+   15   body = opts["body"]
+    2   if body
+    2     body = (type(body) == "table") and query_string_encode(body) or body
+    2     opts.body = body
 ****0     opts.headers["content-length"] = #body
 
 ****0   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, ':'))}" if opts["auth"]
@@ -855,20 +951,20 @@
 
 ****0   http_handler.request(opts)
 
-   14 { :request }
+   15 { :request }
 
 ==============================================================================
 ./moonship/httpsocket.moon
 ==============================================================================
 
-    7 ltn12        = require "ltn12"
-    7 http         = require "socket.http"
-    7 https        = require "ssl.https"
+    8 ltn12        = require "ltn12"
+    8 http         = require "socket.http"
+    8 https        = require "ssl.https"
 
-    7 stringsource = ltn12.source.string
+    8 stringsource = ltn12.source.string
 ****0 tablesink    = ltn12.sink.table
 
-   14 make_request = (opts) ->
+   15 make_request = (opts) ->
 ****0   return https.request(opts) if opts.url\find "https:"
 ****0   http.request(opts)
 
@@ -885,8 +981,8 @@
       --  status = <the http status message>,
       --  err = <nil or error message>
       --}
-   14 request = (opts) ->
-   14   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
+   15 request = (opts) ->
+   15   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
 ****0   opts.source = stringsource(opts.body)
 
@@ -894,22 +990,22 @@
 ****0   opts.sink = tablesink(result)
 ****0   one, code, headers, status = make_request opts
 ****0   body = table.concat(result)
-   14   message = #body > 0 and body or "unknown error"
-   14   return {:code, :headers, :status, err: message} unless one
+   15   message = #body > 0 and body or "unknown error"
+   15   return {:code, :headers, :status, err: message} unless one
 
-   14   { :code, :headers, :status, :body }
+   15   { :code, :headers, :status, :body }
 
-   14 { :request }
+   15 { :request }
 
 ==============================================================================
 ./moonship/log.moon
 ==============================================================================
       -- implement singleton log
 
-    9 logger           = require "log"
-    9 list_writer      = require "log.writer.list"
-    9 console_color    = require "log.writer.console.color"
-    9 util             = require "moonship.util"
+   10 logger           = require "log"
+   10 list_writer      = require "log.writer.list"
+   10 console_color    = require "log.writer.console.color"
+   10 util             = require "moonship.util"
 ****0 to_json          = util.to_json
 
 ****0 doformat = (p) ->
@@ -919,7 +1015,7 @@
 ****0   if p == nil
 ****0     return "nil"
 
-    9   tostring(p)
+   10   tostring(p)
 
 ****0 sep = ' '
 
@@ -937,26 +1033,26 @@
 ==============================================================================
 ./moonship/oauth1.moon
 ==============================================================================
-    8 log               = require "moonship.log"
-    8 util              = require "moonship.util"
-    8 crypto            = require "moonship.crypto"
+    9 log               = require "moonship.log"
+    9 util              = require "moonship.util"
+    9 crypto            = require "moonship.crypto"
 
-    8 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
-    8 import sort, concat from table
+    9 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
+    9 import sort, concat from table
 
-    8 escape_uri        = url_escape
-    8 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
+    9 escape_uri        = url_escape
+    9 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
 ****0 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
-    8 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
-    8 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
+    9 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
+    9 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
 
-    8 local *
+    9 local *
 
-    8 normalizeParameters = (parameters, body, query) ->
-    8   items = { query_string_encode(parameters, "&") }
+    9 normalizeParameters = (parameters, body, query) ->
+    9   items = { query_string_encode(parameters, "&") }
 
-    8   string_split(body, "&", items) if body
-    8   string_split(query, "&", items) if query
+    9   string_split(body, "&", items) if body
+    9   string_split(query, "&", items) if query
 
     1   sort(items)
     2   concat(items, "&")
@@ -975,11 +1071,11 @@
         -- parse url for query string
 ****0   parts = url_parse(opts.url)
     3   parts.port = nil if (url_default_port(parts.scheme) == parts.port)
-    8   base_uri = url_build(parts, false)
+    9   base_uri = url_build(parts, false)
 
 
         -- allow for unit testing by passing in timestamp
-    8   timestamp = oauth['timestamp'] or os.time()
+    9   timestamp = oauth['timestamp'] or os.time()
 ****0   parameters = {
     1     oauth_consumer_key: oauth["consumerkey"],
     1     oauth_signature_method: "HMAC-SHA1",
@@ -1071,11 +1167,11 @@
 ==============================================================================
 ./moonship/remoteresolver.moon
 ==============================================================================
-    4 util        = require "moonship.util"
-    4 httpc       = require "moonship.http"
-    4 log         = require "moonship.log"
+    5 util        = require "moonship.util"
+    5 httpc       = require "moonship.http"
+    5 log         = require "moonship.log"
 
-    4 import url_parse, trim, path_sanitize, url_build from util
+    5 import url_parse, trim, path_sanitize, url_build from util
 
 ****0 loadcode = (url) ->
     4   req = { url: url, method: "GET", capture_url: "/__libpublic", headers: {} }
@@ -1093,7 +1189,7 @@
         parsed
 
       -- attempt to parse and store new basepath
-    4 resolve_github = (modname) ->
+    5 resolve_github = (modname) ->
 ****0   modname = modname\gsub("github%.com/", "https://raw.githubusercontent.com/")
     7   parsed = resolve_remote(modname)
     7   user, repo, blobortree, branch, rest = string.match(parsed.basepath, "(/[^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
@@ -1103,8 +1199,8 @@
         parsed
 
     7 resolve = (modname, opts={plugins: {}}) ->
-    4   originalName = tostring(modname)\gsub("%.moon$", "")
-    4   rst = {}
+    5   originalName = tostring(modname)\gsub("%.moon$", "")
+    5   rst = {}
 
         -- remote is a url, then parse the url
     2   rst = resolve_remote(modname) if modname\find("http") == 1
@@ -1113,7 +1209,7 @@
     2   rst = resolve_github(modname) if modname\find("github%.com/") == 1
 
         -- if _remotebase, try to parse relative to it
-    4   remotebase = opts.plugins._remotebase
+    5   remotebase = opts.plugins._remotebase
 
 ****0   if remotebase and rst.path == nil
           -- example: {url}/remote/simpson/homer.moon
@@ -1150,14 +1246,14 @@
 ./moonship/requestbuilder.moon
 ==============================================================================
       -- build request plugins based on options
-    3 sandbox = require "moonship.sandbox"
-    3 util    = require "moonship.util"
+    4 sandbox = require "moonship.sandbox"
+    4 util    = require "moonship.util"
 
       class RequestBuilder
-    3   new: (opts={}) =>
+    4   new: (opts={}) =>
 ****0     @req = opts
 
-    6   build: (opts) =>
+    7   build: (opts) =>
 ****0     req_wrapper = {}
 ****0     if ngx
 ****0       ngx.req.read_body()
@@ -1178,40 +1274,40 @@
 ****0         user_agent: ""
             }
 ****0       req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
-    6       @req = req_wrapper
+    7       @req = req_wrapper
 
-    3     @req.logs = {}
+    4     @req.logs = {}
 ****0     @req
 
-    3   set: (req) =>
+    4   set: (req) =>
 ****0     @req = req
 
 ****0   log: (obj) =>
 ****0     if (type obj == "table")
 ****0       @req.logs[#@req.logs + 1] = util.to_json(obj)
           else
-    3       @req.logs[#@req.logs + 1] = tostring(t)
+    4       @req.logs[#@req.logs + 1] = tostring(t)
 
-    3 RequestBuilder
+    4 RequestBuilder
 
 ==============================================================================
 ./moonship/sandbox.moon
 ==============================================================================
-    5 parse   = require "moonscript.parse"
-    5 compile = require "moonscript.compile"
-    5 util    = require "moonship.util"
-    5 log     = require "moonship.log"
+    6 parse   = require "moonscript.parse"
+    6 compile = require "moonscript.compile"
+    6 util    = require "moonship.util"
+    6 log     = require "moonship.log"
 
 ****0 table_pack = table.pack or (...) -> { n: select("#", ...), ... }
 ****0 has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"
 ****0 pack_1 = (first, ...) -> first, table_pack(...)
 
 ****0 loads = has_52_compatible_load and load or (code, name, mode, env) ->
-    5   return nil, "can't load binary chunk" if code.byte(code, 1) == 27
+    6   return nil, "can't load binary chunk" if code.byte(code, 1) == 27
 
 ****0   chunk, err = loadstring(code, name)
 ****0   setfenv(chunk, env) if chunk and env
-    5   chunk, err
+    6   chunk, err
 
 ****0 readfile = (file) ->
 ****0   f = io.open(file, "rb")
@@ -1251,11 +1347,11 @@
 ****0 local *
 
       -- Builds the environment table for a sandbox.
-    5 build_env = (src_env, dest_env={}, wl=whitelist) ->
-    5   env = {}
-    5   for name in wl\gmatch "%S+" do
+    6 build_env = (src_env, dest_env={}, wl=whitelist) ->
+    6   env = {}
+    6   for name in wl\gmatch "%S+" do
 
-    5     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
+    6     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
 ****0     if t_name
    14       tbl = env[t_name]
 ****0       env_t = src_env[t_name]
@@ -1305,7 +1401,7 @@
 ****0   assert(type(env) == "table", "env is required")
 
     4   code = readfile(file)
-    5   loadstring(code, file, env)
+    6   loadstring(code, file, env)
 
 
 ****0 loadfile_safe = (file, env={}, wl) ->
@@ -1314,21 +1410,21 @@
 
 
     2 exec = (fn) ->
-    5   ok, ret = pcall(fn)
+    6   ok, ret = pcall(fn)
 ****0   return nil, ret unless ok
 
         ret
 
     2 exec_code = (code, name, env={}, wl) ->
     2   fn = loadstring_safe(code, name, env, wl)
-    5   exec(fn)
+    6   exec(fn)
 
     7 compile_moon = (moon_code) ->
     7   tree, err = parse.string moon_code
     1   return nil, "Parse error: " .. err unless tree
 
     6   lua_code, err, pos = compile.tree tree
-    5   return nil, compile.format_error err, pos, moon_code unless lua_code
+    6   return nil, compile.format_error err, pos, moon_code unless lua_code
 
     1   lua_code
 
@@ -1340,20 +1436,20 @@
       -- custom url parsing implementation
       -- since there are so many that does not meet requirements - wtf?
 
-   10 import insert from table
+   11 import insert from table
 
 ****0 local *
 
-   36 re_match = string.match
-   35 tonumber = tonumber
+   37 re_match = string.match
+   36 tonumber = tonumber
 ****0 setmetatable = setmetatable
 
-   85 string_split = (str, sep, dest={}) ->
-   49   str = tostring str
+   88 string_split = (str, sep, dest={}) ->
+   51   str = tostring str
 ****0   for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
-   36     insert(dest, str)
+   37     insert(dest, str)
 
-   10   dest
+   11   dest
 
 ****0 ports = {
 ****0   acap: 674,
@@ -1435,7 +1531,7 @@
     9     port: parts[5] or nil,
 ****0     path: parts[6] or nil,
     9     query: parts[7] or nil,
-   10     fragment: parts[8] or nil,
+   11     fragment: parts[8] or nil,
 ****0     authority: parts[9] or nil
     9   }
 
@@ -1449,33 +1545,33 @@
       -- @module util
 
       -- this module cannot and should not reference log
-   10 url              = require "moonship.url"
+   11 url              = require "moonship.url"
 ****0 cjson_safe       = require "cjson.safe"
 
-   10 import concat, insert, sort from table
-   10 import char from string
+   11 import concat, insert, sort from table
+   11 import char from string
 ****0 import random, randomseed from math
 
-   10 charset = {}
+   11 charset = {}
 
       -- qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890
-  110 for i = 48,  57 do insert(charset, char(i))
-  200 for i = 65,  90 do insert(charset, char(i))
+  121 for i = 48,  57 do insert(charset, char(i))
+  220 for i = 65,  90 do insert(charset, char(i))
 ****0 for i = 97, 122 do insert(charset, char(i))
 
       -- our utils lib, nothing here should depend on ngx
       -- for ngx stuff, put it inside ngin.lua file
-  270 local *
+  297 local *
 
 ****0 string_random = (length) ->
-   10   randomseed(os.time())
+   11   randomseed(os.time())
 
    12   return string_random(length - 1) .. charset[random(1, #charset)] if length > 0
 
    20   ""
 
     2 table_pairsByKeys = (t, f) ->
-   10   a = {}
+   11   a = {}
 ****0   for n in pairs(t) do insert(a, n)
 ****0   sort(a, f)
 
@@ -1492,7 +1588,7 @@
       -- @param pattern trim pattern
       -- @return trimed string
 ****0 trim = (str, pattern="%s*") ->
-   10   str = tostring str
+   11   str = tostring str
 
    19   if #str > 200
    10     str\gsub("^#{pattern}", "")\reverse()\gsub("^#{pattern}", "")\reverse()
@@ -1554,38 +1650,38 @@
 ****0         seen[obj] = true
 ****0         { k, json_encodable(v) for k,v in pairs(obj) when type(k) == "string" or type(k) == "number" }
     7     when "function", "userdata", "thread"
-   10       nil
+   11       nil
           else
     5       obj
 
-   10 from_json = (obj) -> cjson_safe.decode obj
+   11 from_json = (obj) -> cjson_safe.decode obj
 
-    7 to_json = (obj) -> cjson_safe.encode json_encodable obj
+   27 to_json = (obj) -> cjson_safe.encode json_encodable obj
 
 ****0 query_string_encode = (t, sep="&", quote="", escape=url_escape) ->
-    7   query = {}
-    7   keys = {}
-    3   for k in pairs(t) do keys[#keys+1] = tostring(k)
-    3   sort(keys)
+   27   query = {}
+   27   keys = {}
+    6   for k in pairs(t) do keys[#keys+1] = tostring(k)
+    6   sort(keys)
 
-    8   for _, k in ipairs(keys) do
-    5     v = t[k]
+   28   for _, k in ipairs(keys) do
+   22     v = t[k]
 
 ****0     switch type v
             when "table"
-    3         unless seen[v]
+    6         unless seen[v]
 ****0           seen[v] = true
-    4           tv = query_string_encode(v, sep, quote, seen)
+   21           tv = query_string_encode(v, sep, quote, seen)
     1           v = tv
 ****0       when "function", "userdata", "thread"
-    3         nil
+   20         nil
             else
-   10         v = escape(tostring(v))
+   11         v = escape(tostring(v))
 
     1     k = escape(tostring(k))
 
 ****0     if v ~= "" then
-    4       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
+   10       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
           else
 ****0       query[#query+1] = name
 
@@ -1625,17 +1721,17 @@
 ****0   fields = string_split(str or "", ";")
 ****0   rst = {}
     6   for _, d in ipairs(fields) do
-   10     firstEq = d\find(valSep)
+   11     firstEq = d\find(valSep)
 ****0     if (firstEq)
-   93       k = d\sub(1, firstEq - 1)
-  160       v = d\sub(firstEq + 1)
-   80       rst[k] = v
+  102       k = d\sub(1, firstEq - 1)
+  176       v = d\sub(firstEq + 1)
+   88       rst[k] = v
 
         rst
 
 ****0 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
-   13   :trim, :path_sanitize, :slugify, :table_sort_keys,
-   10   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
+   14   :trim, :path_sanitize, :slugify, :table_sort_keys,
+   11   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
 ****0   :table_pairsByKeys, :query_string_encode, :applyDefaults,
 ****0   :string_split, :string_connection_parse, :string_random,
       }
@@ -1646,14 +1742,15 @@ Summary
 
 File                            Hits Missed Coverage
 ----------------------------------------------------
+./moonship/asynclogger.moon     39   8      82.98%
 ./moonship/awsauth.moon         37   18     67.27%
 ./moonship/azauth.moon          19   55     25.68%
-./moonship/aztable.moon         48   65     42.48%
+./moonship/aztable.moon         68   66     50.75%
 ./moonship/codecacher.moon      65   28     69.89%
 ./moonship/config.moon          41   14     74.55%
 ./moonship/crypto.moon          21   7      75.00%
 ./moonship/date.moon            4    15     21.05%
-./moonship/engine.moon          19   17     52.78%
+./moonship/engine.moon          20   17     54.05%
 ./moonship/hmacauth.moon        7    7      50.00%
 ./moonship/http.moon            15   10     60.00%
 ./moonship/httpsocket.moon      11   8      57.89%
@@ -1666,4 +1763,4 @@ File                            Hits Missed Coverage
 ./moonship/url.moon             33   47     41.25%
 ./moonship/util.moon            70   42     62.50%
 ----------------------------------------------------
-Total                           511  454    52.95%
+Total                           571  463    55.22%

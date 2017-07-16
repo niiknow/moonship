@@ -55,7 +55,10 @@ table_opts = (opts={ :table_name, :pk, :rk }, method="GET") ->
   {
     method: method,
     url: url,
-    headers: headers
+    headers: headers,
+    table_name: opts.table_name,
+    account_key: opts.account_key,
+    account_name: opts.account_name
   }
 
 -- list items
@@ -73,7 +76,10 @@ item_list = (opts={ :table_name }, query={ :filter, :top, :select }) ->
   {
     method: 'GET',
     url: full_path,
-    headers: headers
+    headers: headers,
+    table_name: opts.table_name,
+    account_key: opts.account_key,
+    account_name: opts.account_name
   }
 
 -- create an item
@@ -84,14 +90,28 @@ item_create = (opts={ :table_name }) ->
   {
     method: "POST",
     url: url,
-    headers: headers
+    headers: headers,
+    table_name: opts.table_name,
+    account_key: opts.account_key,
+    account_name: opts.account_name
   }
 
 -- update an item, method can be MERGE to upsert
 item_update = (opts={ :table_name, :pk, :rk }, method="PUT") ->
+  opts_name(opts)
   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
   opts.table_name = table
-  table_opts(opts, method)
+  headers = item_headers(opts, method)
+  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+
+  {
+    method: method,
+    url: url,
+    headers: headers,
+    table_name: opts.table_name,
+    account_key: opts.account_key,
+    account_name: opts.account_name
+  }
 
 -- retrieve an item
 item_retrieve = (opts={ :table_name, :pk, :rk }) ->
@@ -142,12 +162,14 @@ opts_yearly = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, years=1, ts
   rst
 
 create_table = (opts) ->
+  -- log.error opts.table_name
   tableName = opts.table_name
   opts.table_name = "Tables"
   opts.url = ""
   opts.headers = nil
   topts = table_opts(opts, "POST")
   topts.body = to_json({TableName: tableName})
+  -- log.error topts
   http.request(topts)
 
 -- make azure storage request
@@ -160,11 +182,14 @@ request = (opts, createTableIfNotExists=false, retry=2) ->
   -- exponential retry
   if (retry < 10 and res and res.code >= 500 and res.body and res.body\find("retry"))
     ngx.sleep(retry)
-    res = request(oldOpts, createTableIfNotExists, retry * 2)
+    oopts = table_clone(oldOpts)
+    res = request(oopts, createTableIfNotExists, retry * 2)
 
   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
     -- log.error res
-    res = create_table(table_clone(opts))
+    topts = table_clone(oldOpts)
+    topts.body = nil
+    res = create_table(topts)
     return request(oldOpts) if (res and res.code == 201)
 
   res
