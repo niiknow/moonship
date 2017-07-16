@@ -21,8 +21,6 @@ dolog = function(logslocal)
   local opts = azt.item_update({
     tenant = "a",
     table_name = table_name,
-    account_key = azure.AccountKey,
-    account_name = azure.AccountName,
     rk = rk,
     pk = pk
   }, "MERGE")

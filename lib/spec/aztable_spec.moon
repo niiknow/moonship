@@ -13,14 +13,13 @@ describe "moonship.aztable", ->
       azure = string_connection_parse (azure_storage)
       opts = {
         table_name: "del1" .. util.string_random(5)
-        account_name: azure.AccountName
-        account_key: azure.AccountKey
       }
       newOpts = aztable.item_list(opts)
       newOpts.account_name = opts.account_name
       newOpts.account_key = opts.account_key
       newOpts.table_name = opts.table_name
       res = aztable.request(newOpts, true)
+      -- print to_json(res)
       -- delete table
       assert.same 200, res.code
       newOpts.table_name = "Tables('#{opts.table_name}')"

@@ -205,117 +205,126 @@
     3 http          = require "moonship.http"
     3 log           = require "moonship.log"
     3 string_gsub   = string.gsub
+    3 config        = require "moonship.config"
+
     3 my_max_number = 9007199254740991  -- from javascript max safe int
 
     3 import sharedkeylite from azureauth
     3 import to_json, applyDefaults, trim, table_clone from util
-    3 import lower from string
+
+    3 conf = config()\get()
 
     3 local *
 
       -- generate multitenant opts
-    3 opts_name = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }) ->
+****0 opts_name = (opts={ :table_name, :tenant, :pk, :prefix }) ->
+****0   opts.account_key = conf.azure.AccountKey
+****0   opts.account_name = conf.azure.AccountName
+
 ****0   if (opts.tenant)
-****0     opts.tenant = lower(opts.tenant)
-****0     opts.table = lower(opts.table_name)
-****0     opts.prefix = "#{opts.tenant}E#{opts.env_id}"
-****0     opts.table_name = "#{opts.prefix}#{opts.table}"
+    3     opts.tenant = string.lower(opts.tenant)
+    3     opts.prefix = "#{opts.tenant}E#{conf.app_env_id}"
+
+          -- only set if has not set
+****0     if (opts.table == nil)
+****0       opts.table = string.lower(opts.table_name)
+****0       opts.table_name = "#{opts.prefix}#{opts.table}"
 
 ****0 item_headers = (opts, method="GET") ->
 ****0   opts_name(opts)
-    3   sharedkeylite(opts)
+    6   sharedkeylite(opts)
 ****0   hdrs = {
-****0     ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
+    3     ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
 ****0     ["x-ms-date"]: opts.date,
 ****0     ["Accept"]: "application/json;odata=nometadata",
-****0     ["x-ms-version"]: "2016-05-31"
-    6   }
+    3     ["x-ms-version"]: "2016-05-31"
+    3   }
 
     3   hdrs["Content-Type"] = "application/json" if method == "PUT" or method == "POST" or method == "MERGE"
-****0   hdrs["If-Match"] = "*" if (method == "DELETE")
+    3   hdrs["If-Match"] = "*" if (method == "DELETE")
 
-    3   hdrs
+        hdrs
 
       -- get table header to create or delete table
-    3 table_opts = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="GET") ->
-    3   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+    1 table_opts = (opts={ :table_name, :pk, :rk }, method="GET") ->
 ****0   headers = item_headers(opts, method)
+    3   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
 
         -- remove item headers
     3   headers["If-Match"] = nil if method == "DELETE"
 
         {
-    3     method: method,
-    1     url: url,
-****0     headers: headers
-    3   }
-
-      -- list items
-    2 item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter, :top, :select }) ->
-****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-****0   qs = ""
-****0   qs = "#{qs}&$filter=#{query.filter}" if query.filter
-****0   qs = "#{qs}&$top=#{query.top}" if query.top
-****0   qs = "#{qs}&$select=#{query.select}" if query.select
-****0   qs = trim(qs, "&")
-****0   full_path = url
-****0   full_path = "#{url}?#{qs}" if qs
-    2   headers = item_headers(opts, "GET")
-
-        {
-    2     method: 'GET',
-    2     url: full_path,
-    2     headers: headers
-    1   }
-
-      -- create an item
-    2 item_create = (opts={ :account_name, :account_key, :table_name }) ->
-    2   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-    2   headers = item_headers(opts, "POST")
-
-    3   {
-****0     method: "POST",
-    1     url: url,
+    2     method: method,
+****0     url: url,
 ****0     headers: headers
         }
 
+      -- list items
+****0 item_list = (opts={ :table_name }, query={ :filter, :top, :select }) ->
+    2   headers = item_headers(opts, "GET")
+****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+****0   qs = ""
+    2   qs = "#{qs}&$filter=#{query.filter}" if query.filter
+    2   qs = "#{qs}&$top=#{query.top}" if query.top
+    2   qs = "#{qs}&$select=#{query.select}" if query.select
+    1   qs = trim(qs, "&")
+****0   full_path = url
+    2   full_path = "#{url}?#{qs}" if qs
+
+    2   {
+    2     method: 'GET',
+    2     url: full_path,
+    3     headers: headers
+        }
+
+      -- create an item
+****0 item_create = (opts={ :table_name }) ->
+****0   headers = item_headers(opts, "POST")
+****0   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+
+    1   {
+    1     method: "POST",
+    1     url: url,
+    1     headers: headers
+    1   }
+
       -- update an item, method can be MERGE to upsert
-****0 item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="PUT") ->
-****0   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
+    1 item_update = (opts={ :table_name, :pk, :rk }, method="PUT") ->
+    1   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
     1   opts.table_name = table
-    1   table_opts(opts, method)
+****0   table_opts(opts, method)
 
       -- retrieve an item
-    1 item_retrieve = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
-    1   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
+****0 item_retrieve = (opts={ :table_name, :pk, :rk }) ->
+****0   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
 
       -- delete an item
-    1 item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) -> item_update(opts, "DELETE")
+****0 item_delete = (opts={ :table_name, :pk, :rk }) -> item_update(opts, "DELETE")
 
-****0 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
-****0   newopts = util.table_clone(opts)
-    1   newopts.mt_table = newopts.table_name
+    1 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
+    1   newopts = util.table_clone(opts)
+****0   newopts.mt_table = newopts.table_name
 
         -- trim ending number and replace with dt
-    1   newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
+****0   newopts.table_name = string_gsub(newopts.mt_table, "%d+$", "") .. os.date(format, ts)
     1   newopts
 
       -- generate array of daily opts
-    1 opts_daily = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, days=1, ts=os.time()) ->
-    1   rst = {}
+    3 opts_daily = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, days=1, ts=os.time()) ->
+****0   rst = {}
 ****0   multiplier = days and 1 or -1
 ****0   new_ts = ts
-    1   for i = 1, days
-    1     rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
+****0   for i = 1, days
+****0     rst[#rst + 1] = generate_opts(opts, "%Y%m%d", new_ts)
 ****0     new_ts = mydate.add_day(new_ts, days)
 
-    1   rst
+        rst
 
       -- generate array of monthly opts
 ****0 opts_monthly = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }, months=1, ts=os.time()) ->
 ****0   rst = {}
 ****0   multiplier = days and 1 or -1
-****0   new_ts = ts
+    3   new_ts = ts
 ****0   for i = 1, days
 ****0     rst[#rst + 1] = generate_opts(opts, "%Y%m", new_ts)
 ****0     new_ts = mydate.add_month(new_ts, months)
@@ -327,7 +336,7 @@
 ****0   rst = {}
 ****0   multiplier = days and 1 or -1
 ****0   new_ts = ts
-    3   for i = 1, days
+****0   for i = 1, days
 ****0     rst[#rst + 1] = generate_opts(opts, "%Y", new_ts)
 ****0     new_ts = mydate.add_year(new_ts, years)
 
@@ -343,11 +352,11 @@
 ****0   http.request(topts)
 
       -- make azure storage request
-****0 request = (opts, createTableIfNotExists=false) ->
-        -- log.error(opts)
+    3 request = (opts, createTableIfNotExists=false) ->
+        --log.error(opts)
 ****0   oldOpts = table_clone(opts)
 ****0   res = http.request(opts)
-        -- log.error(res)
+        --log.error(res)
 
 ****0   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
           -- log.error res
@@ -547,47 +556,45 @@
 ./moonship/config.moon
 ==============================================================================
 
-    2 util                  = require "moonship.util"
-    2 log                   = require "moonship.log"
-    2 sandbox               = require "moonship.sandbox"
-    2 remoteresolver        = require "moonship.remoteresolver"
-    2 requestbuilder        = require "moonship.requestbuilder"
+    3 util                  = require "moonship.util"
+    3 log                   = require "moonship.log"
+    3 sandbox               = require "moonship.sandbox"
+    3 remoteresolver        = require "moonship.remoteresolver"
+    3 requestbuilder        = require "moonship.requestbuilder"
 
-    2 aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
-    2 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
-    2 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-    2 azure_storage         = os.getenv("AZURE_STORAGE") or ""
-    2 app_path              = os.getenv("MOONSHIP_APP_PATH")
+    3 aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
+    3 aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
+    3 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    3 azure_storage         = os.getenv("AZURE_STORAGE") or ""
+    3 app_path              = os.getenv("MOONSHIP_APP_PATH")
 
-    2 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
-    2 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
-    2 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
-    2 app_env               = os.getenv("MOONSHIP_APP_ENV") or "prd"
+    3 code_cache_size       = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
+    3 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
+    3 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
+    3 app_env               = os.getenv("MOONSHIP_APP_ENV") or "prd"
 
-    2 Storage               = require "moonship.plugins.storage"
-
-****0 import string_split, table_clone, string_connection_parse from util
-    3 import insert from table
+    3 import string_split, table_clone, string_connection_parse from util
+****0 import insert from table
 
 ****0 env_id = (env="prd") ->
-    3   switch type env
-    3     when "dev"
-****0       return 79
-    3     when "tst"
-****0       return 77
-    3     when "uat"
-****0       return 75
-    3     when "stg"
-****0       return 73
-    3     when "prd"
-****0       return 71
+****0   switch type env
+    6     when "dev"
+    6       return 79
+          when "tst"
+    6       return 77
+          when "uat"
+    6       return 75
+          when "stg"
+    6       return 73
+          when "prd"
+    6       return 71
 
         -- default to dev
-    2   return 79
+    6   return 79
 
-****0 build_requires = (opts) ->
+    3 build_requires = (opts) ->
 ****0   (modname) ->
-    4     mod = _G[modname]
+****0     mod = _G[modname]
     4     return mod if mod
 
 ****0     parsed = remoteresolver.resolve(modname, opts)
@@ -598,60 +605,53 @@
             -- log.error loadPath
     4       rsp = parsed.codeloader(loadPath)
     4       if (rsp.code == 200)
-****0         lua_src, err = sandbox.compile_moon rsp.body
+    4         lua_src, err = sandbox.compile_moon rsp.body
 
-    4         return nil, "error compiling `#{modname}` with message: #{err}" unless lua_src
+****0         return nil, "error compiling `#{modname}` with message: #{err}" unless lua_src
 
     4         fn, err = nil, nil
 
-    8         opts.plugins._remotebase = parsed._remotebase
-    4         opts.sandbox_env = sandbox.build_env(_G, opts.plugins, sandbox.whitelist)
-****0         fn, err = sandbox.loadstring lua_src, modname, opts.sandbox_env
+    5         opts.plugins._remotebase = parsed._remotebase
+    8         opts.sandbox_env = sandbox.build_env(_G, opts.plugins, sandbox.whitelist)
+    4         fn, err = sandbox.loadstring lua_src, modname, opts.sandbox_env
 
-    4         return nil, "error loading `#{modname}` with message: #{err}" unless fn
+****0         return nil, "error loading `#{modname}` with message: #{err}" unless fn
 
-    4         rst, err = sandbox.exec(fn)
-****0         return nil, "error executing `#{modname}` with message: #{err}" unless rst
+    8         rst, err = sandbox.exec(fn)
+    4         return nil, "error executing `#{modname}` with message: #{err}" unless rst
 
-    4         _G[modname] = rst
+****0         _G[modname] = rst
 
-****0         return rst
+    4         return rst
 
 ****0       nil, "error loading `#{modname}` with code: #{rsp.code }"
 
-    3     _G[modname], "unable to resolve `#{modname}`"
+****0     _G[modname], "unable to resolve `#{modname}`"
 
-    2 class Config
-****0   new: (newOpts={}) =>
+    3 class Config
+    3   new: (newOpts={}) =>
 ****0     defaultOpts = {
-    2       :aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path,
-****0       :app_path, :code_cache_size, :remote_path, :azure_storage, :app_env, plugins: {}
-    5     }
+****0       :aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_code_path,
+    3       :app_path, :code_cache_size, :remote_path, :azure_storage, :app_env, plugins: {}
+          }
 
-****0     util.applyDefaults(newOpts, defaultOpts)
-    2     newOpts.app_env = newOpts.app_env or "prd"
-    4     newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
-****0     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
-    3     req = newOpts.requestbuilder\build()
-****0     newOpts.plugins["request"] = req
-****0     newOpts.plugins["log"] = req\log
-    3     newOpts.app_env_id = env_id(newOpts.app_env)
+    3     util.applyDefaults(newOpts, defaultOpts)
+****0     newOpts.app_env = newOpts.app_env or "prd"
+    3     newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
+    6     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
+****0     req = newOpts.requestbuilder\build()
+    6     newOpts.plugins["request"] = req
+    3     newOpts.plugins["log"] = req\log
+****0     newOpts.app_env_id = env_id(newOpts.app_env)
 
           -- parsing azure storage connection string
-    3     newOpts["azure"] = string_connection_parse(azure_storage or "")
+    6     newOpts["azure"] = string_connection_parse(azure_storage or "")
 
-          -- create storage and cache if not exists
-    3     unless newOpts.plugins["storage"]
-    3       newOpts.plugins["storage"] = Storage(newOpts, "storage")
-
-    3     unless newOpts.plugins["cache"]
-    3       newOpts.plugins["cache"] = Storage(newOpts, "cache")
-
-    3     @__data = newOpts
+    6     @__data = newOpts
 
     6   get: () => table_clone(@__data, true) -- preserving config through cloning
 
-    3 Config
+    6 Config
 
 ==============================================================================
 ./moonship/crypto.moon
@@ -741,6 +741,7 @@
     2 codecacher     = require "moonship.codecacher"
     2 util           = require "moonship.util"
     2 log            = require "moonship.log"
+    2 Storage        = require "moonship.plugins.storage"
 
       -- response with
       -- :body, :code, :headers, :status, :error
@@ -768,16 +769,24 @@
 ****0   engage: (req) =>
     2     opts = @options\get()
 
-    2     opts.plugins["request"] = req if req
+    4     opts.plugins["request"] = req if req
 ****0     req = opts.plugins["request"]
+
+          -- create storage and cache if not exists
+****0     unless opts.plugins["storage"]
+    2       opts.plugins["storage"] = Storage(opts, "storage")
+
+****0     unless opts.plugins["cache"]
+****0       opts.plugins["cache"] = Storage(opts, "cache")
+
 ****0     rst, err = @codeCache\get(opts)
 
 ****0     return { :req, error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err
 ****0     return { :req, code: 404, headers: {}  } unless rst
 
-****0     @handleResponse(rst)
-****0     rst.req = req
-    2     rst
+    2     @handleResponse(rst)
+    1     rst.req = req
+    1     rst
 
     1 Engine
 
@@ -914,7 +923,7 @@
     9 util             = require "moonship.util"
 ****0 to_json          = util.to_json
 
-****0 doformat = (p) ->
+    6 doformat = (p) ->
 ****0   if type(p) == "table"
 ****0     return to_json p
 
@@ -926,15 +935,15 @@
 ****0 sep = ' '
 
 ****0 formatter = (...) ->
-****0   params = [doformat(v) for v in *{...}]
+    6   params = [doformat(v) for v in *{...}]
 
-****0   table.concat(params, sep)
+    6   table.concat(params, sep)
 
 ****0 local *
 
-****0 log = logger.new( "info", list_writer.new( console_color.new() ), formatter )
+    6 log = logger.new( "info", list_writer.new( console_color.new() ), formatter )
 
-      log
+    6 log
 
 ==============================================================================
 ./moonship/oauth1.moon
@@ -1030,8 +1039,6 @@
 ****0     opts = azt.item_retrieve({
 ****0       tenant: "a",
 ****0       table_name: table_name,
-****0       account_key: azure.AccountKey,
-****0       account_name: azure.AccountName,
 ****0       rk: k,
 ****0       pk: req.host
           })
@@ -1053,8 +1060,6 @@
 ****0     opts = azt.item_update({
 ****0       tenant: "a",
 ****0       table_name: table_name,
-****0       account_key: azure.AccountKey,
-****0       account_name: azure.AccountName,
 ****0       rk: k,
 ****0       pk: req.host
 ****0     }, "MERGE")
@@ -1077,11 +1082,11 @@
 ==============================================================================
 ./moonship/remoteresolver.moon
 ==============================================================================
-    3 util        = require "moonship.util"
-    3 httpc       = require "moonship.http"
-    3 log         = require "moonship.log"
+    4 util        = require "moonship.util"
+    4 httpc       = require "moonship.http"
+    4 log         = require "moonship.log"
 
-    3 import url_parse, trim, path_sanitize, url_build from util
+    4 import url_parse, trim, path_sanitize, url_build from util
 
 ****0 loadcode = (url) ->
     4   req = { url: url, method: "GET", capture_url: "/__libpublic", headers: {} }
@@ -1099,7 +1104,7 @@
         parsed
 
       -- attempt to parse and store new basepath
-    3 resolve_github = (modname) ->
+    4 resolve_github = (modname) ->
 ****0   modname = modname\gsub("github%.com/", "https://raw.githubusercontent.com/")
     7   parsed = resolve_remote(modname)
     7   user, repo, blobortree, branch, rest = string.match(parsed.basepath, "(/[^/]+)(/[^/]+)(/[^/]+)(/[^/]+)(.*)")
@@ -1109,8 +1114,8 @@
         parsed
 
     7 resolve = (modname, opts={plugins: {}}) ->
-    3   originalName = tostring(modname)\gsub("%.moon$", "")
-    3   rst = {}
+    4   originalName = tostring(modname)\gsub("%.moon$", "")
+    4   rst = {}
 
         -- remote is a url, then parse the url
     2   rst = resolve_remote(modname) if modname\find("http") == 1
@@ -1119,7 +1124,7 @@
     2   rst = resolve_github(modname) if modname\find("github%.com/") == 1
 
         -- if _remotebase, try to parse relative to it
-    3   remotebase = opts.plugins._remotebase
+    4   remotebase = opts.plugins._remotebase
 
 ****0   if remotebase and rst.path == nil
           -- example: {url}/remote/simpson/homer.moon
@@ -1156,14 +1161,14 @@
 ./moonship/requestbuilder.moon
 ==============================================================================
       -- build request plugins based on options
-    2 sandbox = require "moonship.sandbox"
-    2 util    = require "moonship.util"
+    3 sandbox = require "moonship.sandbox"
+    3 util    = require "moonship.util"
 
       class RequestBuilder
-    2   new: (opts={}) =>
+    3   new: (opts={}) =>
 ****0     @req = opts
 
-    3   build: (opts) =>
+    6   build: (opts) =>
 ****0     req_wrapper = {}
 ****0     if ngx
 ****0       ngx.req.read_body()
@@ -1184,40 +1189,40 @@
 ****0         user_agent: ""
             }
 ****0       req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
-    3       @req = req_wrapper
+    6       @req = req_wrapper
 
-    2     @req.logs = {}
+    3     @req.logs = {}
 ****0     @req
 
-    2   set: (req) =>
+    3   set: (req) =>
 ****0     @req = req
 
 ****0   log: (obj) =>
 ****0     if (type obj == "table")
 ****0       @req.logs[#@req.logs + 1] = util.to_json(obj)
           else
-    2       @req.logs[#@req.logs + 1] = tostring(t)
+    3       @req.logs[#@req.logs + 1] = tostring(t)
 
-    2 RequestBuilder
+    3 RequestBuilder
 
 ==============================================================================
 ./moonship/sandbox.moon
 ==============================================================================
-    4 parse   = require "moonscript.parse"
-    4 compile = require "moonscript.compile"
-    4 util    = require "moonship.util"
-    4 log     = require "moonship.log"
+    5 parse   = require "moonscript.parse"
+    5 compile = require "moonscript.compile"
+    5 util    = require "moonship.util"
+    5 log     = require "moonship.log"
 
 ****0 table_pack = table.pack or (...) -> { n: select("#", ...), ... }
 ****0 has_52_compatible_load = _VERSION ~= "Lua 5.1" or tostring(assert)\match "builtin"
 ****0 pack_1 = (first, ...) -> first, table_pack(...)
 
 ****0 loads = has_52_compatible_load and load or (code, name, mode, env) ->
-    4   return nil, "can't load binary chunk" if code.byte(code, 1) == 27
+    5   return nil, "can't load binary chunk" if code.byte(code, 1) == 27
 
 ****0   chunk, err = loadstring(code, name)
 ****0   setfenv(chunk, env) if chunk and env
-    4   chunk, err
+    5   chunk, err
 
 ****0 readfile = (file) ->
 ****0   f = io.open(file, "rb")
@@ -1257,11 +1262,11 @@
 ****0 local *
 
       -- Builds the environment table for a sandbox.
-    4 build_env = (src_env, dest_env={}, wl=whitelist) ->
-    4   env = {}
-    4   for name in wl\gmatch "%S+" do
+    5 build_env = (src_env, dest_env={}, wl=whitelist) ->
+    5   env = {}
+    5   for name in wl\gmatch "%S+" do
 
-    4     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
+    5     t_name, field = name\match "^([^%.]+)%.([^%.]+)$"
 ****0     if t_name
    14       tbl = env[t_name]
 ****0       env_t = src_env[t_name]
@@ -1311,7 +1316,7 @@
 ****0   assert(type(env) == "table", "env is required")
 
     4   code = readfile(file)
-    4   loadstring(code, file, env)
+    5   loadstring(code, file, env)
 
 
 ****0 loadfile_safe = (file, env={}, wl) ->
@@ -1320,21 +1325,21 @@
 
 
     2 exec = (fn) ->
-    4   ok, ret = pcall(fn)
+    5   ok, ret = pcall(fn)
 ****0   return nil, ret unless ok
 
         ret
 
     2 exec_code = (code, name, env={}, wl) ->
     2   fn = loadstring_safe(code, name, env, wl)
-    4   exec(fn)
+    5   exec(fn)
 
     7 compile_moon = (moon_code) ->
     7   tree, err = parse.string moon_code
     1   return nil, "Parse error: " .. err unless tree
 
     6   lua_code, err, pos = compile.tree tree
-    4   return nil, compile.format_error err, pos, moon_code unless lua_code
+    5   return nil, compile.format_error err, pos, moon_code unless lua_code
 
     1   lua_code
 
@@ -1350,14 +1355,14 @@
 
 ****0 local *
 
-   33 re_match = string.match
-   32 tonumber = tonumber
+   36 re_match = string.match
+   35 tonumber = tonumber
 ****0 setmetatable = setmetatable
 
-   76 string_split = (str, sep, dest={}) ->
-   43   str = tostring str
+   85 string_split = (str, sep, dest={}) ->
+   49   str = tostring str
 ****0   for str in string.gmatch(str, "([^" .. (sep or "%s") .. "]+)") do
-   33     insert(dest, str)
+   36     insert(dest, str)
 
    10   dest
 
@@ -1566,32 +1571,32 @@
 
    10 from_json = (obj) -> cjson_safe.decode obj
 
-    7 to_json = (obj) -> cjson_safe.encode json_encodable obj
+   87 to_json = (obj) -> cjson_safe.encode json_encodable obj
 
 ****0 query_string_encode = (t, sep="&", quote="", escape=url_escape) ->
-    7   query = {}
-    7   keys = {}
-    3   for k in pairs(t) do keys[#keys+1] = tostring(k)
-    3   sort(keys)
+   87   query = {}
+   87   keys = {}
+   17   for k in pairs(t) do keys[#keys+1] = tostring(k)
+   17   sort(keys)
 
-    8   for _, k in ipairs(keys) do
-    5     v = t[k]
+   95   for _, k in ipairs(keys) do
+   78     v = t[k]
 
 ****0     switch type v
             when "table"
-    3         unless seen[v]
+   17         unless seen[v]
 ****0           seen[v] = true
-    4           tv = query_string_encode(v, sep, quote, seen)
+   70           tv = query_string_encode(v, sep, quote, seen)
     1           v = tv
 ****0       when "function", "userdata", "thread"
-    3         nil
+   69         nil
             else
    10         v = escape(tostring(v))
 
     1     k = escape(tostring(k))
 
 ****0     if v ~= "" then
-    4       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
+   18       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
           else
 ****0       query[#query+1] = name
 
@@ -1633,14 +1638,14 @@
     6   for _, d in ipairs(fields) do
    10     firstEq = d\find(valSep)
 ****0     if (firstEq)
-   66       k = d\sub(1, firstEq - 1)
-  112       v = d\sub(firstEq + 1)
-   56       rst[k] = v
+   93       k = d\sub(1, firstEq - 1)
+  160       v = d\sub(firstEq + 1)
+   80       rst[k] = v
 
         rst
 
 ****0 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
-   10   :trim, :path_sanitize, :slugify, :table_sort_keys,
+   13   :trim, :path_sanitize, :slugify, :table_sort_keys,
    10   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
 ****0   :table_pairsByKeys, :query_string_encode, :applyDefaults,
 ****0   :string_split, :string_connection_parse, :string_random,
@@ -1654,22 +1659,22 @@ File                            Hits Missed Coverage
 ----------------------------------------------------
 ./moonship/awsauth.moon         37   18     67.27%
 ./moonship/azauth.moon          19   55     25.68%
-./moonship/aztable.moon         47   61     43.52%
+./moonship/aztable.moon         48   62     43.64%
 ./moonship/codecacher.moon      65   28     69.89%
-./moonship/config.moon          52   22     70.27%
+./moonship/config.moon          48   16     75.00%
 ./moonship/crypto.moon          21   7      75.00%
 ./moonship/date.moon            4    15     21.05%
-./moonship/engine.moon          15   16     48.39%
+./moonship/engine.moon          19   17     52.78%
 ./moonship/hmacauth.moon        7    7      50.00%
 ./moonship/http.moon            15   10     60.00%
 ./moonship/httpsocket.moon      11   8      57.89%
-./moonship/log.moon             5    12     29.41%
+./moonship/log.moon             10   8      55.56%
 ./moonship/oauth1.moon          32   8      80.00%
-./moonship/plugins/storage.moon 5    41     10.87%
+./moonship/plugins/storage.moon 5    37     11.90%
 ./moonship/remoteresolver.moon  28   14     66.67%
 ./moonship/requestbuilder.moon  9    25     26.47%
 ./moonship/sandbox.moon         42   25     62.69%
 ./moonship/url.moon             33   47     41.25%
 ./moonship/util.moon            70   42     62.50%
 ----------------------------------------------------
-Total                           517  461    52.86%
+Total                           523  449    53.81%

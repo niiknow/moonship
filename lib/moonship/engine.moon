@@ -2,6 +2,7 @@ config         = require "moonship.config"
 codecacher     = require "moonship.codecacher"
 util           = require "moonship.util"
 log            = require "moonship.log"
+Storage        = require "moonship.plugins.storage"
 
 -- response with
 -- :body, :code, :headers, :status, :error
@@ -31,6 +32,14 @@ class Engine
 
     opts.plugins["request"] = req if req
     req = opts.plugins["request"]
+
+    -- create storage and cache if not exists
+    unless opts.plugins["storage"]
+      opts.plugins["storage"] = Storage(opts, "storage")
+
+    unless opts.plugins["cache"]
+      opts.plugins["cache"] = Storage(opts, "cache")
+
     rst, err = @codeCache\get(opts)
 
     return { :req, error: err, code: 500, status: "500 Engine.engage error", headers: {}  } if err

@@ -2,6 +2,7 @@ local config = require("moonship.config")
 local codecacher = require("moonship.codecacher")
 local util = require("moonship.util")
 local log = require("moonship.log")
+local Storage = require("moonship.plugins.storage")
 local Engine
 do
   local _class_0
@@ -28,6 +29,12 @@ do
         opts.plugins["request"] = req
       end
       req = opts.plugins["request"]
+      if not (opts.plugins["storage"]) then
+        opts.plugins["storage"] = Storage(opts, "storage")
+      end
+      if not (opts.plugins["cache"]) then
+        opts.plugins["cache"] = Storage(opts, "cache")
+      end
       local rst, err = self.codeCache:get(opts)
       if err then
         return {

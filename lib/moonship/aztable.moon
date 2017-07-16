@@ -4,21 +4,30 @@ mydate        = require "moonship.date"
 http          = require "moonship.http"
 log           = require "moonship.log"
 string_gsub   = string.gsub
+config        = require "moonship.config"
+
 my_max_number = 9007199254740991  -- from javascript max safe int
 
 import sharedkeylite from azureauth
 import to_json, applyDefaults, trim, table_clone from util
-import lower from string
+
+conf = config()\get()
 
 local *
 
 -- generate multitenant opts
-opts_name = (opts={ :table_name, :tenant, :env_id, :pk, :prefix }) ->
+opts_name = (opts={ :table_name, :tenant, :pk, :prefix }) ->
+  opts.account_key = conf.azure.AccountKey
+  opts.account_name = conf.azure.AccountName
+
   if (opts.tenant)
-    opts.tenant = lower(opts.tenant)
-    opts.table = lower(opts.table_name)
-    opts.prefix = "#{opts.tenant}E#{opts.env_id}"
-    opts.table_name = "#{opts.prefix}#{opts.table}"
+    opts.tenant = string.lower(opts.tenant)
+    opts.prefix = "#{opts.tenant}E#{conf.app_env_id}"
+
+    -- only set if has not set
+    if (opts.table == nil)
+      opts.table = string.lower(opts.table_name)
+      opts.table_name = "#{opts.prefix}#{opts.table}"
 
 item_headers = (opts, method="GET") ->
   opts_name(opts)
@@ -36,9 +45,9 @@ item_headers = (opts, method="GET") ->
   hdrs
 
 -- get table header to create or delete table
-table_opts = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="GET") ->
-  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+table_opts = (opts={ :table_name, :pk, :rk }, method="GET") ->
   headers = item_headers(opts, method)
+  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
 
   -- remove item headers
   headers["If-Match"] = nil if method == "DELETE"
@@ -50,7 +59,8 @@ table_opts = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, metho
   }
 
 -- list items
-item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter, :top, :select }) ->
+item_list = (opts={ :table_name }, query={ :filter, :top, :select }) ->
+  headers = item_headers(opts, "GET")
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
   qs = ""
   qs = "#{qs}&$filter=#{query.filter}" if query.filter
@@ -59,7 +69,6 @@ item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter,
   qs = trim(qs, "&")
   full_path = url
   full_path = "#{url}?#{qs}" if qs
-  headers = item_headers(opts, "GET")
 
   {
     method: 'GET',
@@ -68,9 +77,9 @@ item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter,
   }
 
 -- create an item
-item_create = (opts={ :account_name, :account_key, :table_name }) ->
-  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+item_create = (opts={ :table_name }) ->
   headers = item_headers(opts, "POST")
+  url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
 
   {
     method: "POST",
@@ -79,17 +88,17 @@ item_create = (opts={ :account_name, :account_key, :table_name }) ->
   }
 
 -- update an item, method can be MERGE to upsert
-item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="PUT") ->
+item_update = (opts={ :table_name, :pk, :rk }, method="PUT") ->
   table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
   opts.table_name = table
   table_opts(opts, method)
 
 -- retrieve an item
-item_retrieve = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
+item_retrieve = (opts={ :table_name, :pk, :rk }) ->
   item_list(opts, { filter: "(PartitionKey eq '#{opts.pk}' and RowKey eq '#{opts.rk}')", top: 1 })
 
 -- delete an item
-item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) -> item_update(opts, "DELETE")
+item_delete = (opts={ :table_name, :pk, :rk }) -> item_update(opts, "DELETE")
 
 generate_opts = (opts={ :table_name }, format="%Y%m%d", ts=os.time()) ->
   newopts = util.table_clone(opts)
@@ -143,10 +152,10 @@ create_table = (opts) ->
 
 -- make azure storage request
 request = (opts, createTableIfNotExists=false) ->
-  -- log.error(opts)
+  --log.error(opts)
   oldOpts = table_clone(opts)
   res = http.request(opts)
-  -- log.error(res)
+  --log.error(res)
 
   if (createTableIfNotExists and res and res.body and res.body\find("TableNotFound"))
     -- log.error res

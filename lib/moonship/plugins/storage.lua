@@ -17,8 +17,6 @@ do
       local opts = azt.item_retrieve({
         tenant = "a",
         table_name = table_name,
-        account_key = azure.AccountKey,
-        account_name = azure.AccountName,
         rk = k,
         pk = req.host
       })
@@ -45,8 +43,6 @@ do
       local opts = azt.item_update({
         tenant = "a",
         table_name = table_name,
-        account_key = azure.AccountKey,
-        account_name = azure.AccountName,
         rk = k,
         pk = req.host
       }, "MERGE")

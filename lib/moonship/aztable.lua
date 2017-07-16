@@ -4,29 +4,32 @@ local mydate = require("moonship.date")
 local http = require("moonship.http")
 local log = require("moonship.log")
 local string_gsub = string.gsub
+local config = require("moonship.config")
 local my_max_number = 9007199254740991
 local sharedkeylite
 sharedkeylite = azureauth.sharedkeylite
 local to_json, applyDefaults, trim, table_clone
 to_json, applyDefaults, trim, table_clone = util.to_json, util.applyDefaults, util.trim, util.table_clone
-local lower
-lower = string.lower
+local conf = config():get()
 local opts_name, item_headers, table_opts, item_list, item_create, item_update, item_retrieve, item_delete, generate_opts, opts_daily, opts_monthly, opts_yearly, create_table, request
 opts_name = function(opts)
   if opts == nil then
     opts = {
       table_name = table_name,
       tenant = tenant,
-      env_id = env_id,
       pk = pk,
       prefix = prefix
     }
   end
+  opts.account_key = conf.azure.AccountKey
+  opts.account_name = conf.azure.AccountName
   if (opts.tenant) then
-    opts.tenant = lower(opts.tenant)
-    opts.table = lower(opts.table_name)
-    opts.prefix = tostring(opts.tenant) .. "E" .. tostring(opts.env_id)
-    opts.table_name = tostring(opts.prefix) .. tostring(opts.table)
+    opts.tenant = string.lower(opts.tenant)
+    opts.prefix = tostring(opts.tenant) .. "E" .. tostring(conf.app_env_id)
+    if (opts.table == nil) then
+      opts.table = string.lower(opts.table_name)
+      opts.table_name = tostring(opts.prefix) .. tostring(opts.table)
+    end
   end
 end
 item_headers = function(opts, method)
@@ -52,8 +55,6 @@ end
 table_opts = function(opts, method)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       pk = pk,
       rk = rk
@@ -62,8 +63,8 @@ table_opts = function(opts, method)
   if method == nil then
     method = "GET"
   end
-  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
   local headers = item_headers(opts, method)
+  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
   if method == "DELETE" then
     headers["If-Match"] = nil
   end
@@ -76,8 +77,6 @@ end
 item_list = function(opts, query)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name
     }
   end
@@ -88,6 +87,7 @@ item_list = function(opts, query)
       select = select
     }
   end
+  local headers = item_headers(opts, "GET")
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
   local qs = ""
   if query.filter then
@@ -104,7 +104,6 @@ item_list = function(opts, query)
   if qs then
     full_path = tostring(url) .. "?" .. tostring(qs)
   end
-  local headers = item_headers(opts, "GET")
   return {
     method = 'GET',
     url = full_path,
@@ -114,13 +113,11 @@ end
 item_create = function(opts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name
     }
   end
-  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
   local headers = item_headers(opts, "POST")
+  local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
   return {
     method = "POST",
     url = url,
@@ -130,8 +127,6 @@ end
 item_update = function(opts, method)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       pk = pk,
       rk = rk
@@ -147,8 +142,6 @@ end
 item_retrieve = function(opts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       pk = pk,
       rk = rk
@@ -162,8 +155,6 @@ end
 item_delete = function(opts)
   if opts == nil then
     opts = {
-      account_name = account_name,
-      account_key = account_key,
       table_name = table_name,
       pk = pk,
       rk = rk

@@ -12,7 +12,6 @@ local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
 local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local app_env = os.getenv("MOONSHIP_APP_ENV") or "prd"
-local Storage = require("moonship.plugins.storage")
 local string_split, table_clone, string_connection_parse
 string_split, table_clone, string_connection_parse = util.string_split, util.table_clone, util.string_connection_parse
 local insert
@@ -114,12 +113,6 @@ do
       end
       newOpts.app_env_id = env_id(newOpts.app_env)
       newOpts["azure"] = string_connection_parse(azure_storage or "")
-      if not (newOpts.plugins["storage"]) then
-        newOpts.plugins["storage"] = Storage(newOpts, "storage")
-      end
-      if not (newOpts.plugins["cache"]) then
-        newOpts.plugins["cache"] = Storage(newOpts, "cache")
-      end
       self.__data = newOpts
     end,
     __base = _base_0,
