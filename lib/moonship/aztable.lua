@@ -7,11 +7,11 @@ local string_gsub = string.gsub
 local my_max_number = 9007199254740991
 local sharedkeylite
 sharedkeylite = azureauth.sharedkeylite
-local to_json, applyDefaults
-to_json, applyDefaults = util.to_json, util.applyDefaults
+local to_json, applyDefaults, trim, table_clone
+to_json, applyDefaults, trim, table_clone = util.to_json, util.applyDefaults, util.trim, util.table_clone
 local lower
 lower = string.lower
-local get_headers, item_list, item_create, item_update, item_retrieve, item_delete, table_opts, opts_name, generate_opts, opts_daily, opts_monthly, opts_yearly, createTableThenExecute, request
+local get_headers, item_list, item_create, item_update, item_retrieve, item_delete, table_opts, opts_name, generate_opts, opts_daily, opts_monthly, opts_yearly, create_table, request
 get_headers = function(headers)
   return applyDefaults(headers, {
     ["Accept"] = "application/json;odata=nometadata",
@@ -38,15 +38,19 @@ item_list = function(opts, query)
   local Authorization = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
   local qs = ""
   if query.filter then
-    qs = tostring(qs) .. "&$filter=%{query.filter}"
+    qs = tostring(qs) .. "&$filter=" .. tostring(query.filter)
   end
   if query.top then
-    qs = tostring(qs) .. "&$top=%{query.top}"
+    qs = tostring(qs) .. "&$top=" .. tostring(query.top)
   end
   if query.select then
-    qs = tostring(qs) .. "&$select=%{query.select}"
+    qs = tostring(qs) .. "&$select=" .. tostring(query.select)
   end
-  local full_path = tostring(url) .. "?" .. tostring(qs)
+  qs = trim(qs, "&")
+  local full_path = url
+  if qs then
+    full_path = tostring(url) .. "?" .. tostring(qs)
+  end
   local headers = get_headers({
     Authorization = Authorization,
     ["x-ms-date"] = opts.date
@@ -57,7 +61,7 @@ item_list = function(opts, query)
     headers = headers
   }
 end
-item_create = function(opts, item)
+item_create = function(opts)
   if opts == nil then
     opts = {
       account_name = account_name,
@@ -76,11 +80,10 @@ item_create = function(opts, item)
   return {
     method = 'POST',
     url = url,
-    data = to_json(item),
     headers = headers
   }
 end
-item_update = function(opts, item, method)
+item_update = function(opts, method)
   if opts == nil then
     opts = {
       account_name = account_name,
@@ -93,7 +96,7 @@ item_update = function(opts, item, method)
   if method == nil then
     method = "PUT"
   end
-  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(item.pk) .. "',RowKey='" .. tostring(item.rk) .. "')"
+  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(opts.pk) .. "',RowKey='" .. tostring(opts.rk) .. "')"
   opts.table_name = table
   sharedkeylite(opts)
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
@@ -106,7 +109,6 @@ item_update = function(opts, item, method)
   return {
     method = method,
     url = url,
-    data = to_json(item),
     headers = headers
   }
 end
@@ -135,7 +137,7 @@ item_delete = function(opts)
       rk = rk
     }
   end
-  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(item.pk) .. "',RowKey='" .. tostring(item.rk) .. "')"
+  local table = tostring(opts.table_name) .. "(PartitionKey='" .. tostring(opts.pk) .. "',RowKey='" .. tostring(opts.rk) .. "')"
   opts.table_name = table
   sharedkeylite(opts)
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
@@ -148,13 +150,11 @@ item_delete = function(opts)
   return {
     method = "DELETE",
     url = url,
-    data = to_json(item),
     headers = headers
   }
 end
-table_opts = function(self, opts)
-  opts.table_name = opts:gsub("^/*", "")
-  auth.sharedkeylite(opts)
+table_opts = function(opts)
+  sharedkeylite(opts)
   local url = "https://" .. tostring(opts.account_name) .. ".table.core.windows.net/" .. tostring(opts.table_name)
   local Authorization = "SharedKeyLite " .. tostring(opts.account_name) .. ":" .. tostring(opts.sig)
   local headers = get_headers({
@@ -278,30 +278,29 @@ opts_yearly = function(opts, years, ts)
   end
   return rst
 end
-createTableThenExecute = function(opts, fn)
-  local tableOpts = table_clone(opts)
-  local newTableName = table_opts.table_name
-  tableOpts.table_name = "Tables"
-  tableOpts.body = to_json({
-    TableName = newTableName
+create_table = function(opts)
+  local tableName = opts.table_name
+  opts.table_name = "Tables"
+  opts.method = "POST"
+  opts.url = ""
+  opts.headers = nil
+  local topts = table_opts(opts)
+  topts.body = to_json({
+    TableName = tableName
   })
-  tableOpts.method = "POST"
-  local topts = table_opts(tableOpts)
-  local res = http.request(topts)
-  log.error(res)
-  if (res and res.code == 200) then
-    return fn(opts)
-  end
-  return res
+  return http.request(topts)
 end
 request = function(opts, createTableIfNotExists)
   if createTableIfNotExists == nil then
     createTableIfNotExists = false
   end
+  local oldOpts = table_clone(opts)
   local res = http.request(opts)
-  if (createTableIfNotExists and res and res.body and res.body:find("not exist")) then
-    log.error(res)
-    return createTableThenExecute(opts, request)
+  if (createTableIfNotExists and res and res.body and res.body:find("TableNotFound")) then
+    res = create_table(table_clone(opts))
+    if (res and res.code == 201) then
+      return request(oldOpts)
+    end
   end
   return res
 end

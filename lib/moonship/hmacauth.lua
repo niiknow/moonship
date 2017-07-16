@@ -11,7 +11,7 @@ sign = function(key, data, algo)
   if algo == nil then
     algo = crypto.sha256
   end
-  return base64_encode(crypto.hmac(key, str, algo).digest())
+  return base64_encode(crypto.hmac(key, data, algo).digest())
 end
 verify = function(key, data, algo)
   if algo == nil then
@@ -30,7 +30,7 @@ sign_custom = function(key, data, ttl, ts, algo)
     ts = os.time()
   end
   if algo == nil then
-    algo = "sha256"
+    algo = crypto.sha256
   end
   return tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data) .. ":" .. sign(tostring(ts) .. ":" .. tostring(ttl) .. ":" .. tostring(data))
 end

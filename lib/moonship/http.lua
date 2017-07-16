@@ -1,5 +1,6 @@
 local util = require("moonship.util")
 local oauth1 = require("moonship.oauth1")
+local log = require("moonship.log")
 local string_upper = string.upper
 local http_handler = require("moonship.httpsocket")
 if ngx then

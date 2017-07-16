@@ -16,7 +16,7 @@ date_utc = function(date)
   if date == nil then
     date = os.time()
   end
-  return os.date("!%a, %d, %b, %Y %H:%M:%S GMT", date)
+  return os.date("!%a, %d %b %Y %H:%M:%S GMT", date)
 end
 getHeader = function(headers, name, additionalHeaders)
   if additionalHeaders == nil then
@@ -34,7 +34,6 @@ sharedkeylite = function(opts)
   end
   opts.time = opts.time or os.time()
   opts.date = opts.date or date_utc(opts.time)
-  log.error(opts)
   opts.sig = hmacauth.sign(base64_decode(opts.account_key), tostring(opts.date) .. "\n/" .. tostring(opts.account_name) .. "/" .. tostring(opts.table_name))
   return opts
 end

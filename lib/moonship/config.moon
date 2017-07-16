@@ -16,6 +16,8 @@ aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
 remote_path           = os.getenv("MOONSHIP_REMOTE_PATH")
 app_env               = os.getenv("MOONSHIP_APP_ENV") or "prd"
 
+Storage               = require "moonship.plugins.storage"
+
 import string_split, table_clone, string_connection_parse from util
 import insert from table
 
@@ -89,6 +91,13 @@ class Config
 
     -- parsing azure storage connection string
     newOpts["azure"] = string_connection_parse(azure_storage or "")
+
+    -- create storage and cache if not exists
+    unless newOpts.plugins["storage"]
+      newOpts.plugins["storage"] = Storage(newOpts, "storage")
+
+    unless newOpts.plugins["cache"]
+      newOpts.plugins["cache"] = Storage(newOpts, "cache")
 
     @__data = newOpts
 

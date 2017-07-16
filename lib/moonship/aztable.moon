@@ -38,7 +38,7 @@ item_list = (opts={ :account_name, :account_key, :table_name }, query={ :filter,
   }
 
 -- create an item
-item_create = (opts={ :account_name, :account_key, :table_name }, item) ->
+item_create = (opts={ :account_name, :account_key, :table_name }) ->
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
   Authorization = "SharedKeyLite #{opts.account_name}:#{opts.sig}"
@@ -47,13 +47,12 @@ item_create = (opts={ :account_name, :account_key, :table_name }, item) ->
   {
     method: 'POST',
     url: url,
-    data: to_json(item),
     headers: headers
   }
 
 -- update an item, method can be MERGE to upsert
-item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, item, method="PUT") ->
-  table = "#{opts.table_name}(PartitionKey='#{item.pk}',RowKey='#{item.rk}')"
+item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, method="PUT") ->
+  table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
   opts.table_name = table
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
@@ -63,7 +62,6 @@ item_update = (opts={ :account_name, :account_key, :table_name, :pk, :rk }, item
   {
     method: method,
     url: url,
-    data: to_json(item),
     headers: headers
   }
 
@@ -73,7 +71,7 @@ item_retrieve = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
 
 -- delete an item
 item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
-  table = "#{opts.table_name}(PartitionKey='#{item.pk}',RowKey='#{item.rk}')"
+  table = "#{opts.table_name}(PartitionKey='#{opts.pk}',RowKey='#{opts.rk}')"
   opts.table_name = table
   sharedkeylite(opts)
   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
@@ -83,7 +81,6 @@ item_delete = (opts={ :account_name, :account_key, :table_name, :pk, :rk }) ->
   {
     method: "DELETE",
     url: url,
-    data: to_json(item),
     headers: headers
   }
 

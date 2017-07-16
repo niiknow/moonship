@@ -3,12 +3,11 @@ log.set_lvl("info")
 
 engine            = require "moonship.engine"
 awsauth           = require "moonship.awsauth"
-azts              = require "moonship.aztablestategy"
+azauth            = require "moonship.azauth"
 util              = require "moonship.util"
 crypto            = require "moonship.crypto"
 hmacauth          = require "moonship.hmacauth"
 http              = require "moonship.http"
-logger            = require "moonship.log"
 oauth1            = require "moonship.oauth1"
 
 import table_clone from util
@@ -17,7 +16,7 @@ opts = {
   useS3: true,
   plugins: {
     awsauth: awsauth,
-    azauth: table_clone(azts.azauth),
+    azauth: table_clone(azauth),
     crypto: table_clone(crypto),
     hmacauth: table_clone(hmacauth),
     http: table_clone(http),
@@ -26,7 +25,6 @@ opts = {
   }
 }
 ngin = engine opts
-
 
 rst = ngin\engage()
 
@@ -40,5 +38,7 @@ if rst
       ngx.header[k] = v
 
   ngx.say rst.body if (rst.body)
+
+  -- log request
 
   ngx.exit(rst.code)
