@@ -6,12 +6,12 @@ local requestbuilder = require("moonship.requestbuilder")
 local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 local aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
 local azure_storage = os.getenv("AZURE_STORAGE") or ""
 local app_path = os.getenv("MOONSHIP_APP_PATH")
-local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
-local aws_s3_code_path = os.getenv("AWS_S3_CODE_PATH")
-local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local app_env = os.getenv("MOONSHIP_APP_ENV") or "PRD"
+local code_cache_size = os.getenv("MOONSHIP_CODE_CACHE_SIZE") or 10000
+local remote_path = os.getenv("MOONSHIP_REMOTE_PATH")
 local string_split, table_clone, string_connection_parse
 string_split, table_clone, string_connection_parse = util.string_split, util.table_clone, util.string_connection_parse
 local insert

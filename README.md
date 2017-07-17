@@ -1,6 +1,32 @@
 # moonship
 openresty dynamic moonscript
 
+environment variables
+```
+# passthrough env vars
+# AWS S3 code repo config
+env AWS_DEFAULT_REGION;
+env AWS_ACCESS_KEY_ID;
+env AWS_SECRET_ACCESS_KEY;
+env AWS_S3_CODE_PATH;
+
+# access by lua
+env MOONSHIP_HOST_REGEX;
+
+# azure
+env AZURE_STORAGE;
+
+# app stuff
+env MOONSHIP_APP_PATH;
+env MOONSHIP_APP_ENV;
+
+# size of code to cache per worker, depend on server ram - default 10000
+env MOONSHIP_CODECACHE_SIZE;
+
+# set some remote url as base code repo path instead of s3
+env MOONSHIP_REMOTE_PATH;
+```
+
 # build and run
 http://leafo.net/posts/getting_started_with_moonscript.html
 
