@@ -2,15 +2,23 @@ local util = require("moonship.util")
 local oauth1 = require("moonship.oauth1")
 local log = require("moonship.log")
 local string_upper = string.upper
-local http_handler = require("moonship.httpsocket")
+local http_socket = require("moonship.httpsocket")
+local http_ngx
 if ngx then
-  http_handler = require("moonship.nginx.http")
+  http_ngx = require("moonship.nginx.http")
 end
 local concat
 concat = table.concat
 local query_string_encode
 query_string_encode = util.query_string_encode
 string_upper = string.upper
+local dorequest
+dorequest = function(opts)
+  if ngx and not opts.useSocket then
+    return http_ngx.request(opts)
+  end
+  return http_socket.request(opts)
+end
 local request
 request = function(opts)
   if type(opts) == 'string' then
@@ -42,7 +50,7 @@ request = function(opts)
   if opts["oauth"] then
     opts.headers["Authorization"] = oauth1.create_signature(opts, opts["oauth"])
   end
-  return http_handler.request(opts)
+  return dorequest(opts)
 end
 return {
   request = request

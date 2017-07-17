@@ -2,15 +2,15 @@ local http = require("moonship.http")
 local azt = require("moonship.aztable")
 local util = require("moonship.util")
 local log = require("moonship.log")
-local from_json, to_json
-from_json, to_json = util.from_json, util.to_json
+local from_json, to_json, table_clone
+from_json, to_json, table_clone = util.from_json, util.to_json, util.table_clone
 local BUFFER_COUNT, FLUSH_INTERVAL, dolog, AsyncLogger
 BUFFER_COUNT = 1
 FLUSH_INTERVAL = 0.01
-dolog = function(self, v)
-  local req = v.req
+dolog = function(self, rsp)
+  local v = { }
+  local req = rsp.req
   local logs = req.logs
-  v.req = nil
   req.logs = nil
   local rk = (tostring(req.host) .. " " .. tostring(req.path)):gsub("/", "$")
   local time = os.time()
@@ -26,19 +26,25 @@ dolog = function(self, v)
     table_name = table_name,
     rk = rk,
     pk = pk
-  }, "MERGE")
-  v.req = nil
+  })
   v.RowKey = rk
   v.PartitionKey = pk
   v.host = req.host
   v.path = req.path
-  v.start = req.start
-  v["end"] = req["end"]
-  v.time = v["end"] - v.start
+  v.time = req["end"] - req.start
   v.req = to_json(req)
-  v.logs = to_json(logs)
+  v.err = tostring(rsp.err)
+  v.code = rsp.code
+  v.status = rsp.status
+  v.headers = to_json(rsp.headers)
+  v.body = rsp.body
+  if (#logs > 0) then
+    v.logs = to_json(logs)
+  end
   opts.body = to_json(v)
-  return azt.request(opts, true)
+  opts.useSocket = true
+  local res = azt.request(opts, true)
+  return res
 end
 do
   local _class_0
@@ -46,8 +52,9 @@ do
     dolog = dolog,
     log = function(self, rsp)
       if (ngx) then
+        local myrsp = table_clone(rsp)
         local delay = math.random(10, 100)
-        local ok, err = ngx.timer.at(delay / 1000, dolog, self, rsp)
+        local ok, err = ngx.timer.at(delay / 1000, dolog, self, myrsp)
       end
     end
   }

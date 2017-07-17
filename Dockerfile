@@ -130,8 +130,8 @@ RUN cd /usr/local/openresty/luajit/bin/ \
     && ./luarocks install luasec 0.6-1 \
 
     && chown -R www-data:www-data /app; chmod -R 755 /app \
+    && mkdir -p /tmp/nginx/cache/code/{public,private} \
     && mkdir -p /tmp/nginx/temp \
-    && mkdir -p /tmp/nginx/cache/{ghr,code} \
     && chown -R www-data:www-data /tmp/nginx; chmod -R 755 /tmp/nginx
 
 EXPOSE 80 9080 443

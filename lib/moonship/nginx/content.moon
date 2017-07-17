@@ -31,6 +31,8 @@ ngin = engine opts
 rst = ngin\engage() or { code: 500, req: {} }
 
 rst.req.end = os.time()
+
+-- async logging
 alog.log(rst)
 
 -- send status

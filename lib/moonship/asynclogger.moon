@@ -5,7 +5,7 @@ azt     = require "moonship.aztable"
 util    = require "moonship.util"
 log     = require "moonship.log"
 
-import from_json, to_json from util
+import from_json, to_json, table_clone from util
 
 local *
 
@@ -17,10 +17,10 @@ BUFFER_COUNT = 1
   -- currently set to very low until we get azure bulk to work
 FLUSH_INTERVAL = 0.01
 
-dolog = (v) =>
-  req = v.req
+dolog = (rsp) =>
+  v = {}
+  req = rsp.req
   logs = req.logs
-  v.req = nil
   req.logs= nil
 
   -- replace illegal forward slash char
@@ -39,28 +39,34 @@ dolog = (v) =>
     table_name: table_name,
     rk: rk,
     pk: pk
-  }, "MERGE")
+  })
 
-  v.req = nil
   v.RowKey = rk
   v.PartitionKey = pk
   v.host = req.host
   v.path = req.path
-  v.start = req.start
-  v.end = req.end
-  v.time = v.end - v.start
+  v.time = req.end - req.start
   v.req = to_json(req)
-  v.logs = to_json(logs)
+  v.err = tostring(rsp.err)
+  v.code = rsp.code
+  v.status = rsp.status
+  v.headers = to_json(rsp.headers)
+  v.body = rsp.body
+
+  if (#logs > 0)
+    v.logs = to_json(logs)
 
   opts.body = to_json(v)
-  -- log.error opts
-  azt.request(opts, true)
+  opts.useSocket = true
+  res = azt.request(opts, true)
+  res
 
 class AsyncLogger
   dolog: dolog
   log: (rsp) =>
     if (ngx)
+      myrsp = table_clone(rsp)
       delay = math.random(10, 100)
-      ok, err = ngx.timer.at(delay / 1000, dolog, self, rsp)
+      ok, err = ngx.timer.at(delay / 1000, dolog, self, myrsp)
 
 AsyncLogger

@@ -279,6 +279,7 @@ create_table = function(opts)
   opts.url = ""
   opts.headers = nil
   local topts = table_opts(opts, "POST")
+  topts.useSocket = opts.useSocket
   topts.body = to_json({
     TableName = tableName
   })

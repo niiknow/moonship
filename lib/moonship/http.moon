@@ -4,13 +4,19 @@ oauth1       = require "moonship.oauth1"
 log          = require "moonship.log"
 
 string_upper = string.upper
-http_handler = require "moonship.httpsocket"
-http_handler = require "moonship.nginx.http" if ngx
+
+http_socket  = require "moonship.httpsocket"
+http_ngx     = require "moonship.nginx.http" if ngx
 
 import concat from table
 import query_string_encode from util
 
 string_upper = string.upper
+
+dorequest = (opts) ->
+  return http_ngx.request(opts) if ngx and not opts.useSocket
+
+  http_socket.request(opts)
 
 --{
 --  body = <response body>,
@@ -40,6 +46,6 @@ request = (opts) ->
   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, ':'))}" if opts["auth"]
   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
-  http_handler.request(opts)
+  dorequest(opts)
 
 { :request }
