@@ -14,13 +14,6 @@ describe "moonship.crypto", ->
 
     assert.same expected, actual
 
-  it "correctly bcrypt encode and verify", ->
-    expected = "hello world"
-    encoded = crypto.bcrypt(expected)
-    verified = crypto.bcrypt_verify(expected, encoded)
-
-    assert.same true, verified
-
   it "correctly hash md5", ->
     expected = "XrY7u+Ae7tCTyyK7j1rNww=="
     actual = crypto.base64_encode(crypto.md5("hello world").digest())

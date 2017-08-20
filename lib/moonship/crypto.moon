@@ -1,6 +1,5 @@
 crypto        = require "crypto"
 crypto_hmac   = require "crypto.hmac"
-mybcrypt      = require "bcrypt"
 basexx        = require "basexx"
 
 { :to_base64, :from_base64 } = basexx
@@ -23,8 +22,6 @@ hmac_wrapper = (key, str, algo) ->
     hex: () -> crypto_hmac.digest(algo, str, key, false)
   }
 
-bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
-bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
 md5 = (str) -> crypto_wrapper("md5", str)
 sha1 = (str) -> crypto_wrapper("sha1", str)
 sha256 = (str) -> crypto_wrapper("sha256", str)
@@ -36,4 +33,4 @@ hmac = (key, str, algo) ->
 
   return hmac_wrapper(key, str, algo) if type(algo) == "string"
 
-{ :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac }
+{ :base64_encode, :base64_decode, :md5, :sha1, :sha256, :hmac }
