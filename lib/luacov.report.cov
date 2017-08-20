@@ -8,7 +8,7 @@
     1 util    = require "moonship.util"
     1 log     = require "moonship.log"
 
-    1 import from_json, to_json from util
+    1 import from_json, to_json, table_clone from util
 
 ****0 local *
 
@@ -62,15 +62,13 @@
     1   opts.body = to_json(v)
 ****0   opts.useSocket = true
     1   res = azt.request(opts, true)
-
-        -- ngx.log(ngx.ERR, "logging: " .. opts)
-    1   res
+    2   res
 
     1 class AsyncLogger
-    1   dolog: dolog
-****0   log: (rsp) =>
+****0   dolog: dolog
+    1   log: (rsp) =>
     1     if (ngx)
-    1       myrsp = table_clone(rsp)
+****0       myrsp = table_clone(rsp)
     1       delay = math.random(10, 100)
     1       ok, err = ngx.timer.at(delay / 1000, dolog, self, myrsp)
 
@@ -92,11 +90,11 @@
 ****0     defOpts = {
     4       timestamp: os.time(), aws_host: "s3.amazonaws.com", aws_region: "us-east-1",
 ****0       aws_service: "s3", content_type: "application/x-www-form-urlencoded", request_method: "GET",
-    2       request_path: "/", request_body: "", aws_secret_access_key: "", aws_access_key_id: ""
-    2     }
+    1       request_path: "/", request_body: "", aws_secret_access_key: "", aws_access_key_id: ""
+    1     }
 
-    2     util.applyDefaults(options, defOpts)
-    2     options.iso_date        = os.date("!%Y%m%d", options.timestamp)
+    1     util.applyDefaults(options, defOpts)
+    1     options.iso_date        = os.date("!%Y%m%d", options.timestamp)
     4     options.iso_tz          = os.date("!%Y%m%dT%H%M%SZ", options.timestamp)
 ****0     @options = options
 
@@ -105,64 +103,64 @@
 ****0   get_canonical_header: () =>
 ****0     concat { "content-type:" .. @options.content_type, "host:" .. @options.aws_host, "x-amz-date:" .. @options.iso_tz }, "\n"
 
-    2   get_signed_request_body: () =>
+    1   get_signed_request_body: () =>
     4     params = @options.request_body
 ****0     if type(@options.request_body) == "table"
-    2       sort(params)
-    2       params = util.query_string_encode(params)
+    1       sort(params)
+    1       params = util.query_string_encode(params)
 
 ****0     digest = @get_sha256_digest(params or "")
-    4     string.lower(digest) -- hash must be in lowercase hex string
+    2     string.lower(digest) -- hash must be in lowercase hex string
 
         -- get canonical request
         -- https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 ****0   get_canonical_request: () =>
-    2     param  = {
-    2       @options.request_method,
+    1     param  = {
+    1       @options.request_method,
     4       @options.request_path,
             "", -- canonical query string
-   12       @get_canonical_header(),
+    6       @get_canonical_header(),
     4       "", -- content body?
             "content-type;host;x-amz-date",
-   10       @get_signed_request_body()
+    5       @get_signed_request_body()
     4     }
 ****0     canonical_request = concat(param, "\n")
-    4     @get_sha256_digest(canonical_request)
+    2     @get_sha256_digest(canonical_request)
 
         -- generate sha256 from the given string
-    4   get_sha256_digest: (s) => crypto.sha256(s).hex()
+    2   get_sha256_digest: (s) => crypto.sha256(s).hex()
     4   hmac: (secret, message) => crypto.hmac(secret, message, crypto.sha256)
 
         -- get signing key
         -- https://docs.aws.amazon.com/general/latest/gr/sigv4-calculate-signature.html
-    2   get_signing_key: () =>
-    2     k_date    = @hmac("AWS4" .. @options.aws_secret_access_key, @options.iso_date).digest()
+    1   get_signing_key: () =>
+    1     k_date    = @hmac("AWS4" .. @options.aws_secret_access_key, @options.iso_date).digest()
 ****0     k_region  = @hmac(k_date, @options.aws_region).digest()
 ****0     k_service = @hmac(k_region, @options.aws_service).digest()
-    2     @hmac(k_service, "aws4_request").digest()
+    1     @hmac(k_service, "aws4_request").digest()
 
         -- get string
 ****0   get_string_to_sign: () =>
-    2     param = { @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
-    2     cred  = concat(param, "/")
+    1     param = { @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
+    1     cred  = concat(param, "/")
 ****0     req   = @get_canonical_request()
-    2     concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
+    1     concat({ "AWS4-HMAC-SHA256", @options.iso_tz, cred, req }, "\n")
 
         -- generate signature
-    8   get_signature: () => @hmac(@get_signing_key(), @get_string_to_sign()).hex()
+    4   get_signature: () => @hmac(@get_signing_key(), @get_string_to_sign()).hex()
 
         -- get authorization string
         -- x-amz-content-sha256 required by s3
-    2   get_auth_header: () =>
-    2     param = { @options.aws_access_key_id, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
-    2     concat { "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"), "SignedHeaders=content-type;host;x-amz-date", "Signature=" .. @get_signature() }, ", "
+    1   get_auth_header: () =>
+    1     param = { @options.aws_access_key_id, @options.iso_date, @options.aws_region, @options.aws_service, "aws4_request" }
+    1     concat { "AWS4-HMAC-SHA256 Credential=" .. concat(param, "/"), "SignedHeaders=content-type;host;x-amz-date", "Signature=" .. @get_signature() }, ", "
 
 ****0   get_auth_headers: () =>
 ****0     { "Authorization": @get_auth_header(), "x-amz-date": @get_date_header(), "x-amz-content-sha256": @get_content_sha256(), "Content-Type": @options.content_type }
 
         -- get the current timestamp in iso8601 basic format
 ****0   get_date_header: () => @options.iso_tz
-    4   get_content_sha256: () => @get_sha256_digest("")
+    2   get_content_sha256: () => @get_sha256_digest("")
 
     4 AwsAuth
 
@@ -184,10 +182,10 @@
 
     4 getHeader = (headers, name, additionalHeaders={}) -> headers[name] or additionalHeaders[name] or ""
 
-    4 sharedkeylite = (opts = { :account_name, :account_key, :table_name }) ->
+    5 sharedkeylite = (opts = { :account_name, :account_key, :table_name }) ->
 ****0   opts.time = opts.time or os.time()
 ****0   opts.date = opts.date or date_utc(opts.time)
-    4   opts.sig = hmacauth.sign(base64_decode(opts.account_key), "#{opts.date}\n/#{opts.account_name}/#{opts.table_name}")
+    5   opts.sig = hmacauth.sign(base64_decode(opts.account_key), "#{opts.date}\n/#{opts.account_name}/#{opts.table_name}")
     4   opts
 
 ****0 canonicalizedResource = (opts) ->
@@ -196,15 +194,15 @@
 ****0   qs = query_string_encode(query, "\n", "", (v) -> v)
 
 ****0   params = {
-    4     "/#{opts.account_name}#{parsedUrl.path}",
+    5     "/#{opts.account_name}#{parsedUrl.path}",
           qs
         }
 
 ****0   concat(params, "\n")
 
 ****0 canonicalizedHeaders = (headers) ->
-    4   rst = {}
-    8   keys = {}
+    5   rst = {}
+   10   keys = {}
 
         -- sort
     4   for k in pairs(headers) do keys[#keys+1] = tostring(k)
@@ -292,7 +290,7 @@
 
     4 conf = config()\get()
 
-    4 local *
+    5 local *
 
       -- generate multitenant opts
 ****0 opts_name = (opts={ :table_name, :tenant, :pk, :prefix }) ->
@@ -300,8 +298,8 @@
 ****0   opts.account_name = conf.azure.AccountName
 
 ****0   if (opts.tenant)
-    4     opts.tenant = string.lower(opts.tenant)
-    4     opts.prefix = "#{opts.tenant}#{conf.app_env}"
+    5     opts.tenant = string.lower(opts.tenant)
+    5     opts.prefix = "#{opts.tenant}#{conf.app_env}"
 
           -- only set if has not set
     1     if (opts.table == nil)
@@ -310,29 +308,29 @@
 
 ****0 item_headers = (opts, method="GET") ->
 ****0   opts_name(opts)
-    8   sharedkeylite(opts)
+    9   sharedkeylite(opts)
 ****0   hdrs = {
-    4     ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
+    5     ["Authorization"]: "SharedKeyLite #{opts.account_name}:#{opts.sig}",
 ****0     ["x-ms-date"]: opts.date,
 ****0     ["Accept"]: "application/json;odata=nometadata",
-    4     ["x-ms-version"]: "2016-05-31"
-    4   }
+    5     ["x-ms-version"]: "2016-05-31"
+    5   }
 
-    4   hdrs["Content-Type"] = "application/json" if method == "PUT" or method == "POST" or method == "MERGE"
-    4   hdrs["If-Match"] = "*" if (method == "DELETE")
+    5   hdrs["Content-Type"] = "application/json" if method == "PUT" or method == "POST" or method == "MERGE"
+    5   hdrs["If-Match"] = "*" if (method == "DELETE")
 
         hdrs
 
       -- get table header to create or delete table
-    2 table_opts = (opts={ :table_name, :pk, :rk }, method="GET") ->
+    3 table_opts = (opts={ :table_name, :pk, :rk }, method="GET") ->
 ****0   headers = item_headers(opts, method)
-    4   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+    5   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
 
         -- remove item headers
-    4   headers["If-Match"] = nil if method == "DELETE"
+    5   headers["If-Match"] = nil if method == "DELETE"
 
         {
-    2     method: method,
+    3     method: method,
 ****0     url: url,
 ****0     headers: headers,
 ****0     table_name: opts.table_name,
@@ -342,19 +340,19 @@
 
       -- list items
 ****0 item_list = (opts={ :table_name }, query={ :filter, :top, :select }) ->
-    2   headers = item_headers(opts, "GET")
-    2   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
-    2   qs = ""
+    3   headers = item_headers(opts, "GET")
+    3   url = "https://#{opts.account_name}.table.core.windows.net/#{opts.table_name}"
+    3   qs = ""
     1   qs = "#{qs}&$filter=#{query.filter}" if query.filter
 ****0   qs = "#{qs}&$top=#{query.top}" if query.top
-    2   qs = "#{qs}&$select=#{query.select}" if query.select
-    2   qs = trim(qs, "&")
-    2   full_path = url
-    2   full_path = "#{url}?#{qs}" if qs
+    3   qs = "#{qs}&$select=#{query.select}" if query.select
+    3   qs = trim(qs, "&")
+    3   full_path = url
+    3   full_path = "#{url}?#{qs}" if qs
 
-    2   {
-    2     method: 'GET',
-    2     url: full_path,
+    3   {
+    3     method: 'GET',
+    3     url: full_path,
     4     headers: headers,
 ****0     table_name: opts.table_name,
     1     account_key: opts.account_key,
@@ -754,7 +752,6 @@
 ==============================================================================
    10 crypto        = require "crypto"
    10 crypto_hmac   = require "crypto.hmac"
-   10 mybcrypt      = require "bcrypt"
    10 basexx        = require "basexx"
 
    10 { :to_base64, :from_base64 } = basexx
@@ -765,32 +762,30 @@
 
 ****0 base64_decode = ngx and ngx.decode_base64 or from_base64
 
-   13 crypto_wrapper = (dtype, str) ->
+   10 crypto_wrapper = (dtype, str) ->
         {
-   10     digest: () -> crypto.digest(dtype, str, true)
-   13     hex: () -> crypto.digest(dtype, str, false)
-   13   }
+    7     digest: () -> crypto.digest(dtype, str, true)
+   10     hex: () -> crypto.digest(dtype, str, false)
+   10   }
 
 ****0 hmac_wrapper = (key, str, algo) ->
-   21   {
+   17   {
 ****0     digest: () -> crypto_hmac.digest(algo, str, key, true)
-   16     hex: () -> crypto_hmac.digest(algo, str, key, false)
-   21   }
+   13     hex: () -> crypto_hmac.digest(algo, str, key, false)
+   17   }
 
-    5 bcrypt = (str, rounds=12) -> mybcrypt.digest(str, rounds)
-   21 bcrypt_verify = (str, digest) -> mybcrypt.verify( str, digest )
-   21 md5 = (str) -> crypto_wrapper("md5", str)
-   10 sha1 = (str) -> crypto_wrapper("sha1", str)
-****0 sha256 = (str) -> crypto_wrapper("sha256", str)
-    1 hmac = (key, str, algo) ->
+    4 md5 = (str) -> crypto_wrapper("md5", str)
+   17 sha1 = (str) -> crypto_wrapper("sha1", str)
+   17 sha256 = (str) -> crypto_wrapper("sha256", str)
+   10 hmac = (key, str, algo) ->
 
-****0   return hmac_wrapper(key, str, "md5") if algo == md5
-    1   return hmac_wrapper(key, str, "sha1") if algo == sha1
-   10   return hmac_wrapper(key, str, "sha256") if algo == sha256
+    3   return hmac_wrapper(key, str, "md5") if algo == md5
+   10   return hmac_wrapper(key, str, "sha1") if algo == sha1
+****0   return hmac_wrapper(key, str, "sha256") if algo == sha256
 
-    1   return hmac_wrapper(key, str, algo) if type(algo) == "string"
+   10   return hmac_wrapper(key, str, algo) if type(algo) == "string"
 
-****0 { :base64_encode, :base64_decode, :bcrypt, :bcrypt_verify, :md5, :sha1, :sha256, :hmac }
+    5 { :base64_encode, :base64_decode, :md5, :sha1, :sha256, :hmac }
 
 ==============================================================================
 ./moonship/date.moon
@@ -900,8 +895,8 @@
     4 import unpack from table
 
 ****0 local *
-    4 sign = (key, data, algo=crypto.sha256) -> base64_encode(crypto.hmac(key, data, algo).digest())
-    4 verify = (key, data, algo=crypto.sha256) -> data == sign(key, data, algo)
+    5 sign = (key, data, algo=crypto.sha256) -> base64_encode(crypto.hmac(key, data, algo).digest())
+    5 verify = (key, data, algo=crypto.sha256) -> data == sign(key, data, algo)
 ****0 sign_custom = (key, data="", ttl=600, ts=os.time(), algo=crypto.sha256) -> "#{ts}:#{ttl}:#{data}:" .. sign("#{ts}:#{ttl}:#{data}")
 
       -- reverse the logic above to hmac verify
@@ -920,22 +915,22 @@
 ./moonship/http.moon
 ==============================================================================
 
-    8 util         = require "moonship.util"
-    8 oauth1       = require "moonship.oauth1"
-    8 log          = require "moonship.log"
+    7 util         = require "moonship.util"
+    7 oauth1       = require "moonship.oauth1"
+    7 log          = require "moonship.log"
 
-    8 string_upper = string.upper
+    7 string_upper = string.upper
 
 ****0 http_socket  = require "moonship.httpsocket"
 ****0 http_ngx     = require "moonship.nginx.http" if ngx
 
-    8 import concat from table
-    8 import query_string_encode from util
+    7 import concat from table
+    7 import query_string_encode from util
 
-    8 string_upper = string.upper
+    7 string_upper = string.upper
 
 ****0 dorequest = (opts) ->
-   15   return http_ngx.request(opts) if ngx and not opts.useSocket
+   16   return http_ngx.request(opts) if ngx and not opts.useSocket
 
 ****0   http_socket.request(opts)
 
@@ -954,18 +949,18 @@
 ****0   return { code: 0, err: "url is required" } unless opts.url
 
 ****0   opts["method"] = string_upper(opts["method"] or 'GET')
-   30   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
-   15   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
+   32   opts["headers"] = opts["headers"] or {["Accept"]: "*/*"}
+   16   opts["headers"]["User-Agent"] = opts["headers"]["User-Agent"] or "Mozilla/5.0"
 
         -- auto add content length
-   15   body = opts["body"]
-   15   if body
-   15     body = (type(body) == "table") and query_string_encode(body) or body
-    2     opts.body = body
-    2     opts.headers["content-length"] = #body
+   16   body = opts["body"]
+   16   if body
+   16     body = (type(body) == "table") and query_string_encode(body) or body
+    4     opts.body = body
+    4     opts.headers["content-length"] = #body
 
 ****0   opts.headers["Authorization"] = "Basic #{encode_base64(concat(opts.auth, ':'))}" if opts["auth"]
-   15   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
+   16   opts.headers["Authorization"] = oauth1.create_signature opts, opts["oauth"] if opts["oauth"]
 
 ****0   dorequest(opts)
 
@@ -975,14 +970,14 @@
 ./moonship/httpsocket.moon
 ==============================================================================
 
-    8 ltn12        = require "ltn12"
-    8 http         = require "socket.http"
-    8 https        = require "ssl.https"
+    7 ltn12        = require "ltn12"
+    7 http         = require "socket.http"
+    7 https        = require "ssl.https"
 
-    8 stringsource = ltn12.source.string
+    7 stringsource = ltn12.source.string
 ****0 tablesink    = ltn12.sink.table
 
-   15 make_request = (opts) ->
+   16 make_request = (opts) ->
 ****0   return https.request(opts) if opts.url\find "https:"
 ****0   http.request(opts)
 
@@ -999,8 +994,8 @@
       --  status = <the http status message>,
       --  err = <nil or error message>
       --}
-   15 request = (opts) ->
-   15   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
+   16 request = (opts) ->
+   16   opts = { url: opts, method: 'GET' } if type(opts) == 'string'
 
 ****0   opts.source = stringsource(opts.body)
 
@@ -1008,12 +1003,12 @@
 ****0   opts.sink = tablesink(result)
 ****0   one, code, headers, status = make_request opts
 ****0   body = table.concat(result)
-   15   message = #body > 0 and body or "unknown error"
-   15   return {:code, :headers, :status, err: message} unless one
+   16   message = #body > 0 and body or "unknown error"
+   16   return {:code, :headers, :status, err: message} unless one
 
-   15   { :code, :headers, :status, :body }
+   16   { :code, :headers, :status, :body }
 
-   15 { :request }
+   16 { :request }
 
 ==============================================================================
 ./moonship/log.moon
@@ -1051,26 +1046,26 @@
 ==============================================================================
 ./moonship/oauth1.moon
 ==============================================================================
-    9 log               = require "moonship.log"
-    9 util              = require "moonship.util"
-    9 crypto            = require "moonship.crypto"
+    8 log               = require "moonship.log"
+    8 util              = require "moonship.util"
+    8 crypto            = require "moonship.crypto"
 
-    9 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
-    9 import sort, concat from table
+    8 import string_split, url_escape, query_string_encode, table_sort_keys, url_parse, url_build, url_default_port from util
+    8 import sort, concat from table
 
-    9 escape_uri        = url_escape
-    9 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
+    8 escape_uri        = url_escape
+    8 unescape_uri      = ngx and ngx.unescape_uri or util.url_unescape
 ****0 encode_base64     = ngx and ngx.encode_base64 or crypto.base64_encode
-    9 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
-    9 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
+    8 digest_hmac_sha1  = ngx and ngx.hmac_sha1 or (key, str) -> crypto.hmac(key, str, crypto.sha1).digest()
+    8 digest_md5        = ngx and ngx.md5 or (str) -> crypto.md5(str).hex()
 
-    9 local *
+    8 local *
 
-    9 normalizeParameters = (parameters, body, query) ->
-    9   items = { query_string_encode(parameters, "&") }
+    8 normalizeParameters = (parameters, body, query) ->
+    8   items = { query_string_encode(parameters, "&") }
 
-    9   string_split(body, "&", items) if body
-    9   string_split(query, "&", items) if query
+    8   string_split(body, "&", items) if body
+    8   string_split(query, "&", items) if query
 
     1   sort(items)
     2   concat(items, "&")
@@ -1089,11 +1084,11 @@
         -- parse url for query string
 ****0   parts = url_parse(opts.url)
     3   parts.port = nil if (url_default_port(parts.scheme) == parts.port)
-    9   base_uri = url_build(parts, false)
+    8   base_uri = url_build(parts, false)
 
 
         -- allow for unit testing by passing in timestamp
-    9   timestamp = oauth['timestamp'] or os.time()
+    8   timestamp = oauth['timestamp'] or os.time()
 ****0   parameters = {
     1     oauth_consumer_key: oauth["consumerkey"],
     1     oauth_signature_method: "HMAC-SHA1",
@@ -1674,32 +1669,32 @@
 
    11 from_json = (obj) -> cjson_safe.decode obj
 
-   28 to_json = (obj) -> cjson_safe.encode json_encodable obj
+   30 to_json = (obj) -> cjson_safe.encode json_encodable obj
 
 ****0 query_string_encode = (t, sep="&", quote="", escape=url_escape) ->
-   28   query = {}
-   28   keys = {}
-    6   for k in pairs(t) do keys[#keys+1] = tostring(k)
-    6   sort(keys)
+   30   query = {}
+   30   keys = {}
+    7   for k in pairs(t) do keys[#keys+1] = tostring(k)
+    7   sort(keys)
 
-   28   for _, k in ipairs(keys) do
-   22     v = t[k]
+   30   for _, k in ipairs(keys) do
+   23     v = t[k]
 
 ****0     switch type v
             when "table"
-    6         unless seen[v]
+    7         unless seen[v]
 ****0           seen[v] = true
-   22           tv = query_string_encode(v, sep, quote, seen)
+   23           tv = query_string_encode(v, sep, quote, seen)
     1           v = tv
 ****0       when "function", "userdata", "thread"
-   21         nil
+   22         nil
             else
    11         v = escape(tostring(v))
 
     1     k = escape(tostring(k))
 
 ****0     if v ~= "" then
-   12       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
+   14       query[#query+1] = string.format('%s=%s', k, quote .. v .. quote)
           else
 ****0       query[#query+1] = name
 
@@ -1741,14 +1736,14 @@
     6   for _, d in ipairs(fields) do
    11     firstEq = d\find(valSep)
 ****0     if (firstEq)
-  102       k = d\sub(1, firstEq - 1)
-  176       v = d\sub(firstEq + 1)
-   88       rst[k] = v
+   70       k = d\sub(1, firstEq - 1)
+  114       v = d\sub(firstEq + 1)
+   57       rst[k] = v
 
         rst
 
 ****0 { :url_escape, :url_unescape, :url_parse, :url_build, :url_default_port,
-   14   :trim, :path_sanitize, :slugify, :table_sort_keys,
+   13   :trim, :path_sanitize, :slugify, :table_sort_keys,
    11   :json_encodable, :from_json, :to_json, :table_clone, :table_extend,
 ****0   :table_pairsByKeys, :query_string_encode, :applyDefaults,
 ****0   :string_split, :string_connection_parse, :string_random,
@@ -1760,13 +1755,13 @@ Summary
 
 File                            Hits Missed Coverage
 ----------------------------------------------------
-./moonship/asynclogger.moon     44   9      83.02%
+./moonship/asynclogger.moon     43   10     81.13%
 ./moonship/awsauth.moon         37   18     67.27%
 ./moonship/azauth.moon          19   55     25.68%
 ./moonship/aztable.moon         67   69     49.26%
 ./moonship/codecacher.moon      65   28     69.89%
 ./moonship/config.moon          44   11     80.00%
-./moonship/crypto.moon          21   7      75.00%
+./moonship/crypto.moon          20   5      80.00%
 ./moonship/date.moon            4    15     21.05%
 ./moonship/engine.moon          20   17     54.05%
 ./moonship/hmacauth.moon        7    7      50.00%
@@ -1781,4 +1776,4 @@ File                            Hits Missed Coverage
 ./moonship/url.moon             33   47     41.25%
 ./moonship/util.moon            70   42     62.50%
 ----------------------------------------------------
-Total                           579  466    55.41%
+Total                           577  465    55.37%

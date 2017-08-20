@@ -1,10 +1,9 @@
 local crypto = require("crypto")
 local crypto_hmac = require("crypto.hmac")
-local mybcrypt = require("bcrypt")
 local basexx = require("basexx")
 local to_base64, from_base64
 to_base64, from_base64 = basexx.to_base64, basexx.from_base64
-local base64_encode, base64_decode, crypto_wrapper, hmac_wrapper, bcrypt, bcrypt_verify, md5, sha1, sha256, hmac
+local base64_encode, base64_decode, crypto_wrapper, hmac_wrapper, md5, sha1, sha256, hmac
 base64_encode = ngx and ngx.encode_base64 or to_base64
 base64_decode = ngx and ngx.decode_base64 or from_base64
 crypto_wrapper = function(dtype, str)
@@ -26,15 +25,6 @@ hmac_wrapper = function(key, str, algo)
       return crypto_hmac.digest(algo, str, key, false)
     end
   }
-end
-bcrypt = function(str, rounds)
-  if rounds == nil then
-    rounds = 12
-  end
-  return mybcrypt.digest(str, rounds)
-end
-bcrypt_verify = function(str, digest)
-  return mybcrypt.verify(str, digest)
 end
 md5 = function(str)
   return crypto_wrapper("md5", str)
@@ -62,8 +52,6 @@ end
 return {
   base64_encode = base64_encode,
   base64_decode = base64_decode,
-  bcrypt = bcrypt,
-  bcrypt_verify = bcrypt_verify,
   md5 = md5,
   sha1 = sha1,
   sha256 = sha256,
