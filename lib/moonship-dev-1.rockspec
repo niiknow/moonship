@@ -6,7 +6,7 @@ source = {
 }
 
 description = {
-	summary = "A dynamic scripting framework for MoonScript",
+	summary = "A dynamic scripting framework with MoonScript",
 	homepage = "https://niiknow.github.io/moonship",
 	maintainer = "Tom Noogen <friends@niiknow.org>",
 	license = "MIT"
@@ -19,22 +19,8 @@ dependencies = {
 	"date",
 	"etlua",
 	"loadkit",
-	"lpeg",
-	"lua-cjson",
-	"luacrypto",
-	"luafilesystem",
-	"luasocket",
-	"mimetypes",
+	"lpeg"
 
-  "bcrypt",
-  "luacrypto",
-  "md5",
-  "penlight",
-  "lua-resty-http",
-  "lua-resty-string",
-  "lua-lru",
-  "lua-resty-hmac",
-  "lua-resty-jwt"
 }
 
 build = {
