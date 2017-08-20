@@ -27,6 +27,8 @@ request_ngx = (request_uri, opts={}) ->
 
   req_t.body = opts.body if opts.body
 
+  -- ngx.log(ngx.INFO, util.to_json(opts))
+
   rsp, err = ngx.location.capture(capture_url, req_t)
 
   return { code: 0, err: err } if err

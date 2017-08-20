@@ -124,7 +124,7 @@ json_encodable = function(obj, seen)
       local _tbl_0 = { }
       for k, v in pairs(obj) do
         if type(k) == "string" or type(k) == "number" then
-          _tbl_0[k] = json_encodable(v)
+          _tbl_0[k] = json_encodable(v, seen)
         end
       end
       return _tbl_0

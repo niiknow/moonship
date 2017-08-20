@@ -30,8 +30,8 @@ run_tests();
 __DATA__
 === TEST 1: aws s3 file
 --- main_config
-    env AWS_ACCESS_KEY_ID;
-    env AWS_SECRET_ACCESS_KEY;
+    env AWS_S3_KEY_ID;
+    env AWS_S3_ACCESS_KEY;
     env AWS_S3_CODE_PATH;
     env MOONSHIP_APP_PATH;
     env AZURE_STORAGE;

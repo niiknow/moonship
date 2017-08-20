@@ -83,9 +83,10 @@ do
     end,
     get = function(self, aws)
       local req = self.options.plugins["request"]
+      req.cb = req.cb or ""
       self.options.sandbox_env.request = req
       local url = util.path_sanitize(tostring(req.host) .. "/" .. tostring(req.path))
-      local valHolder = self.codeCache:get()
+      local valHolder = self.codeCache:get(url .. tostring(req.cb))
       if not (valHolder) then
         local domainAndPath, query = string.match(url, "([^?#]*)(.*)")
         domainAndPath = string.gsub(string.gsub(domainAndPath, "http://", ""), "https://", "")
@@ -108,14 +109,14 @@ do
           log.debug(tostring(valHolder.fileMod))
           valHolder.value = sandbox.loadfile_safe(valHolder.localFullPath, self.options.sandbox_env)
           valHolder.lastCheck = os.time()
-          self.codeCache:set(url, valHolder)
+          self.codeCache:set(url .. tostring(req.cb), valHolder)
         else
           valHolder.value = nil
         end
         self:doCheckRemoteFile(valHolder, aws)
       end
       if valHolder.value == nil then
-        self.codeCache:delete(url)
+        self.codeCache:delete(url .. tostring(req.cb))
       end
       if (type(valHolder.value) == "function") then
         return sandbox.exec(valHolder.value)

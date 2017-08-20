@@ -24,6 +24,7 @@ do
           server_addr = ngx.var.server_addr,
           user_agent = ""
         }
+        req_wrapper.cb = req_wrapper.query.cb
         req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
         self.req = req_wrapper
       end

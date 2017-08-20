@@ -6,8 +6,8 @@ remoteresolver        = require "moonship.remoteresolver"
 requestbuilder        = require "moonship.requestbuilder"
 
 aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
-aws_access_key_id     = os.getenv("AWS_ACCESS_KEY_ID")
-aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+aws_access_key_id     = os.getenv("AWS_S3_KEY_ID")
+aws_secret_access_key = os.getenv("AWS_S3_ACCESS_KEY")
 aws_s3_code_path      = os.getenv("AWS_S3_CODE_PATH") -- 'bucket-name/basepath'
 azure_storage         = os.getenv("AZURE_STORAGE") or ""
 
@@ -67,10 +67,16 @@ class Config
     }
 
     util.applyDefaults(newOpts, defaultOpts)
+
+    -- ngx.log(ngx.INFO, util.to_json(newOpts))
+
     newOpts.app_env = upper(newOpts.app_env or "PRD")
     newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
     newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
     req = newOpts.requestbuilder\build()
+
+    -- ngx.log(ngx.INFO, util.to_json(req))
+
     newOpts.plugins["request"] = req
     newOpts.plugins["log"] = req\log
 

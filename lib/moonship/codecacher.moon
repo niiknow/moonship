@@ -40,6 +40,7 @@ myUrlHandler = (opts) ->
     req.headers[k] = v
 
   res, err = httpc.request(req)
+
   return res unless err
 
   log.debug "code load error: #{err}"
@@ -101,6 +102,8 @@ class CodeCacher
     -- if remote return 200
     rsp, err = @options.codeHandler(opts)
 
+    -- ngx.log(ngx.INFO, 'rsp' .. util.to_json(rsp))
+    -- ngx.log(ngx.INFO, 'err: ' .. util.to_json(err))
 
     if (rsp.code == 200)
       -- ngx.say(valHolder.localPath)
@@ -124,9 +127,10 @@ class CodeCacher
 
   get: (aws) =>
     req = @options.plugins["request"]
+    req.cb = req.cb or ""
     @options.sandbox_env.request = req
     url = util.path_sanitize("#{req.host}/#{req.path}")
-    valHolder = @codeCache\get()
+    valHolder = @codeCache\get(url .. "#{req.cb}")
 
     -- initialize valHolder
     unless valHolder
@@ -163,7 +167,7 @@ class CodeCacher
         -- set it back immediately for the next guy
         -- set next ttl
         valHolder.lastCheck = os.time()
-        @codeCache\set url, valHolder
+        @codeCache\set url .. "#{req.cb}", valHolder
       else
         -- delete reference if file no longer exists/purged
         valHolder.value = nil
@@ -171,7 +175,7 @@ class CodeCacher
       @doCheckRemoteFile(valHolder, aws)
 
     -- remove from cache if not found
-    @codeCache\delete(url) if valHolder.value == nil
+    @codeCache\delete(url .. "#{req.cb}") if valHolder.value == nil
     return sandbox.exec(valHolder.value) if (type(valHolder.value) == "function")
 
     valHolder.value

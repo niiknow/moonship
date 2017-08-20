@@ -1,10 +1,10 @@
-FROM niiknow/openresty
+FROM niiknow/openresty:0.1.4
 
 MAINTAINER noogen <friends@niiknow.org>
 
 # Add additional binaries into PATH for convenience
 ENV LUA_PATH="/app/?.lua;/app/?/?.lua;/app/?/init.lua;/app/lib/?.lua;/app/lib/?/?.lua;/usr/local/openresty/site/lualib/?.lua;/usr/local/openresty/site/lualib/?/init.lua;/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua;/usr/local/openresty/lib/?.lua;;" \
-    AWS_DEFAULT_REGION="us-west-2" \
+    AWS_DEFAULT_REGION="us-east-1" \
     MOONSHIP_APP_PATH="/app" \
     MOONSHIP_APP_ENV="prd" \
     MOONSHIP_CODECACHE_SIZE=10000
@@ -25,12 +25,13 @@ RUN \
 	    python \
 	    py-pip \
 	    rsync \
-	    sed && \
+	    sed \
+
+	    openssl-dev && \
 
     apk add --no-cache --virtual .build-deps \
 	    gcc \
 	    libc-dev \
-	    openssl-dev \
 	    git && \
 
     pip install awscli && \
@@ -62,7 +63,7 @@ RUN \
 
 COPY rootfs/. /
 
-COPY lib/. /app-start/
+COPY lib/. /app-start/lib/
 
 EXPOSE 80 443
 

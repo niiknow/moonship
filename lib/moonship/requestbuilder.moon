@@ -24,8 +24,9 @@ class RequestBuilder
         referer: ngx.var.http_referer or "-",
         scheme: ngx.var.scheme,
         server_addr: ngx.var.server_addr,
-        user_agent: ""
+        user_agent: "",
       }
+      req_wrapper.cb = req_wrapper.query.cb
       req_wrapper.user_agent = req_wrapper.headers["User-Agent"]
       @req = req_wrapper
 

@@ -6,8 +6,8 @@ environment variables
 # passthrough env vars
 # AWS S3 code repo config
 env AWS_DEFAULT_REGION;
-env AWS_ACCESS_KEY_ID;
-env AWS_SECRET_ACCESS_KEY;
+env AWS_S3_KEY_ID;
+env AWS_S3_ACCESS_KEY;
 env AWS_S3_CODE_PATH;
 
 # access by lua

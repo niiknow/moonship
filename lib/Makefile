@@ -24,17 +24,17 @@ clean: build
 
 init:
 	luarocks install busted
-    luarocks install lua-resty-jwt
-    luarocks install lua-resty-http
-    luarocks install moonscript
-    luarocks install luacrypto
-    luarocks install lua-lru
-    luarocks install basexx
-    luarocks install lpath
-    luarocks install lua-log
-    luarocks install --server=http://luarocks.org/dev ltn12
-    luarocks install luasec 0.6-1
-    luarocks install http
+	luarocks install lua-resty-jwt
+	luarocks install lua-resty-http
+	luarocks install moonscript
+	luarocks install luacrypto
+	luarocks install lua-lru
+	luarocks install basexx
+	luarocks install lpath
+	luarocks install lua-log
+	luarocks install --server=http://luarocks.org/dev ltn12
+	luarocks install luasec 0.6-1
+	luarocks install http
 
 doc: clean
 	ldoc .
