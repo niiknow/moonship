@@ -56,28 +56,15 @@ RUN \
     addgroup -S nginx && \
     adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx && \
 
-    mkdir -p /app/lib && \
-
     apk --purge -v del py-pip .build-deps && \
 
     rm -rf /var/cache/apk/*
 
 COPY rootfs/. /
 
-COPY lib/. /app/
-
-RUN \
-    chown -R nginx:nginx /app; chmod -R 755 /app && \
-    chown -R nginx:nginx /usr/local/openresty/nginx/logs/ && \
-
-  # link for ease of refs in conf file
-    ln -s /usr/local/openresty/nginx/logs/ /var/log/nginx && \
-
-  # backup the conf folder
-    rsync -a /usr/local/openresty/nginx/conf/ /usr/local/openresty/nginx/conf-bak
+COPY lib/. /app-start/
 
 EXPOSE 80 443
 
-# mount to persist configuration, ssl, and purge cache
-VOLUME ["/usr/local/openresty/nginx/conf"]
+VOLUME ["/app"]
 

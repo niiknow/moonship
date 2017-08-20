@@ -42,7 +42,6 @@ luarocks install lua-resty-jwt 0.1.10-1
 luarocks install lua-resty-http 0.08-0
 luarocks install moonscript
 luarocks install luacrypto 0.3.2-2
-luarocks install bcrypt 2.1-4
 luarocks install lua-lru 1.0-1
 luarocks install basexx 0.1.0-1
 luarocks install lpath 0.1.0-1 
@@ -64,3 +63,4 @@ run demo local web server, then open: http://localhost:4000/hello
 moon lib/server.moon
 ```
 
+# MIT
