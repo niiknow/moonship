@@ -43,13 +43,10 @@ __DATA__
     }
 
     location /__libprivate {
-        internal;
         set $clean_url "";
-        set_unescape_uri $clean_url $arg_url;
+        set_unescape_uri $clean_url $arg_target;
         proxy_pass $clean_url;
 
-
-        # Make connection to S3 using HTTP/1.1
         proxy_http_version 1.1;
     }
 --- request

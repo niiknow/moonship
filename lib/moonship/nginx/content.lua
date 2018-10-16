@@ -1,15 +1,13 @@
-local log = require("moonship.log")
+local log = require("mooncrafts.log")
 log.set_lvl("info")
 local engine = require("moonship.engine")
-local awsauth = require("moonship.awsauth")
-local azauth = require("moonship.azauth")
-local util = require("moonship.util")
-local crypto = require("moonship.crypto")
-local hmacauth = require("moonship.hmacauth")
-local http = require("moonship.http")
-local oauth1 = require("moonship.oauth1")
-local asynclogger = require("moonship.asynclogger")
-local alog = asynclogger()
+local awsauth = require("mooncrafts.awsauth")
+local azauth = require("mooncrafts.azauth")
+local util = require("mooncrafts.util")
+local crypto = require("mooncrafts.crypto")
+local hmacauth = require("mooncrafts.hmacauth")
+local http = require("mooncrafts.http")
+local oauth1 = require("mooncrafts.oauth1")
 local table_clone
 table_clone = util.table_clone
 local opts = {
@@ -30,7 +28,6 @@ local rst = ngin:engage() or {
   req = { }
 }
 rst.req["end"] = os.time()
-alog.log(rst)
 ngx.status = rst.code
 if (rst.headers) then
   for k, v in pairs(rst.headers) do

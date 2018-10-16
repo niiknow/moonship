@@ -1,8 +1,9 @@
-local util = require("moonship.util")
-local log = require("moonship.log")
-local sandbox = require("moonship.sandbox")
-local remoteresolver = require("moonship.remoteresolver")
-local requestbuilder = require("moonship.requestbuilder")
+local util = require("mooncrafts.util")
+local log = require("mooncrafts.log")
+local sandbox = require("mooncrafts.sandbox")
+local remoteresolver = require("mooncrafts.remoteresolver")
+local requestbuilder = require("mooncrafts.requestbuilder")
+local asynclogger = require("mooncrafts.asynclogger")
 local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 local aws_access_key_id = os.getenv("AWS_S3_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_S3_ACCESS_KEY")
@@ -82,6 +83,7 @@ do
         plugins = { }
       }
       util.applyDefaults(newOpts, defaultOpts)
+      newOpts.alog = newOpts.azure_storage
       newOpts.app_env = upper(newOpts.app_env or "PRD")
       newOpts.requestbuilder = newOpts.requestbuilder or requestbuilder()
       newOpts.plugins["require"] = newOpts.require or build_requires(newOpts)
@@ -95,6 +97,10 @@ do
         end
       end
       newOpts["azure"] = string_connection_parse(azure_storage or "")
+      newOpts["alog"] = asynclogger({
+        account_name = newOpts.azure.AccountName,
+        account_key = newOpts.azure.AccountKey
+      })
       self.__data = newOpts
     end,
     __base = _base_0,

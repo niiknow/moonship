@@ -1,8 +1,8 @@
 -- implement storage with azure
 
-http    = require "moonship.http"
-azt     = require "moonship.aztable"
-util    = require "moonship.util"
+http    = require "mooncrafts.http"
+azt     = require "mooncrafts.aztable"
+util    = require "mooncrafts.util"
 
 import from_json, to_json from util
 

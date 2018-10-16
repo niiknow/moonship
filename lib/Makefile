@@ -1,7 +1,7 @@
 
 .PHONY: test local build global watch clean
 
-test:
+test: build
 	busted -c spec
 
 local: build
@@ -23,18 +23,12 @@ clean: build
 	mkdir -p ./t/localhost
 
 init:
-	luarocks install busted
-	luarocks install lua-resty-jwt
-	luarocks install lua-resty-http
-	luarocks install moonscript
-	luarocks install luacrypto
-	luarocks install lua-lru
-	luarocks install basexx
-	luarocks install lpath
-	luarocks install lua-log
-	luarocks install --server=http://luarocks.org/dev ltn12
-	luarocks install luasec 0.6-1
-	luarocks install http
+	sudo luarocks install lua-lru
+	sudo luarocks install lpath
+	sudo luarocks install luasec OPENSSL_DIR=/usr/local/opt/openssl
+	sudo luarocks install cqueues CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
+	sudo luarocks install http CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
+	sudo luarocks install mooncrafts
 
 doc: clean
 	ldoc .

@@ -1,13 +1,13 @@
 
-aws_auth         = require "moonship.awsauth"
-httpc            = require "moonship.http"
-sandbox          = require "moonship.sandbox"
-util             = require "moonship.util"
+aws_auth         = require "mooncrafts.awsauth"
+httpc            = require "mooncrafts.http"
+sandbox          = require "mooncrafts.sandbox"
+util             = require "mooncrafts.util"
 
 lfs              = require "lfs"
 lru              = require "lru"
 plpath           = require "path"
-log              = require "moonship.log"
+log              = require "mooncrafts.log"
 fs               = require "path.fs"
 
 local *
@@ -39,8 +39,10 @@ myUrlHandler = (opts) ->
   for k, v in pairs(authHeaders) do
     req.headers[k] = v
 
+  -- ngx.log(ngx.ERR, 'req' .. util.to_json(req))
   res, err = httpc.request(req)
 
+  -- ngx.log(ngx.ERR, 'res' .. util.to_json(res))
   return res unless err
 
   log.debug "code load error: #{err}"
@@ -108,6 +110,7 @@ class CodeCacher
     if (rsp.code == 200)
       -- ngx.say(valHolder.localPath)
       -- write file, load data
+      -- ngx.log(ngx.ERR, opts)
       if (rsp.body)
         lua_src = sandbox.compile_moon rsp.body
         if (lua_src)

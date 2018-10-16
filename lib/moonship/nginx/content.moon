@@ -1,16 +1,15 @@
-log               = require "moonship.log"
+log               = require "mooncrafts.log"
 log.set_lvl("info")
 
 engine            = require "moonship.engine"
-awsauth           = require "moonship.awsauth"
-azauth            = require "moonship.azauth"
-util              = require "moonship.util"
-crypto            = require "moonship.crypto"
-hmacauth          = require "moonship.hmacauth"
-http              = require "moonship.http"
-oauth1            = require "moonship.oauth1"
-asynclogger       = require "moonship.asynclogger"
-alog = asynclogger()
+awsauth           = require "mooncrafts.awsauth"
+azauth            = require "mooncrafts.azauth"
+util              = require "mooncrafts.util"
+crypto            = require "mooncrafts.crypto"
+hmacauth          = require "mooncrafts.hmacauth"
+http              = require "mooncrafts.http"
+oauth1            = require "mooncrafts.oauth1"
+
 
 import table_clone from util
 
@@ -33,7 +32,6 @@ rst = ngin\engage() or { code: 500, req: {} }
 rst.req.end = os.time()
 
 -- async logging
-alog.log(rst)
 
 -- send status
 ngx.status = rst.code
@@ -42,6 +40,8 @@ ngx.status = rst.code
 if (rst.headers)
   for k, v in pairs rst.headers do
     ngx.header[k] = v
+
+-- ngx.log(ngx.ERR, util.to_json(rst))
 
 -- send body
 ngx.say rst.body if (rst.body)

@@ -1,7 +1,7 @@
 local config = require("moonship.config")
 local codecacher = require("moonship.codecacher")
-local util = require("moonship.util")
-local log = require("moonship.log")
+local util = require("mooncrafts.util")
+local log = require("mooncrafts.log")
 local Storage = require("moonship.plugins.storage")
 local Engine
 do
@@ -70,6 +70,7 @@ do
         }
       end
       self.options = config(options)
+      self.alog = self.options:get().alog
       self.codeCache = codecacher.CodeCacher(self.options:get())
     end,
     __base = _base_0,

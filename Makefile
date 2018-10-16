@@ -5,7 +5,7 @@ LUA_INCLUDE_DIR ?= $(PREFIX)/include
 LUA_LIB_DIR ?=     $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL ?= install
 
-.PHONY: all test test-moon install build
+.PHONY: all test test-moon install build local global doc
 
 all: build ;
 
@@ -23,11 +23,22 @@ test-resty: all
 build:
 	cd lib && $(MAKE) build
 
+local: build
+	luarocks make --force --local mooncrafts-git-1.rockspec
+
+global: build
+	sudo luarocks make mooncrafts-git-1.rockspec
+
 test:
 	cd lib && $(MAKE) test
 
 clean:
 	rm -rf doc/
+	cd lib && $(MAKE) clean
+
+init:
+	cd lib && $(MAKE) init
 
 doc:
 	cd lib && $(MAKE) doc
+

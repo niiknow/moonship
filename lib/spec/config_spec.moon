@@ -1,16 +1,16 @@
 config = require "moonship.config"
 
-log               = require "moonship.log"
+log               = require "mooncrafts.log"
 log.set_lvl("info")
 
 engine            = require "moonship.engine"
-awsauth           = require "moonship.awsauth"
-util              = require "moonship.util"
-crypto            = require "moonship.crypto"
-hmacauth          = require "moonship.hmacauth"
-http              = require "moonship.http"
-logger            = require "moonship.log"
-oauth1            = require "moonship.oauth1"
+awsauth           = require "mooncrafts.awsauth"
+util              = require "mooncrafts.util"
+crypto            = require "mooncrafts.crypto"
+hmacauth          = require "mooncrafts.hmacauth"
+http              = require "mooncrafts.http"
+logger            = require "mooncrafts.log"
+oauth1            = require "mooncrafts.oauth1"
 
 import table_clone from util
 

@@ -1,7 +1,7 @@
 config         = require "moonship.config"
 codecacher     = require "moonship.codecacher"
-util           = require "moonship.util"
-log            = require "moonship.log"
+util           = require "mooncrafts.util"
+log            = require "mooncrafts.log"
 Storage        = require "moonship.plugins.storage"
 
 -- response with
@@ -17,6 +17,7 @@ class Engine
       }
 
     @options = config(options)
+    @alog = @options\get().alog
     @codeCache = codecacher.CodeCacher(@options\get())
 
   handleResponse: (rst) =>

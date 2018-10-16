@@ -1,9 +1,10 @@
 
-util                  = require "moonship.util"
-log                   = require "moonship.log"
-sandbox               = require "moonship.sandbox"
-remoteresolver        = require "moonship.remoteresolver"
-requestbuilder        = require "moonship.requestbuilder"
+util                  = require "mooncrafts.util"
+log                   = require "mooncrafts.log"
+sandbox               = require "mooncrafts.sandbox"
+remoteresolver        = require "mooncrafts.remoteresolver"
+requestbuilder        = require "mooncrafts.requestbuilder"
+asynclogger           = require "mooncrafts.asynclogger"
 
 aws_region            = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 aws_access_key_id     = os.getenv("AWS_S3_KEY_ID")
@@ -68,6 +69,7 @@ class Config
 
     util.applyDefaults(newOpts, defaultOpts)
 
+    newOpts.alog = newOpts.azure_storage
     -- ngx.log(ngx.INFO, util.to_json(newOpts))
 
     newOpts.app_env = upper(newOpts.app_env or "PRD")
@@ -82,6 +84,10 @@ class Config
 
     -- parsing azure storage connection string
     newOpts["azure"] = string_connection_parse(azure_storage or "")
+    newOpts["alog"] = asynclogger({
+      account_name: newOpts.azure.AccountName,
+      account_key: newOpts.azure.AccountKey
+    })
 
     @__data = newOpts
 
