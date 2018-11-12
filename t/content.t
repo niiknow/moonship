@@ -7,7 +7,8 @@ my $pwd = cwd();
 
 $ENV{TEST_NGINX_RESOLVER} = '8.8.8.8';
 $ENV{TEST_COVERAGE} ||= 0;
-$ENV{MOONSHIP_APP_PATH} = 't/servroot/html';
+$ENV{LETSENCRYPT_URL} = 'https://acme-staging.api.letsencrypt.org/directory'
+$ENV{AWS_DEFAULT_REGION} = 'us-east-2'
 
 our $HttpConfig = qq{
     lua_package_path "$pwd/lib/?.lua;/usr/local/share/lua/5.1/?.lua;;";
@@ -30,10 +31,11 @@ run_tests();
 __DATA__
 === TEST 1: aws s3 file
 --- main_config
+  env LETSENCRYPT_URL;
+  env AWS_DEFAULT_REGION;
   env AWS_S3_KEY_ID;
   env AWS_S3_ACCESS_KEY;
   env AWS_S3_PATH;
-  env MOONSHIP_APP_PATH;
 
 --- http_config eval: $::HttpConfig
 --- config

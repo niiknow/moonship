@@ -1,6 +1,7 @@
 FROM niiknow/openresty:0.2.0
 LABEL maintainer="noogen <friends@niiknow.org>"
 ENV AWS_DEFAULT_REGION="us-east-2" \
+    LETSENCRYPT_URL="https://acme-staging.api.letsencrypt.org/directory" \
     HOME="/root" \
     USER="root"
 USER root

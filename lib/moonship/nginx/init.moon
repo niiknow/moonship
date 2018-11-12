@@ -6,6 +6,8 @@ export router_cache = require "moonship.routercache"
 -- capture base host from env variable
 base_host = os.getenv("BASE_HOST") or "moonship.test"
 
+auto_ssl\set("ca", '$LETSENCRYPT_URL')
+
 -- use dns to lookup valid cname
 auto_ssl\set "allow_domain", (domain) ->
   -- lookup dns
