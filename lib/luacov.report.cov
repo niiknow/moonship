@@ -27,7 +27,7 @@
 
  4   if opts.aws and opts.aws.aws_s3_code_path
        -- process s3 stuff
- 4     opts.aws.request_path = "/#{opts.aws.aws_s3_code_path}/#{full_path}"
+ 4     opts.aws.request_path = "/#{opts.aws.aws_s3_path}/#{full_path}"
  4     aws = aws_auth(opts.aws)
  4     full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
 *0     authHeaders = aws\get_auth_headers()

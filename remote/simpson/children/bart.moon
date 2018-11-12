@@ -1,1 +1,0 @@
-{ say: "Bart: Ay, caramba!", }

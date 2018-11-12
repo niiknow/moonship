@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # reload nginx to prevent file lock and immediately clear cache
-nginx -s reload
+/usr/local/openresty/bin/openresty -s reload
 
-# delete any files older than 24 hours
-find /tmp/* -daystart -maxdepth 1 -mmin +1440 -type f -exec rm -f {} \;
+# delete anything older than 12 hours
+find /var/cache/nginx/site/* -daystart -maxdepth 1 -mmin +720 -type f -exec rm -f {} \;

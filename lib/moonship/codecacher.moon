@@ -22,9 +22,9 @@ myUrlHandler = (opts) ->
   authHeaders             = {}
   full_path               = util.path_sanitize("#{full_path}/index.moon")
 
-  if opts.aws and opts.aws.aws_s3_code_path
+  if opts.aws and opts.aws.aws_s3_path
     -- process s3 stuff
-    opts.aws.request_path = "/#{opts.aws.aws_s3_code_path}/#{full_path}"
+    opts.aws.request_path = "/#{opts.aws.aws_s3_path}/#{full_path}"
     aws = aws_auth(opts.aws)
     full_path = "https://#{aws.options.aws_host}#{opts.aws.request_path}"
     authHeaders = aws\get_auth_headers()
