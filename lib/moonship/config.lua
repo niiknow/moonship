@@ -31,7 +31,6 @@ do
         aws_secret_access_key = aws_secret_access_key,
         aws_s3_path = aws_s3_path,
         app_path = app_path,
-        remote_path = remote_path,
         app_env = app_env
       }
       util.applyDefaults(newOpts, defaultOpts)

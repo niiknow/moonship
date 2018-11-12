@@ -12,14 +12,14 @@ cache, err = lrucache.new(CACHE_SIZE)
 
 return nil, error("failed to create the cache: " .. (err or "unknown")) if (not cache)
 
-resolve = (app_dns) ->
-  router = cache\get(app_dns.name)
+resolve = (name) ->
+  router = cache\get(name)
   return router if router
 
   -- attempt to resolve router web.json
   opts.aws.request_path = "/#{opts.aws.aws_s3_path}/#{full_path}"
   aws = aws_auth(opts.aws)
-  full_path = "https://#{aws.options.aws_host}/#{app_dns.name}/private/web.json"
+  full_path = "https://#{aws.options.aws_host}/#{name}/private/web.json"
   authHeaders = aws\get_auth_headers()
 
   req = { url: full_path, method: "GET", capture_url: "/__private", headers: {} }
@@ -39,7 +39,7 @@ resolve = (app_dns) ->
   config = util.to_json(res.body)
   router = Router(config)
 
-  cache\set(app_dns.name, router, ROUTER_TTL)
+  cache\set(name, router, ROUTER_TTL)
   router
 
 { :resolve }

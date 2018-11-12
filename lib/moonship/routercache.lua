@@ -10,14 +10,14 @@ if (not cache) then
   return nil, error("failed to create the cache: " .. (err or "unknown"))
 end
 local resolve
-resolve = function(app_dns)
-  local router = cache:get(app_dns.name)
+resolve = function(name)
+  local router = cache:get(name)
   if router then
     return router
   end
   opts.aws.request_path = "/" .. tostring(opts.aws.aws_s3_path) .. "/" .. tostring(full_path)
   local aws = aws_auth(opts.aws)
-  local full_path = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(app_dns.name) .. "/private/web.json"
+  local full_path = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(name) .. "/private/web.json"
   local authHeaders = aws:get_auth_headers()
   local req = {
     url = full_path,
@@ -37,7 +37,7 @@ resolve = function(app_dns)
   end
   local config = util.to_json(res.body)
   router = Router(config)
-  cache:set(app_dns.name, router, ROUTER_TTL)
+  cache:set(name, router, ROUTER_TTL)
   return router
 end
 return {

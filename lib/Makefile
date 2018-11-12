@@ -4,31 +4,34 @@
 test: build
 	busted -c spec
 
-local: build
-	luarocks make --force --local moonship-dev-1.rockspec
-
-global: build
-	sudo luarocks make moonship-dev-1.rockspec
-
 build:
-	moonc *.moon
 	moonc moonship
 
 watch: build
 	moonc -w moonship
 
-clean: build
+clean:
 	rm $$(find ./ | grep \.lua$$)
 	rm -rf ./t/localhost
 	mkdir -p ./t/localhost
 
 init:
-	sudo luarocks install lua-lru
-	sudo luarocks install lpath
-	sudo luarocks install luasec OPENSSL_DIR=/usr/local/opt/openssl
-	sudo luarocks install cqueues CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
-	sudo luarocks install http CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
+	sudo luarocks install busted
+	sudo luarocks install lua-resty-jwt
+	sudo luarocks install lua-resty-http
+	sudo luarocks install moonscript
+	sudo luarocks install luacrypto
+	sudo luarocks install basexx
+	sudo luarocks install lua-log
+	sudo luarocks install lua-cjson
+	sudo luarocks install luasocket
+	sudo luarocks install --server=http://luarocks.org/dev ltn12
 	sudo luarocks install mooncrafts
+	# sudo luarocks install luasec OPENSSL_DIR=/usr/local/opt/openssl
+	# uncomment these if require lua "http.server"
+	# sudo luarocks install cqueues CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
+	# sudo luarocks install http CRYPTO_DIR=/usr/local/opt/openssl OPENSSL_DIR=/usr/local/opt/openssl
 
 doc: clean
 	ldoc .
+
