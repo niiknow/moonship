@@ -1,10 +1,10 @@
 local util = require("mooncrafts.util")
-local aws_region = os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
+local aws_region = os.getenv("AWS_DEFAULT_REGION")
 local aws_access_key_id = os.getenv("AWS_S3_KEY_ID")
 local aws_secret_access_key = os.getenv("AWS_S3_ACCESS_KEY")
 local aws_s3_path = os.getenv("AWS_S3_PATH")
-local app_path = os.getenv("MOONSHIP_APP_PATH")
-local app_env = os.getenv("MOONSHIP_APP_ENV") or "PRD"
+local base_host = os.getenv("BASE_HOST")
+local remote_path = os.getenv("REMOTE_PATH")
 local string_split, table_clone, string_connection_parse
 string_split, table_clone, string_connection_parse = util.string_split, util.table_clone, util.string_connection_parse
 local insert
@@ -26,16 +26,16 @@ do
         newOpts = { }
       end
       local defaultOpts = {
-        aws_region = aws_region,
-        aws_access_key_id = aws_access_key_id,
-        aws_secret_access_key = aws_secret_access_key,
-        aws_s3_path = aws_s3_path,
-        app_path = app_path,
-        app_env = app_env
+        remote_path = remote_path,
+        base_host = base_host,
+        aws = {
+          aws_region = aws_region,
+          aws_access_key_id = aws_access_key_id,
+          aws_secret_access_key = aws_secret_access_key,
+          aws_s3_path = aws_s3_path
+        }
       }
       util.applyDefaults(newOpts, defaultOpts)
-      newOpts.alog = newOpts.azure_storage
-      newOpts.app_env = upper(newOpts.app_env or "PRD")
       self.__data = newOpts
     end,
     __base = _base_0,

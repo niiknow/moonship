@@ -1,10 +1,19 @@
 -- get the app content
-__sitename = ngx.var.__sitename
-router = router_cache.resolve(__sitename)
+util = require "mooncrafts.util"
 
-if router
-  return router\handleRequest(ngx)
+import path_sanitize from util
 
-ngx.status = 500
-ngx.say("Unexpected error while handling request, this should be a 404")
-ngx.exit(ngx.status)
+engage = (__sitename) ->
+  -- ensure sitename is saniized
+  __sitename         = path_sanitize(__sitename)
+  ngx.var.__sitename = __sitename
+
+  router = router_cache.resolve(__sitename)
+
+  return router\handleRequest(ngx) if router
+
+  ngx.status = 500
+  ngx.say("Unexpected error while handling request, this should be a 404")
+  ngx.exit(ngx.status)
+
+{ :engage }

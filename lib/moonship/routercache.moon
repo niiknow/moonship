@@ -1,7 +1,10 @@
 -- cache route to dns host
 lrucache = require "resty.lrucache"
 util     = require "mooncrafts.util"
-Router  = require "mooncrafts.nginx.router"
+Router   = require "moonship.router"
+Config   = require "moonship.config"
+aws_auth = require "mooncrafts.awsauth"
+httpc    = require "mooncrafts.http"
 
 import string_split from util
 
@@ -16,10 +19,15 @@ resolve = (name) ->
   router = cache\get(name)
   return router if router
 
+  opts = Config()\get()
+  -- ngx.log(ngx.ERR, tostring(opts))
+
+  opts.aws_host = "s3.#{opts.aws_region}.amazonaws.com"
+
   -- attempt to resolve router web.json
-  opts.aws.request_path = "/#{opts.aws.aws_s3_path}/#{full_path}"
+  opts.aws.request_path = "/#{opts.aws.aws_s3_path}/#{name}/private/web.json"
   aws = aws_auth(opts.aws)
-  full_path = "https://#{aws.options.aws_host}/#{name}/private/web.json"
+  full_path = "https://#{aws.options.aws_host}/#{opts.aws.request_path}"
   authHeaders = aws\get_auth_headers()
 
   req = { url: full_path, method: "GET", capture_url: "/__private", headers: {} }
@@ -35,7 +43,17 @@ resolve = (name) ->
     ngx.say("failed to query website configuration file ", err)
     return ngx.exit(ngx.status)
 
+  if res.code > 299
+    ngx.status = 500
+    ngx.say("failed to fetch website configuration file, status: ", res.code)
+    return ngx.exit(ngx.status)
+
   -- parse json
+  if (res.body\find('{') == nil)
+    ngx.status = 500
+    ngx.say("invalid website configuration file, status: ", res.code)
+    return ngx.exit(ngx.status)
+
   config = util.to_json(res.body)
   router = Router(config)
 

@@ -14,10 +14,6 @@ install: all
 	$(INSTALL) lib/moonship/*.* $(LUA_LIB_DIR)/moonship
 	$(INSTALL) -d $(LUA_LIB_DIR)/moonship/nginx
 	$(INSTALL) lib/moonship/nginx/*.* $(LUA_LIB_DIR)/moonship/nginx
-	$(INSTALL) -d $(LUA_LIB_DIR)/moonship/resty
-	$(INSTALL) lib/moonship/resty/*.* $(LUA_LIB_DIR)/moonship/resty
-	$(INSTALL) -d $(LUA_LIB_DIR)/moonship/vendor
-	$(INSTALL) lib/moonship/vendor/*.* $(LUA_LIB_DIR)/moonship/vendor
 
 test-resty: all
 	PATH=$(OPENRESTY_PREFIX)/nginx/sbin:$$PATH prove -I../test-nginx/lib -r t

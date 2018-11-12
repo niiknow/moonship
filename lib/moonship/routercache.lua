@@ -1,6 +1,9 @@
 local lrucache = require("resty.lrucache")
 local util = require("mooncrafts.util")
-local Router = require("mooncrafts.nginx.router")
+local Router = require("moonship.router")
+local Config = require("moonship.config")
+local aws_auth = require("mooncrafts.awsauth")
+local httpc = require("mooncrafts.http")
 local string_split
 string_split = util.string_split
 local CACHE_SIZE = 10000
@@ -15,9 +18,11 @@ resolve = function(name)
   if router then
     return router
   end
-  opts.aws.request_path = "/" .. tostring(opts.aws.aws_s3_path) .. "/" .. tostring(full_path)
+  local opts = Config():get()
+  opts.aws_host = "s3." .. tostring(opts.aws_region) .. ".amazonaws.com"
+  opts.aws.request_path = "/" .. tostring(opts.aws.aws_s3_path) .. "/" .. tostring(name) .. "/private/web.json"
   local aws = aws_auth(opts.aws)
-  local full_path = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(name) .. "/private/web.json"
+  local full_path = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(opts.aws.request_path)
   local authHeaders = aws:get_auth_headers()
   local req = {
     url = full_path,
@@ -33,6 +38,16 @@ resolve = function(name)
   if err then
     ngx.status = 500
     ngx.say("failed to query website configuration file ", err)
+    return ngx.exit(ngx.status)
+  end
+  if res.code > 299 then
+    ngx.status = 500
+    ngx.say("failed to fetch website configuration file, status: ", res.code)
+    return ngx.exit(ngx.status)
+  end
+  if (res.body:find('{') == nil) then
+    ngx.status = 500
+    ngx.say("invalid website configuration file, status: ", res.code)
     return ngx.exit(ngx.status)
   end
   local config = util.to_json(res.body)

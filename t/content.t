@@ -1,27 +1,28 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 2);
 
 my $pwd = cwd();
 
 $ENV{TEST_NGINX_RESOLVER} = '8.8.8.8';
 $ENV{TEST_COVERAGE} ||= 0;
-$ENV{LETSENCRYPT_URL} = 'https://acme-staging.api.letsencrypt.org/directory'
-$ENV{AWS_DEFAULT_REGION} = 'us-east-2'
+$ENV{LETSENCRYPT_URL} = 'https://acme-staging.api.letsencrypt.org/directory';
+$ENV{AWS_DEFAULT_REGION} = 'us-east-2';
 
 our $HttpConfig = qq{
-    lua_package_path "$pwd/lib/?.lua;/usr/local/share/lua/5.1/?.lua;;";
-    error_log logs/error.log debug;
+  lua_package_path "$pwd/lib/?.lua;/usr/local/lib/lua/?.lua;/usr/local/share/lua/5.1/?.lua;;";
+  error_log logs/error.log debug;
 
-    init_by_lua_block {
-        if $ENV{TEST_COVERAGE} == 1 then
-            jit.off()
-            require("luacov.runner").init()
-        end
-    }
+  init_by_lua_block {
+      if $ENV{TEST_COVERAGE} == 1 then
+          jit.off()
+          require("luacov.runner").init()
+      end
+      router_cache = require "moonship.routercache"
+  }
 
-    resolver $ENV{TEST_NGINX_RESOLVER};
+  resolver $ENV{TEST_NGINX_RESOLVER};
 };
 
 no_long_string();
@@ -31,44 +32,48 @@ run_tests();
 __DATA__
 === TEST 1: aws s3 file
 --- main_config
-  env LETSENCRYPT_URL;
-  env AWS_DEFAULT_REGION;
-  env AWS_S3_KEY_ID;
-  env AWS_S3_ACCESS_KEY;
-  env AWS_S3_PATH;
+env LETSENCRYPT_URL;
+env AWS_DEFAULT_REGION;
+env AWS_S3_KEY_ID;
+env AWS_S3_ACCESS_KEY;
+env AWS_S3_PATH;
 
 --- http_config eval: $::HttpConfig
 --- config
-  location = /hello {
-  	content_by_lua_file ../../lib/moonship/nginx/content.lua;
-  }
 
-  location /__proxy {
-		internal;
-		set_unescape_uri               	$clean_url "$arg_target";
+				set $__sitename '';
 
-		proxy_pass                     	$clean_url;
-		proxy_cache_key                	$clean_url;
+			  location = /hello {
+						content_by_lua_block {
+							local engine = require "moonship.nginx.content"
+							engine.engage("test")
+						}
+			  }
 
-		# small cache to help prevent hammering of backend
-		proxy_cache_valid              	any 10s;
-	}
+			  location /__proxy {
+						internal;
+						set_unescape_uri               	$clean_url "$arg_target";
 
-  location /__private {
-		internal;
-		set_unescape_uri               	$clean_url "$arg_target";
+						proxy_pass                     	$clean_url;
+						proxy_cache_key                	$clean_url;
 
-		proxy_pass                     	$clean_url;
-		proxy_cache_key                	$clean_url;
+						# small cache to help prevent hammering of backend
+						proxy_cache_valid              	any 10s;
+				}
 
-		# small cache to help prevent hammering of backend
-		proxy_cache_valid              	any 10s;
-  }
+			  location /__private {
+						internal;
+						set_unescape_uri               	$clean_url "$arg_target";
+
+						proxy_pass                     	$clean_url;
+						proxy_cache_key                	$clean_url;
+
+						# small cache to help prevent hammering of backend
+						proxy_cache_valid              	any 10s;
+			  }
 --- request
 GET /hello
 --- response_body
-hello from s3
---- no_error_log
-[error]
-[warn]
+failed to fetch website configuration file, status: 301
+--- error_code: 500
 

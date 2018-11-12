@@ -1,4 +1,13 @@
 -- validate host by dns
+util = require "mooncrafts.util"
+
+import is_ip from util
+
+if is_ip(host)
+  ngx.status = 403
+  ngx.say("host cannot be an IP address")
+  return ngx.exit(ngx.status)
+
 host = ngx.var.host
 parts = string_split(host, ".")
 host  = "www." .. host if (#parts < 3)

@@ -1,3 +1,11 @@
+local util = require("mooncrafts.util")
+local is_ip
+is_ip = util.is_ip
+if is_ip(host) then
+  ngx.status = 403
+  ngx.say("host cannot be an IP address")
+  return ngx.exit(ngx.status)
+end
 local host = ngx.var.host
 local parts = string_split(host, ".")
 if (#parts < 3) then

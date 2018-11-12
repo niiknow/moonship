@@ -23,6 +23,7 @@
 ```
 # passthrough env vars
 # AWS S3 config
+env LETSENCRYPT_URL;
 env AWS_DEFAULT_REGION;
 env AWS_S3_KEY_ID;
 env AWS_S3_ACCESS_KEY;

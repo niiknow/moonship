@@ -1,7 +1,8 @@
 auto_ssl = (require("resty.auto-ssl")).new()
 cname_dns = require("moonship.cname")
 router_cache = require("moonship.routercache")
-local base_host = os.getenv("BASE_HOST") or "moonship.test"
+local base_host = os.getenv("BASE_HOST")
+auto_ssl:set("ca", '$LETSENCRYPT_URL')
 auto_ssl:set("allow_domain", function(domain)
   local host = domain
   local parts = string_split(domain, ".")
