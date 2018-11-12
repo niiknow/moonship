@@ -1,16 +1,16 @@
-version: "3.3"
+version: "3"
 
 services:
-    moonship:
-        image: .
-        container_name: moonship
-        environment:
-            - "AWS_S3_KEY_ID=${AWS_S3_KEY_ID}"
-            - "AWS_S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}"
-            - "AWS_S3_PATH=${AWS_S3_PATH}"
-            - "AZURE_STORAGE=${AZURE_STORAGE}"
-        ports:
-            - "80:80"
-        labels:
-            - "Moonship"
-        restart: unless-stopped
+  moonship:
+    image: .
+    container_name: moonship
+    environment:
+      - "AWS_S3_KEY_ID=${AWS_S3_KEY_ID}"
+      - "AWS_S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}"
+      - "AWS_S3_PATH=${AWS_S3_PATH}"
+    ports:
+      - "80:80"
+      - "443:443"
+    labels:
+      - "Moonship"
+    restart: always

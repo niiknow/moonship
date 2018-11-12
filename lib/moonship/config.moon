@@ -16,7 +16,7 @@ class Config
   new: (newOpts={}) =>
     defaultOpts = {
       :aws_region, :aws_access_key_id, :aws_secret_access_key, :aws_s3_path,
-      :app_path, :remote_path, :app_env
+      :app_path, :app_env
     }
 
     util.applyDefaults(newOpts, defaultOpts)
