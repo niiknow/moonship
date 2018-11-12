@@ -10,6 +10,7 @@ engage = (__sitename) ->
 
   router = router_cache.resolve(__sitename)
 
+  ngx.log(ngx.ERR, __sitename) if router == nil
   return router\handleRequest(ngx) if router
 
   ngx.status = 500

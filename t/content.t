@@ -1,7 +1,7 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 3);
 
 my $pwd = cwd();
 
@@ -30,7 +30,7 @@ no_long_string();
 run_tests();
 
 __DATA__
-=== TEST 1: aws s3 file
+=== TEST 1: fail website setup
 --- main_config
 env LETSENCRYPT_URL;
 env AWS_DEFAULT_REGION;
@@ -43,7 +43,7 @@ env AWS_S3_PATH;
 
 				set $__sitename '';
 
-			  location = /hello {
+			  location = /err {
 						content_by_lua_block {
 							local engine = require "moonship.nginx.content"
 							engine.engage("test")
@@ -59,6 +59,58 @@ env AWS_S3_PATH;
 
 						# small cache to help prevent hammering of backend
 						proxy_cache_valid              	any 10s;
+						proxy_pass_request_headers      off;
+				}
+
+			  location /__private {
+						internal;
+						set_unescape_uri               	$clean_url "$arg_target";
+
+						proxy_pass                     	$clean_url;
+						proxy_cache_key                	$clean_url;
+
+						# small cache to help prevent hammering of backend
+						proxy_cache_valid              	any 10s;
+			  }
+--- request
+GET /err
+--- response_body
+failed to fetch website configuration file, status: 404
+--- error_code: 500
+--- no_error_log
+[error]
+
+
+=== TEST 2: successful hello content
+--- main_config
+env LETSENCRYPT_URL;
+env AWS_DEFAULT_REGION;
+env AWS_S3_KEY_ID;
+env AWS_S3_ACCESS_KEY;
+env AWS_S3_PATH;
+
+--- http_config eval: $::HttpConfig
+--- config
+
+				set $__sitename '';
+
+			  location = /hello {
+						content_by_lua_block {
+							local engine = require "moonship.nginx.content"
+							engine.engage("localhost")
+						}
+			  }
+
+			  location /__proxy {
+						internal;
+						set_unescape_uri               	$clean_url "$arg_target";
+
+						proxy_pass                     	$clean_url;
+						proxy_cache_key                	$clean_url;
+
+						# small cache to help prevent hammering of backend
+						proxy_cache_valid              	any 10s;
+						proxy_pass_request_headers      off;
 				}
 
 			  location /__private {
@@ -74,6 +126,6 @@ env AWS_S3_PATH;
 --- request
 GET /hello
 --- response_body
-failed to fetch website configuration file, status: 301
---- error_code: 500
-
+abcdefg
+--- no_error_log
+[error]

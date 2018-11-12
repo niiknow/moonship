@@ -19,10 +19,10 @@ resolve = function(name)
     return router
   end
   local opts = Config():get()
-  opts.aws_host = "s3." .. tostring(opts.aws_region) .. ".amazonaws.com"
+  opts.aws.aws_host = "s3." .. tostring(opts.aws.aws_region) .. ".amazonaws.com"
   opts.aws.request_path = "/" .. tostring(opts.aws.aws_s3_path) .. "/" .. tostring(name) .. "/private/web.json"
   local aws = aws_auth(opts.aws)
-  local full_path = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(opts.aws.request_path)
+  local full_path = "https://" .. tostring(aws.options.aws_host) .. tostring(opts.aws.request_path)
   local authHeaders = aws:get_auth_headers()
   local req = {
     url = full_path,
@@ -50,7 +50,8 @@ resolve = function(name)
     ngx.say("invalid website configuration file, status: ", res.code)
     return ngx.exit(ngx.status)
   end
-  local config = util.to_json(res.body)
+  local config = util.from_json(res.body)
+  config.base = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(opts.aws.aws_s3_path) .. "/" .. tostring(name) .. "/public"
   router = Router(config)
   cache:set(name, router, ROUTER_TTL)
   return router

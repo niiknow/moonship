@@ -203,11 +203,11 @@ class Router
       -- parse by specific method
       if (r.http_methods == "*" or r.http_methods\find(req.http_method))
 
-        ngx.log(ngx.ERR, util.to_json(r))
+        -- ngx.log(ngx.ERR, util.to_json(r))
         -- then match by path
         match, params = match_pattern(reqUrl, r.pattern)
 
-        ngx.log(ngx.ERR, util.to_json(params))
+        -- ngx.log(ngx.ERR, util.to_json(params))
         -- parse dest
         if match
           status = r.status or 0
@@ -258,19 +258,18 @@ class Router
   -- handle page rendering
   handlePage: (req, rst, proxyPath='/__proxy') =>
     -- only handle pages: no file extension
-    path = trim(req.path, "/")
-    rst.template = "page" if not rst.template
+    path = req.path
+    path = "/index" if req.path == "/"
+    base = @conf.base
+    rst.template = "page" if path != "/index"
     rst.ext = "liquid" if not rst.ext
 
-    if (strlen(req.path) <= 0)
-      path = "index"
-      rst.template = "index"
-
     urls = {
-      {"#{base}/templates/#{rst.template}.#{ext}"}
-      {"#{base}/templates/index.#{ext}"}
-      {"#{base}/contents/#{path}.json"}
+      {proxyPath, {args: {target: "#{base}/templates/#{rst.template}.#{rst.ext}"}}}
+      {proxyPath, {args: {target: "#{base}/contents#{path}.json"}}}
     }
+
+    -- ngx.log(ngx.ERR, util.to_json(urls))
 
     page, data = ngx.location.capture_multi(urls)
 
@@ -279,14 +278,15 @@ class Router
 
     -- prepare local variables
     req.page = if rst.template_data then rst.template_data else {}
-    if (data and data.status == ngx.HTTP_OK)
+
+    if (data and data.status < 300)
       req.page = util.from_json(data.body)
 
     -- push in request
     {
       code: 200
       headers: {}
-      body: @viewEngine\render(page.body, req)
+      body: trim(@viewEngine\render(page.body, req.page))
     }
 
   handleProxy: (req, rst, proxyPath='/__proxy') =>
@@ -305,7 +305,8 @@ class Router
     rst = @parseRedirects(req)
 
     rst.template = "index" if req.path == "/"
-    rst.template = "page" if not (rst.template)
+    rst.template = "page" if not rst.template
+    rst.ext      = "liquid" if not rst.ext
 
     -- redirect
     return ngx.redirect(rst.target, rst.code) if rst.isRedir
@@ -317,11 +318,14 @@ class Router
       for k, v in pairs(r.headers)
         rst.headers[k] = v unless k == 'content-length'
 
+    page_rst = nil
+
     -- proxy pass if target
     if (rst.target)
       page_rst = @handleProxy(req, rst, proxyPath)
     else -- handle the current page
       page_rst = @handlePage(req, rst, proxyPath)
+
 
     -- set response headers for valid response
     if (page_rst.code >= 200 or page_rst.code < 300)
@@ -338,6 +342,6 @@ class Router
     -- allow template to handle it's own error
     -- and response with appropriate error body
     ngx.say(page_rst.body) if (page_rst.body)
-    ngx.exit(page_rst.code) if (pagerst.code)
+    ngx.exit(page_rst.code) if (page_rst.code)
 
 Router

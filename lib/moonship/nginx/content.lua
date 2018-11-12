@@ -6,6 +6,9 @@ engage = function(__sitename)
   __sitename = path_sanitize(__sitename)
   ngx.var.__sitename = __sitename
   local router = router_cache.resolve(__sitename)
+  if router == nil then
+    ngx.log(ngx.ERR, __sitename)
+  end
   if router then
     return router:handleRequest(ngx)
   end
