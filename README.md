@@ -30,7 +30,6 @@ env AWS_S3_PATH;
 
 # app stuff
 env BASE_HOST; # the cname base host, i.e. yourserver.com
-env MOONSHIP_APP_PATH; # usually, this is /app
 ```
 
 # build and run

@@ -31,5 +31,5 @@ auto_ssl:set("allow_domain", function(domain)
   ngx.exit(ngx.status)
   return false
 end)
-auto_ssl:set("dir", "/app/ssl")
+auto_ssl:set("dir", "/usr/local/openresty/nginx/conf/ssl")
 return auto_ssl:init()

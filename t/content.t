@@ -30,25 +30,38 @@ run_tests();
 __DATA__
 === TEST 1: aws s3 file
 --- main_config
-    env AWS_S3_KEY_ID;
-    env AWS_S3_ACCESS_KEY;
-    env AWS_S3_PATH;
-    env MOONSHIP_APP_PATH;
-    env AZURE_STORAGE;
+  env AWS_S3_KEY_ID;
+  env AWS_S3_ACCESS_KEY;
+  env AWS_S3_PATH;
+  env MOONSHIP_APP_PATH;
 
 --- http_config eval: $::HttpConfig
 --- config
-    location = /hello {
-    	content_by_lua_file ../../lib/moonship/nginx/content.lua;
-    }
+  location = /hello {
+  	content_by_lua_file ../../lib/moonship/nginx/content.lua;
+  }
 
-    location /__libprivate {
-        set $clean_url "";
-        set_unescape_uri $clean_url $arg_target;
-        proxy_pass $clean_url;
+  location /__proxy {
+		internal;
+		set_unescape_uri               	$clean_url "$arg_target";
 
-        proxy_http_version 1.1;
-    }
+		proxy_pass                     	$clean_url;
+		proxy_cache_key                	$clean_url;
+
+		# small cache to help prevent hammering of backend
+		proxy_cache_valid              	any 10s;
+	}
+
+  location /__private {
+		internal;
+		set_unescape_uri               	$clean_url "$arg_target";
+
+		proxy_pass                     	$clean_url;
+		proxy_cache_key                	$clean_url;
+
+		# small cache to help prevent hammering of backend
+		proxy_cache_valid              	any 10s;
+  }
 --- request
 GET /hello
 --- response_body

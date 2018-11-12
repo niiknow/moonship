@@ -3,23 +3,11 @@
 me=`basename "$0"`
 echo "[i] MOONSHIP running: $me"
 
-mkdir -p /app
+# initialize nginx folder
+if [ ! -f /usr/local/openresty/nginx/conf/app/server.conf ]; then
+    echo "[i] running for the 1st time"
+    rsync --update -raz /usr/local/openresty/nginx/conf-bak/app/* /usr/local/openresty/nginx/conf/app
 
-# rsync app
-if [ -z "`ls /app --hide='lost+found'`" ]
-then
-    rsync -a /app-start/* /app
+    # reload to catch new conf
+    /usr/local/openresty/bin/openresty -s reload
 fi
-
-mkdir -p /app/tmp/cache/code/public
-mkdir -p /app/tmp/cache/code/private
-mkdir -p /app/tmp/nginx/temp
-
-chown -R nginx:nginx /app
-
-# make sure runit services are running across restart
-find /etc/service/ -name "down" -exec rm -rf {} \;
-
-ln -sf /app/conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
-ln -sf /dev/stdout /app/log/nginx/access.log
-ln -sf /dev/stderr /app/log/nginx/error.log
