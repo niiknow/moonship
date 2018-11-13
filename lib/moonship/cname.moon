@@ -4,9 +4,8 @@ util     = require "mooncrafts.util"
 
 import string_split from util
 
-CACHE_SIZE        = 10000
-
-cache, err        = lrucache.new(CACHE_SIZE)
+CACHE_SIZE = 10000
+cache, err = lrucache.new(CACHE_SIZE)
 
 return nil, error("failed to create the cache: " .. (err or "unknown")) if (not cache)
 

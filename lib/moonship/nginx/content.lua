@@ -3,6 +3,9 @@ local path_sanitize
 path_sanitize = util.path_sanitize
 local engage
 engage = function(__sitename)
+  if __sitename == nil then
+    __sitename = ngx.var.__sitename
+  end
   __sitename = path_sanitize(__sitename)
   ngx.var.__sitename = __sitename
   local router = router_cache.resolve(__sitename)

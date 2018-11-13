@@ -3,7 +3,7 @@ util = require "mooncrafts.util"
 
 import path_sanitize from util
 
-engage = (__sitename) ->
+engage = (__sitename=ngx.var.__sitename) ->
   -- ensure sitename is saniized
   __sitename         = path_sanitize(__sitename)
   ngx.var.__sitename = __sitename

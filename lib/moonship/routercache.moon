@@ -49,14 +49,16 @@ resolve = (name) ->
     ngx.say("failed to fetch website configuration file, status: ", res.code)
     return ngx.exit(ngx.status)
 
-  -- parse json
+  -- check valid json
   if (res.body\find('{') == nil)
     ngx.status = 500
     ngx.say("invalid website configuration file, status: ", res.code)
     return ngx.exit(ngx.status)
 
+  -- parse json
   config = util.from_json(res.body)
-  config.base = "https://#{aws.options.aws_host}/#{opts.aws.aws_s3_path}/#{name}/public"
+  base   = "https://#{aws.options.aws_host}/#{opts.aws.aws_s3_path}/#{name}/public"
+  config.base = base if not config.base
   router = Router(config)
 
   cache\set(name, router, ROUTER_TTL)

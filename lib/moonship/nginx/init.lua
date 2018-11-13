@@ -1,36 +1,53 @@
 auto_ssl = (require("resty.auto-ssl")).new()
 cname_dns = require("moonship.cname")
 router_cache = require("moonship.routercache")
-local base_host = os.getenv("BASE_HOST")
-auto_ssl:set("ca", '$LETSENCRYPT_URL')
-auto_ssl:set("allow_domain", function(domain)
-  local host = domain
-  local parts = string_split(domain, ".")
-  if (#parts < 3) then
-    host = "www." .. domain
+local bh = os.getenv("BASE_HOST")
+local lu = os.getenv("LETSENCRYPT_URL")
+local dir = "/usr/local/openresty/nginx/conf/ssl"
+local engage
+engage = function(base_host, letsencrypt_url, dir)
+  if base_host == nil then
+    base_host = bh
   end
-  local answers, err = cname_dns.resolve(host)
-  if err then
-    ngx.status = 500
-    ngx.say(err)
-    ngx.exit(ngx.status)
-    return false
+  if letsencrypt_url == nil then
+    letsencrypt_url = lu
   end
-  if not answers then
-    ngx.status = 500
-    ngx.say("failed to query the DNS server: ", err)
-    ngx.exit(ngx.status)
-    return false
+  if dir == nil then
+    dir = "/usr/local/openresty/nginx/conf/ssl"
   end
-  for i, ans in ipairs(answers) do
-    if ans.base == base_host then
-      return true
+  auto_ssl:set("ca", lu)
+  auto_ssl:set("allow_domain", function(domain)
+    local host = domain
+    local parts = string_split(domain, ".")
+    if (#parts < 3) then
+      host = "www." .. domain
     end
-  end
-  ngx.status = 500
-  ngx.say("failed to query valid CNAME from DNS server")
-  ngx.exit(ngx.status)
-  return false
-end)
-auto_ssl:set("dir", "/usr/local/openresty/nginx/conf/ssl")
-return auto_ssl:init()
+    local answers, err = cname_dns.resolve(host)
+    if err then
+      ngx.status = 500
+      ngx.say(err)
+      ngx.exit(ngx.status)
+      return false
+    end
+    if not answers then
+      ngx.status = 500
+      ngx.say("failed to query the DNS server: ", err)
+      ngx.exit(ngx.status)
+      return false
+    end
+    for i, ans in ipairs(answers) do
+      if ans.base == base_host then
+        return true
+      end
+    end
+    ngx.status = 500
+    ngx.say("failed to query valid CNAME from DNS server")
+    ngx.exit(ngx.status)
+    return false
+  end)
+  auto_ssl:set("dir", dir)
+  return auto_ssl:init()
+end
+return {
+  engage = engage
+}

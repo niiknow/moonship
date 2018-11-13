@@ -51,7 +51,10 @@ resolve = function(name)
     return ngx.exit(ngx.status)
   end
   local config = util.from_json(res.body)
-  config.base = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(opts.aws.aws_s3_path) .. "/" .. tostring(name) .. "/public"
+  local base = "https://" .. tostring(aws.options.aws_host) .. "/" .. tostring(opts.aws.aws_s3_path) .. "/" .. tostring(name) .. "/public"
+  if not config.base then
+    config.base = base
+  end
   router = Router(config)
   cache:set(name, router, ROUTER_TTL)
   return router
