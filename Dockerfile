@@ -7,6 +7,7 @@ ENV AWS_DEFAULT_REGION="us-east-2" \
 USER root
 WORKDIR /root
 ARG LUA_RESTY_AUTO_SSL_VERSION="0.12.0"
+ARG RESTY_OPENSSL_VERSION="1.0.2k"
 RUN cd /tmp \
     printf "Build of moonship, date: %s\n"  `date -u +"%Y-%m-%dT%H:%M:%SZ"` >> /etc/BUILDS/zz-moonship && \
     apk add --no-cache \
@@ -14,29 +15,34 @@ RUN cd /tmp \
       coreutils \
       curl \
       diffutils \
-      grep \
       openssl \
+      openssl-dev \
+      grep \
       nano \
       less \
       python \
       py-pip \
       rsync \
+      git \
       sed && \
     pip install --upgrade pip && \
     pip install awscli && \
     if [ -L /usr/bin/pkill ]; then rm /usr/bin/pkill; fi && \
+    cd /tmp && \
+    curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz && \
+		tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz && \
     luarocks install lua-resty-http && \
     luarocks install lua-resty-auto-ssl $LUA_RESTY_AUTO_SSL_VERSION && \
-    luarocks install lua-resty-jwt && \
-    luarocks install lua-resty-http && \
     luarocks install moonscript && \
-    luarocks install luacrypto && \
     luarocks install lua-lru && \
     luarocks install basexx  && \
     luarocks install lpath && \
     luarocks install lua-log && \
-    luarocks install --server=http://luarocks.org/dev ltn12 && \
+    luarocks install lua-cjson && \
+    luarocks install luasocket && \
     luarocks install luasec && \
+    luarocks install luaossl && \
+    luarocks install --server=http://luarocks.org/dev ltn12 && \
     luarocks install mooncrafts && \
     addgroup -S nginx \
     && mkdir -p /var/cache/nginx \
@@ -51,7 +57,7 @@ RUN cd /tmp \
     && chown -R nginx:nginx /usr/local/openresty/nginx/logs/ \
     && ln -s /usr/local/openresty/nginx/logs/ /var/log/nginx \
     && apk --purge -v del py-pip \
-    && mkdir -p /usr/local/openresty/nginx/conf/app/src/moonship && \
+    && mkdir -p /usr/local/openresty/nginx/conf/app/src/moonship \
     && rm -rf /var/cache/apk/* /tmp/*
 COPY rootfs/. /
 COPY lib/moonship/. /usr/local/openresty/nginx/conf/app/src/moonship/
