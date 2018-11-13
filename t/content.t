@@ -11,19 +11,19 @@ $ENV{LETSENCRYPT_URL} = 'https://acme-staging.api.letsencrypt.org/directory';
 $ENV{AWS_DEFAULT_REGION} = 'us-east-2';
 
 our $HttpConfig = qq{
-  lua_package_path "$pwd/lib/?.lua;/usr/local/opt/openresty/luajit/share/lua/5.1/?.lua;;";
-  lua_package_cpath "/usr/local/opt/openresty/luajit/lib/lua/5.1/?.so;;";
-  error_log logs/error.log debug;
+	  lua_package_path "$pwd/lib/?.lua;/usr/local/opt/openresty/luajit/share/lua/5.1/?.lua;;";
+	  lua_package_cpath "/usr/local/opt/openresty/luajit/lib/lua/5.1/?.so;;";
+	  error_log logs/error.log debug;
 
-  init_by_lua_block {
-      if $ENV{TEST_COVERAGE} == 1 then
-          jit.off()
-          require("luacov.runner").init()
-      end
-      router_cache = require "mooncrafts.resty.routercache"
-  }
+	  init_by_lua_block {
+	      if $ENV{TEST_COVERAGE} == 1 then
+	          jit.off()
+	          require("luacov.runner").init()
+	      end
+	      router_cache = require "mooncrafts.resty.routercache"
+	  }
 
-  resolver $ENV{TEST_NGINX_RESOLVER};
+	  resolver $ENV{TEST_NGINX_RESOLVER};
 };
 
 no_long_string();
