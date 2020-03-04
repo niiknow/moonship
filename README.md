@@ -15,7 +15,7 @@
 
 **Base on the stategy above**
 
-* Auto-ssl is approved by determining if CNAME is valid.  If Apex domain, then CNAME is lookup using `www` of the Apex domain.  Redirects are handled by rule definition under https://{s3}/tenant_name/private/web.json - if web.json exists, then website has been correctly setup/activated.
+* Auto-ssl is approved by determining if CNAME is valid.  If Apex domain, then CNAME is lookup using `www` of the Apex domain.  Redirects are handled by rule definition under https://{s3}/tenant_name/private/web.json - if web.json exists, then website has been correctly setup/activated.  Example DNS `www.somesite.com CNAME yodawg.yourserver.com` identified that yodawg is your tenant name.
 
 * Redirect rules must follow the schema loosely defined here: https://github.com/niiknow/mooncrafts/blob/master/lib/mooncrafts/resty/router.moon#L8  This library was originally made to handle *FaaS*, as a result, redirect rules can contain raw code that are capable of handling HTTP request.
 
